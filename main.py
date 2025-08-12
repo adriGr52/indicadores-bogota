@@ -156,7 +156,7 @@ except:
 @app.get("/dashboard")
 async def get_dashboard():
     """Servir el dashboard principal"""
-    return FileResponse('dashboard_compartible.html')
+    return FileResponse('dashboard_compatible.html')
 
 @app.get("/dashboard/")
 async def get_dashboard_slash():
