@@ -1,5 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -144,6 +146,22 @@ app.add_middleware(
 
 # Crear tablas
 Base.metadata.create_all(bind=engine)
+
+# Configurar archivos estáticos y rutas del dashboard
+try:
+    app.mount("/static", StaticFiles(directory="."), name="static")
+except:
+    pass  # En caso de que el directorio no exista
+
+@app.get("/dashboard")
+async def get_dashboard():
+    """Servir el dashboard principal"""
+    return FileResponse('dashboard_compartible.html')
+
+@app.get("/dashboard/")
+async def get_dashboard_slash():
+    """Servir el dashboard principal con slash"""
+    return FileResponse('dashboard_compartible.html')
 
 # =====================================================
 # DEPENDENCIAS
