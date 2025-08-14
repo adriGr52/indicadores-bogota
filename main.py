@@ -15,6 +15,8 @@ import io
 import json
 import os
 from enum import Enum
+import unicodedata
+import re
 
 # =====================================================
 # CONFIGURACIÓN DE BASE DE DATOS
@@ -39,6 +41,42 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # =====================================================
+# FUNCIONES DE UTILIDAD MEJORADAS
+# =====================================================
+
+def normalizar_nombre_localidad(nombre: str) -> str:
+    """
+    Normaliza nombres de localidades eliminando tildes y caracteres especiales.
+    """
+    if not nombre:
+        return ""
+    
+    # Eliminar tildes y diacríticos
+    nombre_normalizado = unicodedata.normalize('NFD', nombre)
+    nombre_sin_tildes = ''.join(
+        char for char in nombre_normalizado 
+        if unicodedata.category(char) != 'Mn'
+    )
+    
+    # Limpiar caracteres especiales pero mantener espacios y guiones
+    nombre_limpio = re.sub(r'[^\w\s\-]', '', nombre_sin_tildes)
+    
+    # Capitalizar correctamente
+    return nombre_limpio.title().strip()
+
+def calcular_promedio_general_indicador(db: Session, indicador_nombre: str) -> float:
+    """
+    Calcula el promedio general de un indicador específico.
+    """
+    resultado = db.query(func.avg(IndicadorDB.valor)).filter(
+        IndicadorDB.indicador_nombre.ilike(f"%{indicador_nombre}%"),
+        IndicadorDB.valor.isnot(None),
+        IndicadorDB.valor > 0
+    ).scalar()
+    
+    return resultado or 0.0
+
+# =====================================================
 # MODELOS DE BASE DE DATOS
 # =====================================================
 
@@ -54,11 +92,11 @@ class IndicadorDB(Base):
     valor = Column(Float)
     nivel_territorial = Column(String)
     id_localidad = Column(Integer, nullable=True)
-    nombre_localidad = Column(String, nullable=True)
+    nombre_localidad = Column(String, nullable=True, index=True)  # Añadido índice
     id_upz = Column(String, nullable=True)
     nombre_upz = Column(String, nullable=True)
     area_geografica = Column(String, nullable=True)
-    año_inicio = Column(Integer, nullable=True)
+    año_inicio = Column(Integer, nullable=True, index=True)  # Añadido índice
     año_fin = Column(Integer, nullable=True)
     año_referencia = Column(String, nullable=True)
     periodicidad = Column(String, nullable=True)
@@ -85,7 +123,7 @@ class EstadisticasArchivo(Base):
     fecha_procesamiento = Column(DateTime, default=datetime.utcnow)
 
 # =====================================================
-# MODELOS PYDANTIC
+# MODELOS PYDANTIC MEJORADOS
 # =====================================================
 
 class DimensionEnum(str, Enum):
@@ -107,6 +145,31 @@ class IndicadorResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class IndicadorSuperiorPromedio(BaseModel):
+    indicador: str
+    dimension: str
+    valor_promedio_localidad: float
+    promedio_general: float
+    diferencia_porcentual: float
+    registros: int
+    año_mas_reciente: Optional[int]
+    supera_promedio: bool
+
+class UPZInfo(BaseModel):
+    id_upz: str
+    nombre_upz: str
+    registros: int
+    indicadores: int
+
+class LocalidadAnalisisCompleto(BaseModel):
+    localidad: Dict[str, Any]
+    resumen_general: Dict[str, Any]
+    upzs: List[UPZInfo]
+    indicadores_superiores_promedio: List[IndicadorSuperiorPromedio]
+    analisis_por_dimension: List[Dict[str, Any]]
+    evoluciones_temporales: List[Dict[str, Any]]
+    estadisticas_comparativas: Dict[str, Any]
+
 class CaracterizacionResponse(BaseModel):
     total_registros: int
     indicadores_unicos: int
@@ -125,6 +188,7 @@ class FiltroIndicadores(BaseModel):
     año_hasta: Optional[int] = None
     valor_min: Optional[float] = None
     valor_max: Optional[float] = None
+    solo_superiores_promedio: Optional[bool] = False
 
 # =====================================================
 # CONFIGURACIÓN DE FASTAPI
@@ -132,8 +196,8 @@ class FiltroIndicadores(BaseModel):
 
 app = FastAPI(
     title="API Indicadores Sociales Bogotá",
-    description="API para carga y caracterización de indicadores sociales de Bogotá D.C.",
-    version="1.0.0"
+    description="API para carga y caracterización de indicadores sociales de Bogotá D.C. - Versión Mejorada",
+    version="1.1.0"
 )
 
 app.add_middleware(
@@ -161,7 +225,7 @@ async def get_dashboard():
 @app.get("/dashboard/")
 async def get_dashboard_slash():
     """Servir el dashboard principal con slash"""
-    return FileResponse('dashboard_compartible.html')
+    return FileResponse('dashboard_compatible.html')
 
 # =====================================================
 # DEPENDENCIAS
@@ -175,7 +239,447 @@ def get_db():
         db.close()
 
 # =====================================================
-# UTILIDADES
+# FUNCIONES DE ANÁLISIS MEJORADAS
+# =====================================================
+
+def obtener_indicadores_superiores_promedio(db: Session, localidad: str) -> List[Dict]:
+    """
+    Obtiene solo los indicadores que superan el promedio general.
+    """
+    # Obtener todos los indicadores de la localidad
+    indicadores_localidad = db.query(
+        IndicadorDB.indicador_nombre,
+        IndicadorDB.dimension,
+        func.avg(IndicadorDB.valor).label('valor_promedio_localidad'),
+        func.count(IndicadorDB.id).label('registros'),
+        func.max(IndicadorDB.año_inicio).label('año_mas_reciente')
+    ).filter(
+        IndicadorDB.nombre_localidad.ilike(f"%{localidad}%"),
+        IndicadorDB.valor.isnot(None),
+        IndicadorDB.valor > 0
+    ).group_by(IndicadorDB.indicador_nombre, IndicadorDB.dimension).all()
+    
+    indicadores_filtrados = []
+    
+    for indicador in indicadores_localidad:
+        promedio_general = calcular_promedio_general_indicador(db, indicador.indicador_nombre)
+        
+        # Solo incluir si supera el promedio general
+        if indicador.valor_promedio_localidad > promedio_general:
+            indicadores_filtrados.append({
+                "indicador": indicador.indicador_nombre,
+                "dimension": indicador.dimension,
+                "valor_promedio_localidad": round(indicador.valor_promedio_localidad, 2),
+                "promedio_general": round(promedio_general, 2),
+                "diferencia_porcentual": round(
+                    ((indicador.valor_promedio_localidad - promedio_general) / promedio_general) * 100, 1
+                ) if promedio_general > 0 else 0,
+                "registros": indicador.registros,
+                "año_mas_reciente": indicador.año_mas_reciente,
+                "supera_promedio": True
+            })
+    
+    return sorted(indicadores_filtrados, key=lambda x: x['diferencia_porcentual'], reverse=True)
+
+def analisis_detallado_localidad_con_upz(db: Session, localidad: str) -> Dict[str, Any]:
+    """
+    Análisis completo de una localidad incluyendo información de UPZ.
+    """
+    localidad_normalizada = normalizar_nombre_localidad(localidad)
+    
+    # Información básica de la localidad
+    info_basica = db.query(
+        IndicadorDB.id_localidad,
+        IndicadorDB.nombre_localidad,
+        func.count(IndicadorDB.id).label('total_registros'),
+        func.count(IndicadorDB.indicador_nombre.distinct()).label('indicadores_unicos'),
+        func.min(IndicadorDB.año_inicio).label('año_min'),
+        func.max(IndicadorDB.año_inicio).label('año_max')
+    ).filter(
+        IndicadorDB.nombre_localidad.ilike(f"%{localidad}%")
+    ).group_by(IndicadorDB.id_localidad, IndicadorDB.nombre_localidad).first()
+    
+    if not info_basica:
+        return {"error": f"Localidad '{localidad}' no encontrada"}
+    
+    # Información de UPZ en esta localidad
+    upzs = db.query(
+        IndicadorDB.id_upz,
+        IndicadorDB.nombre_upz,
+        func.count(IndicadorDB.id).label('registros_upz'),
+        func.count(IndicadorDB.indicador_nombre.distinct()).label('indicadores_upz')
+    ).filter(
+        IndicadorDB.nombre_localidad.ilike(f"%{localidad}%"),
+        IndicadorDB.id_upz.isnot(None)
+    ).group_by(IndicadorDB.id_upz, IndicadorDB.nombre_upz).all()
+    
+    # Indicadores que superan el promedio
+    indicadores_superiores = obtener_indicadores_superiores_promedio(db, localidad)
+    
+    # Análisis por dimensión
+    por_dimension = db.query(
+        IndicadorDB.dimension,
+        func.count(IndicadorDB.id).label('registros'),
+        func.count(IndicadorDB.indicador_nombre.distinct()).label('indicadores_diferentes'),
+        func.avg(IndicadorDB.valor).label('valor_promedio_dimension')
+    ).filter(
+        IndicadorDB.nombre_localidad.ilike(f"%{localidad}%"),
+        IndicadorDB.dimension.isnot(None),
+        IndicadorDB.valor.isnot(None)
+    ).group_by(IndicadorDB.dimension).all()
+    
+    # Evolución temporal de los mejores indicadores
+    evoluciones = []
+    for indicador in indicadores_superiores[:5]:  # Top 5 indicadores
+        evolucion = db.query(
+            IndicadorDB.año_inicio,
+            func.avg(IndicadorDB.valor).label('valor_promedio')
+        ).filter(
+            IndicadorDB.nombre_localidad.ilike(f"%{localidad}%"),
+            IndicadorDB.indicador_nombre == indicador['indicador'],
+            IndicadorDB.año_inicio.isnot(None)
+        ).group_by(IndicadorDB.año_inicio).order_by(IndicadorDB.año_inicio).all()
+        
+        if evolucion:
+            evoluciones.append({
+                "indicador": indicador['indicador'],
+                "serie_temporal": [
+                    {"año": e.año_inicio, "valor": round(e.valor_promedio, 2)}
+                    for e in evolucion
+                ]
+            })
+    
+    return {
+        "localidad": {
+            "nombre_original": info_basica.nombre_localidad,
+            "nombre_normalizado": localidad_normalizada,
+            "id_localidad": info_basica.id_localidad
+        },
+        "resumen_general": {
+            "total_registros": info_basica.total_registros,
+            "indicadores_unicos": info_basica.indicadores_unicos,
+            "rango_años": f"{info_basica.año_min} - {info_basica.año_max}",
+            "upzs_disponibles": len(upzs)
+        },
+        "upzs": [
+            {
+                "id_upz": upz.id_upz,
+                "nombre_upz": upz.nombre_upz,
+                "registros": upz.registros_upz,
+                "indicadores": upz.indicadores_upz
+            } for upz in upzs
+        ],
+        "indicadores_superiores_promedio": indicadores_superiores,
+        "analisis_por_dimension": [
+            {
+                "dimension": dim.dimension,
+                "registros": dim.registros,
+                "indicadores_diferentes": dim.indicadores_diferentes,
+                "valor_promedio": round(dim.valor_promedio_dimension, 2) if dim.valor_promedio_dimension else None
+            } for dim in por_dimension
+        ],
+        "evoluciones_temporales": evoluciones,
+        "estadisticas_comparativas": {
+            "total_indicadores_analizados": len(indicadores_superiores),
+            "mejor_indicador": indicadores_superiores[0] if indicadores_superiores else None,
+            "promedio_diferencia_porcentual": round(
+                sum(ind['diferencia_porcentual'] for ind in indicadores_superiores) / len(indicadores_superiores), 1
+            ) if indicadores_superiores else 0
+        }
+    }
+
+def obtener_indicadores_superiores_promedio_upz(db: Session, upz_id: str) -> List[Dict]:
+    """
+    Obtiene solo los indicadores que superan el promedio general para una UPZ específica.
+    """
+    # Obtener todos los indicadores de la UPZ
+    indicadores_upz = db.query(
+        IndicadorDB.indicador_nombre,
+        IndicadorDB.dimension,
+        func.avg(IndicadorDB.valor).label('valor_promedio_upz'),
+        func.count(IndicadorDB.id).label('registros'),
+        func.max(IndicadorDB.año_inicio).label('año_mas_reciente')
+    ).filter(
+        IndicadorDB.id_upz == upz_id,
+        IndicadorDB.valor.isnot(None),
+        IndicadorDB.valor > 0
+    ).group_by(IndicadorDB.indicador_nombre, IndicadorDB.dimension).all()
+    
+    indicadores_filtrados = []
+    
+    for indicador in indicadores_upz:
+        promedio_general = calcular_promedio_general_indicador(db, indicador.indicador_nombre)
+        
+        # Solo incluir si supera el promedio general
+        if indicador.valor_promedio_upz > promedio_general:
+            indicadores_filtrados.append({
+                "indicador": indicador.indicador_nombre,
+                "dimension": indicador.dimension,
+                "valor_promedio_upz": round(indicador.valor_promedio_upz, 2),
+                "promedio_general": round(promedio_general, 2),
+                "diferencia_porcentual": round(
+                    ((indicador.valor_promedio_upz - promedio_general) / promedio_general) * 100, 1
+                ) if promedio_general > 0 else 0,
+                "registros": indicador.registros,
+                "año_mas_reciente": indicador.año_mas_reciente,
+                "supera_promedio": True
+            })
+    
+    return sorted(indicadores_filtrados, key=lambda x: x['diferencia_porcentual'], reverse=True)
+
+def analisis_detallado_upz(db: Session, upz_id: str) -> Dict[str, Any]:
+    """
+    Análisis completo de una UPZ específica.
+    """
+    # Información básica de la UPZ
+    info_basica = db.query(
+        IndicadorDB.id_upz,
+        IndicadorDB.nombre_upz,
+        IndicadorDB.nombre_localidad,
+        func.count(IndicadorDB.id).label('total_registros'),
+        func.count(IndicadorDB.indicador_nombre.distinct()).label('indicadores_unicos'),
+        func.min(IndicadorDB.año_inicio).label('año_min'),
+        func.max(IndicadorDB.año_inicio).label('año_max')
+    ).filter(
+        IndicadorDB.id_upz == upz_id
+    ).group_by(
+        IndicadorDB.id_upz, 
+        IndicadorDB.nombre_upz, 
+        IndicadorDB.nombre_localidad
+    ).first()
+    
+    if not info_basica:
+        return {"error": f"UPZ '{upz_id}' no encontrada"}
+    
+    # Indicadores que superan el promedio
+    indicadores_superiores = obtener_indicadores_superiores_promedio_upz(db, upz_id)
+    
+    # Análisis por dimensión
+    por_dimension = db.query(
+        IndicadorDB.dimension,
+        func.count(IndicadorDB.id).label('registros'),
+        func.count(IndicadorDB.indicador_nombre.distinct()).label('indicadores_diferentes'),
+        func.avg(IndicadorDB.valor).label('valor_promedio_dimension')
+    ).filter(
+        IndicadorDB.id_upz == upz_id,
+        IndicadorDB.dimension.isnot(None),
+        IndicadorDB.valor.isnot(None)
+    ).group_by(IndicadorDB.dimension).all()
+    
+    # Evolución temporal de los mejores indicadores
+    evoluciones = []
+    for indicador in indicadores_superiores[:5]:  # Top 5 indicadores
+        evolucion = db.query(
+            IndicadorDB.año_inicio,
+            func.avg(IndicadorDB.valor).label('valor_promedio')
+        ).filter(
+            IndicadorDB.id_upz == upz_id,
+            IndicadorDB.indicador_nombre == indicador['indicador'],
+            IndicadorDB.año_inicio.isnot(None)
+        ).group_by(IndicadorDB.año_inicio).order_by(IndicadorDB.año_inicio).all()
+        
+        if evolucion:
+            evoluciones.append({
+                "indicador": indicador['indicador'],
+                "serie_temporal": [
+                    {"año": e.año_inicio, "valor": round(e.valor_promedio, 2)}
+                    for e in evolucion
+                ]
+            })
+    
+    return {
+        "upz": {
+            "id_upz": info_basica.id_upz,
+            "nombre_upz": info_basica.nombre_upz,
+            "localidad_pertenece": info_basica.nombre_localidad
+        },
+        "resumen_general": {
+            "total_registros": info_basica.total_registros,
+            "indicadores_unicos": info_basica.indicadores_unicos,
+            "rango_años": f"{info_basica.año_min} - {info_basica.año_max}"
+        },
+        "indicadores_superiores_promedio": indicadores_superiores,
+        "analisis_por_dimension": [
+            {
+                "dimension": dim.dimension,
+                "registros": dim.registros,
+                "indicadores_diferentes": dim.indicadores_diferentes,
+                "valor_promedio": round(dim.valor_promedio_dimension, 2) if dim.valor_promedio_dimension else None
+            } for dim in por_dimension
+        ],
+        "evoluciones_temporales": evoluciones,
+        "estadisticas_comparativas": {
+            "total_indicadores_analizados": len(indicadores_superiores),
+            "mejor_indicador": indicadores_superiores[0] if indicadores_superiores else None,
+            "promedio_diferencia_porcentual": round(
+                sum(ind['diferencia_porcentual'] for ind in indicadores_superiores) / len(indicadores_superiores), 1
+            ) if indicadores_superiores else 0
+        }
+    }
+
+def generar_datos_graficos_upz(db: Session, upz_id: str) -> Dict[str, Any]:
+    """
+    Genera datos específicos para gráficos de una UPZ.
+    """
+    # Obtener indicadores superiores al promedio
+    indicadores_superiores = obtener_indicadores_superiores_promedio_upz(db, upz_id)
+    
+    if not indicadores_superiores:
+        return {"error": "No hay indicadores que superen el promedio para esta UPZ"}
+    
+    # Datos para gráfico de barras (top indicadores)
+    datos_barras = {
+        "labels": [ind['indicador'][:25] + "..." if len(ind['indicador']) > 25 else ind['indicador'] 
+                  for ind in indicadores_superiores[:8]],
+        "valores": [ind['valor_promedio_upz'] for ind in indicadores_superiores[:8]],
+        "promedios_generales": [ind['promedio_general'] for ind in indicadores_superiores[:8]],
+        "diferencias_porcentuales": [ind['diferencia_porcentual'] for ind in indicadores_superiores[:8]]
+    }
+    
+    # Datos para gráfico de tendencia temporal (mejor indicador)
+    mejor_indicador = indicadores_superiores[0]['indicador']
+    tendencia_temporal = db.query(
+        IndicadorDB.año_inicio,
+        func.avg(IndicadorDB.valor).label('valor_promedio')
+    ).filter(
+        IndicadorDB.id_upz == upz_id,
+        IndicadorDB.indicador_nombre == mejor_indicador,
+        IndicadorDB.año_inicio.isnot(None)
+    ).group_by(IndicadorDB.año_inicio).order_by(IndicadorDB.año_inicio).all()
+    
+    datos_tendencia = {
+        "indicador": mejor_indicador,
+        "años": [t.año_inicio for t in tendencia_temporal],
+        "valores": [round(t.valor_promedio, 2) for t in tendencia_temporal]
+    }
+    
+    # Datos para gráfico de dimensiones
+    por_dimension = db.query(
+        IndicadorDB.dimension,
+        func.avg(IndicadorDB.valor).label('valor_promedio')
+    ).filter(
+        IndicadorDB.id_upz == upz_id,
+        IndicadorDB.dimension.isnot(None),
+        IndicadorDB.valor.isnot(None)
+    ).group_by(IndicadorDB.dimension).all()
+    
+    datos_dimensiones = {
+        "labels": [dim.dimension for dim in por_dimension],
+        "valores": [round(dim.valor_promedio, 2) for dim in por_dimension]
+    }
+    
+    return {
+        "upz_id": upz_id,
+        "graficos": {
+            "barras_indicadores": datos_barras,
+            "tendencia_temporal": datos_tendencia,
+            "por_dimensiones": datos_dimensiones
+        },
+        "metadatos": {
+            "total_indicadores_superiores": len(indicadores_superiores),
+            "fecha_generacion": datetime.utcnow().isoformat()
+        }
+    }
+    """
+    Genera datos específicos para gráficos de una localidad.
+    """
+    # Obtener indicadores superiores al promedio
+    indicadores_superiores = obtener_indicadores_superiores_promedio(db, localidad)
+    
+    if not indicadores_superiores:
+        return {"error": "No hay indicadores que superen el promedio para esta localidad"}
+    
+    # Datos para gráfico de barras (top indicadores)
+    datos_barras = {
+        "labels": [ind['indicador'][:30] + "..." if len(ind['indicador']) > 30 else ind['indicador'] 
+                  for ind in indicadores_superiores[:8]],
+        "valores": [ind['valor_promedio_localidad'] for ind in indicadores_superiores[:8]],
+        "promedios_generales": [ind['promedio_general'] for ind in indicadores_superiores[:8]],
+        "diferencias_porcentuales": [ind['diferencia_porcentual'] for ind in indicadores_superiores[:8]]
+    }
+    
+    # Datos para gráfico de tendencia temporal (mejor indicador)
+    mejor_indicador = indicadores_superiores[0]['indicador']
+    tendencia_temporal = db.query(
+        IndicadorDB.año_inicio,
+        func.avg(IndicadorDB.valor).label('valor_promedio')
+    ).filter(
+        IndicadorDB.nombre_localidad.ilike(f"%{localidad}%"),
+        IndicadorDB.indicador_nombre == mejor_indicador,
+        IndicadorDB.año_inicio.isnot(None)
+    ).group_by(IndicadorDB.año_inicio).order_by(IndicadorDB.año_inicio).all()
+    
+    datos_tendencia = {
+        "indicador": mejor_indicador,
+        "años": [t.año_inicio for t in tendencia_temporal],
+        "valores": [round(t.valor_promedio, 2) for t in tendencia_temporal]
+    }
+    
+    # Datos para gráfico de dimensiones
+    por_dimension = db.query(
+        IndicadorDB.dimension,
+        func.avg(IndicadorDB.valor).label('valor_promedio')
+    ).filter(
+        IndicadorDB.nombre_localidad.ilike(f"%{localidad}%"),
+        IndicadorDB.dimension.isnot(None),
+        IndicadorDB.valor.isnot(None)
+    ).group_by(IndicadorDB.dimension).all()
+    
+    datos_dimensiones = {
+        "labels": [dim.dimension for dim in por_dimension],
+        "valores": [round(dim.valor_promedio, 2) for dim in por_dimension]
+    }
+    
+    return {
+        "localidad": localidad,
+        "graficos": {
+            "barras_indicadores": datos_barras,
+            "tendencia_temporal": datos_tendencia,
+            "por_dimensiones": datos_dimensiones
+        },
+        "metadatos": {
+            "total_indicadores_superiores": len(indicadores_superiores),
+            "fecha_generacion": datetime.utcnow().isoformat()
+        }
+    }
+
+def normalizar_todas_las_localidades(db: Session) -> Dict[str, int]:
+    """
+    Normaliza todas las localidades en la base de datos.
+    """
+    # Obtener todas las localidades únicas
+    localidades_unicas = db.query(IndicadorDB.nombre_localidad).distinct().all()
+    
+    actualizaciones = 0
+    mapeo_cambios = {}
+    
+    for localidad_tupla in localidades_unicas:
+        nombre_original = localidad_tupla[0]
+        if nombre_original:
+            nombre_normalizado = normalizar_nombre_localidad(nombre_original)
+            
+            if nombre_original != nombre_normalizado:
+                # Actualizar todos los registros con este nombre
+                registros_actualizados = db.query(IndicadorDB).filter(
+                    IndicadorDB.nombre_localidad == nombre_original
+                ).update({"nombre_localidad": nombre_normalizado})
+                
+                actualizaciones += registros_actualizados
+                mapeo_cambios[nombre_original] = {
+                    "nuevo_nombre": nombre_normalizado,
+                    "registros_actualizados": registros_actualizados
+                }
+    
+    db.commit()
+    
+    return {
+        "total_actualizaciones": actualizaciones,
+        "localidades_modificadas": len(mapeo_cambios),
+        "mapeo_cambios": mapeo_cambios
+    }
+
+# =====================================================
+# UTILIDADES EXISTENTES MEJORADAS
 # =====================================================
 
 def procesar_excel_consolidado(file_content: bytes) -> Dict[str, pd.DataFrame]:
@@ -200,13 +704,19 @@ def limpiar_datos_indicador(df: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
     
+    # Normalizar nombres de localidades
+    if 'Nombre Localidad' in df.columns:
+        df['Nombre Localidad'] = df['Nombre Localidad'].apply(
+            lambda x: normalizar_nombre_localidad(str(x)) if pd.notna(x) else x
+        )
+    
     # Eliminar filas completamente vacías
     df = df.dropna(how='all')
     
     return df
 
 # =====================================================
-# ENDPOINTS PRINCIPALES
+# ENDPOINTS PRINCIPALES MEJORADOS
 # =====================================================
 
 @app.post("/upload/consolidado")
@@ -293,6 +803,132 @@ async def cargar_archivo_consolidado(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error procesando archivo: {str(e)}")
 
+# =====================================================
+# NUEVOS ENDPOINTS MEJORADOS
+# =====================================================
+
+@app.get("/localidades/{localidad}/analisis-completo")
+async def analisis_completo_localidad(localidad: str, db: Session = Depends(get_db)):
+    """Análisis completo de una localidad incluyendo UPZ y indicadores superiores al promedio"""
+    try:
+        resultado = analisis_detallado_localidad_con_upz(db, localidad)
+        if "error" in resultado:
+            raise HTTPException(status_code=404, detail=resultado["error"])
+        return resultado
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en análisis: {str(e)}")
+
+@app.get("/localidades/{localidad}/graficos")
+async def datos_graficos_localidad(localidad: str, db: Session = Depends(get_db)):
+    """Genera datos específicos para gráficos de una localidad"""
+    try:
+        resultado = generar_datos_graficos_localidad(db, localidad)
+        if "error" in resultado:
+            raise HTTPException(status_code=404, detail=resultado["error"])
+        return resultado
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generando gráficos: {str(e)}")
+
+# =====================================================
+# NUEVOS ENDPOINTS PARA UPZ Y LOCALIDADES SEPARADOS
+# =====================================================
+
+@app.get("/upz/{upz_id}/analisis-completo")
+async def analisis_completo_upz(upz_id: str, db: Session = Depends(get_db)):
+    """Análisis completo específico de una UPZ"""
+    try:
+        resultado = analisis_detallado_upz(db, upz_id)
+        if "error" in resultado:
+            raise HTTPException(status_code=404, detail=resultado["error"])
+        return resultado
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en análisis UPZ: {str(e)}")
+
+@app.get("/upz/{upz_id}/graficos")
+async def datos_graficos_upz(upz_id: str, db: Session = Depends(get_db)):
+    """Genera datos específicos para gráficos de una UPZ"""
+    try:
+        resultado = generar_datos_graficos_upz(db, upz_id)
+        if "error" in resultado:
+            raise HTTPException(status_code=404, detail=resultado["error"])
+        return resultado
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generando gráficos UPZ: {str(e)}")
+
+@app.get("/upz/listado")
+async def listar_upz_disponibles(db: Session = Depends(get_db)):
+    """Lista todas las UPZ disponibles con estadísticas"""
+    try:
+        upzs = db.query(
+            IndicadorDB.id_upz,
+            IndicadorDB.nombre_upz,
+            IndicadorDB.nombre_localidad,
+            func.count(IndicadorDB.id).label('total_registros'),
+            func.count(IndicadorDB.indicador_nombre.distinct()).label('indicadores_unicos')
+        ).filter(
+            IndicadorDB.id_upz.isnot(None),
+            IndicadorDB.nombre_upz.isnot(None)
+        ).group_by(
+            IndicadorDB.id_upz, 
+            IndicadorDB.nombre_upz, 
+            IndicadorDB.nombre_localidad
+        ).all()
+        
+        return [
+            {
+                "id_upz": upz.id_upz,
+                "nombre_upz": upz.nombre_upz,
+                "localidad": upz.nombre_localidad,
+                "total_registros": upz.total_registros,
+                "indicadores_unicos": upz.indicadores_unicos
+            } for upz in upzs
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listando UPZ: {str(e)}")
+
+@app.get("/upz/{upz_id}/indicadores-superiores")
+async def indicadores_superiores_promedio_upz(upz_id: str, db: Session = Depends(get_db)):
+    """Obtiene indicadores que superan el promedio general para una UPZ específica"""
+    try:
+        indicadores = obtener_indicadores_superiores_promedio_upz(db, upz_id)
+        return {
+            "upz_id": upz_id,
+            "indicadores_superiores": indicadores,
+            "total_encontrados": len(indicadores)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@app.post("/administracion/normalizar-localidades")
+async def normalizar_localidades_db(db: Session = Depends(get_db)):
+    """Normaliza todos los nombres de localidades en la base de datos (proceso silencioso)"""
+    try:
+        resultado = normalizar_todas_las_localidades(db)
+        return {
+            "mensaje": "Proceso completado",
+            "registros_procesados": resultado["total_actualizaciones"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en proceso: {str(e)}")
+
+@app.get("/localidades/{localidad}/indicadores-superiores")
+async def indicadores_superiores_promedio_endpoint(localidad: str, db: Session = Depends(get_db)):
+    """Obtiene indicadores que superan el promedio general para una localidad"""
+    try:
+        indicadores = obtener_indicadores_superiores_promedio(db, localidad)
+        return {
+            "localidad": localidad,
+            "indicadores_superiores": indicadores,
+            "total_encontrados": len(indicadores),
+            "criterio": "Solo indicadores que superan el promedio general de Bogotá"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+# =====================================================
+# ENDPOINTS EXISTENTES MEJORADOS
+# =====================================================
+
 @app.get("/caracterizacion/completa", response_model=CaracterizacionResponse)
 async def obtener_caracterizacion_completa(db: Session = Depends(get_db)):
     """Obtiene una caracterización completa de todos los indicadores"""
@@ -370,7 +1006,7 @@ async def filtrar_indicadores(
     offset: int = Query(default=0),
     db: Session = Depends(get_db)
 ) -> List[IndicadorResponse]:
-    """Filtra indicadores según criterios específicos"""
+    """Filtra indicadores según criterios específicos - MEJORADO"""
     
     query = db.query(IndicadorDB)
     
@@ -395,6 +1031,24 @@ async def filtrar_indicadores(
     if filtros.valor_max is not None:
         query = query.filter(IndicadorDB.valor <= filtros.valor_max)
     
+    # NUEVO: Filtro para indicadores superiores al promedio
+    if filtros.solo_superiores_promedio:
+        # Subconsulta para obtener promedios por indicador
+        subquery = db.query(
+            IndicadorDB.indicador_nombre,
+            func.avg(IndicadorDB.valor).label('promedio_indicador')
+        ).filter(
+            IndicadorDB.valor.isnot(None),
+            IndicadorDB.valor > 0
+        ).group_by(IndicadorDB.indicador_nombre).subquery()
+        
+        query = query.join(
+            subquery, 
+            IndicadorDB.indicador_nombre == subquery.c.indicador_nombre
+        ).filter(
+            IndicadorDB.valor > subquery.c.promedio_indicador
+        )
+    
     resultados = query.offset(offset).limit(limit).all()
     
     return [IndicadorResponse.from_orm(r) for r in resultados]
@@ -404,7 +1058,7 @@ async def analizar_indicador_especifico(
     indicador_nombre: str,
     db: Session = Depends(get_db)
 ):
-    """Análisis detallado de un indicador específico"""
+    """Análisis detallado de un indicador específico - MEJORADO"""
     
     # Verificar que existe el indicador
     existe = db.query(IndicadorDB).filter(
@@ -424,14 +1078,17 @@ async def analizar_indicador_especifico(
         func.max(IndicadorDB.año_inicio).label('año_max')
     ).filter(IndicadorDB.indicador_nombre.ilike(f"%{indicador_nombre}%")).first()
     
-    # Distribución por localidad
+    # Distribución por localidad - SOLO SUPERIORES AL PROMEDIO
+    promedio_general = calcular_promedio_general_indicador(db, indicador_nombre)
+    
     por_localidad = db.query(
         IndicadorDB.nombre_localidad,
         func.avg(IndicadorDB.valor).label('valor_promedio'),
         func.count(IndicadorDB.id).label('registros')
     ).filter(
         IndicadorDB.indicador_nombre.ilike(f"%{indicador_nombre}%"),
-        IndicadorDB.nombre_localidad.isnot(None)
+        IndicadorDB.nombre_localidad.isnot(None),
+        IndicadorDB.valor > promedio_general  # FILTRO MEJORADO
     ).group_by(IndicadorDB.nombre_localidad).all()
     
     # Evolución temporal
@@ -451,13 +1108,18 @@ async def analizar_indicador_especifico(
             "valor_promedio": round(stats.valor_promedio, 2) if stats.valor_promedio else None,
             "valor_min": stats.valor_min,
             "valor_max": stats.valor_max,
-            "rango_años": f"{stats.año_min} - {stats.año_max}"
+            "rango_años": f"{stats.año_min} - {stats.año_max}",
+            "promedio_general_bogota": round(promedio_general, 2)
         },
         "distribucion_por_localidad": [
             {
                 "localidad": loc.nombre_localidad,
                 "valor_promedio": round(loc.valor_promedio, 2) if loc.valor_promedio else None,
-                "registros": loc.registros
+                "registros": loc.registros,
+                "supera_promedio": True,
+                "diferencia_porcentual": round(
+                    ((loc.valor_promedio - promedio_general) / promedio_general) * 100, 1
+                ) if promedio_general > 0 else 0
             } for loc in por_localidad
         ],
         "evolucion_temporal": [
@@ -466,7 +1128,11 @@ async def analizar_indicador_especifico(
                 "valor_promedio": round(temp.valor_promedio, 2) if temp.valor_promedio else None,
                 "registros": temp.registros
             } for temp in temporal
-        ]
+        ],
+        "criterios_filtrado": {
+            "solo_localidades_superiores_promedio": True,
+            "promedio_referencia": round(promedio_general, 2)
+        }
     }
 
 @app.get("/localidades/{localidad}/resumen")
@@ -474,7 +1140,7 @@ async def resumen_localidad(
     localidad: str,
     db: Session = Depends(get_db)
 ):
-    """Resumen de todos los indicadores para una localidad específica"""
+    """Resumen de todos los indicadores para una localidad específica - MEJORADO"""
     
     # Verificar que existe la localidad
     existe = db.query(IndicadorDB).filter(
@@ -484,16 +1150,8 @@ async def resumen_localidad(
     if not existe:
         raise HTTPException(status_code=404, detail="Localidad no encontrada")
     
-    # Resumen por indicador
-    por_indicador = db.query(
-        IndicadorDB.indicador_nombre,
-        IndicadorDB.dimension,
-        func.avg(IndicadorDB.valor).label('valor_promedio'),
-        func.count(IndicadorDB.id).label('registros'),
-        func.max(IndicadorDB.año_inicio).label('año_mas_reciente')
-    ).filter(
-        IndicadorDB.nombre_localidad.ilike(f"%{localidad}%")
-    ).group_by(IndicadorDB.indicador_nombre, IndicadorDB.dimension).all()
+    # Obtener solo indicadores superiores al promedio
+    indicadores_superiores = obtener_indicadores_superiores_promedio(db, localidad)
     
     # Estadísticas generales
     total_registros = db.query(IndicadorDB).filter(
@@ -508,17 +1166,12 @@ async def resumen_localidad(
         "localidad": localidad,
         "resumen_general": {
             "total_registros": total_registros,
-            "indicadores_disponibles": indicadores_unicos
+            "indicadores_disponibles": indicadores_unicos,
+            "indicadores_superiores_promedio": len(indicadores_superiores)
         },
-        "indicadores_detalle": [
-            {
-                "indicador": ind.indicador_nombre,
-                "dimension": ind.dimension,
-                "valor_promedio": round(ind.valor_promedio, 2) if ind.valor_promedio else None,
-                "registros": ind.registros,
-                "año_mas_reciente": ind.año_mas_reciente
-            } for ind in por_indicador
-        ]
+        "indicadores_detalle": indicadores_superiores,
+        "criterio_filtrado": "Solo se muestran indicadores que superan el promedio general de Bogotá",
+        "timestamp": datetime.utcnow()
     }
 
 @app.get("/dimensiones")
@@ -566,8 +1219,14 @@ async def estadisticas_archivos(db: Session = Depends(get_db)):
 @app.get("/")
 async def root():
     return {
-        "mensaje": "API Indicadores Sociales Bogotá D.C.",
-        "version": "1.0.0",
+        "mensaje": "API Indicadores Sociales Bogotá D.C. - Versión Mejorada",
+        "version": "1.1.0",
+        "mejoras": [
+            "Análisis por UPZ",
+            "Normalización de localidades",
+            "Filtro por indicadores superiores al promedio",
+            "Gráficos optimizados"
+        ],
         "documentacion": "/docs"
     }
 
@@ -575,9 +1234,13 @@ async def root():
 async def health_check(db: Session = Depends(get_db)):
     try:
         total_registros = db.query(IndicadorDB).count()
+        localidades_normalizadas = db.query(IndicadorDB.nombre_localidad).distinct().count()
+        
         return {
             "status": "healthy",
             "total_indicadores": total_registros,
+            "localidades_disponibles": localidades_normalizadas,
+            "version": "1.1.0",
             "timestamp": datetime.utcnow()
         }
     except Exception as e:
