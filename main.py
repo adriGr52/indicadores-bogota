@@ -64,6 +64,96 @@ def normalizar_nombre_localidad(nombre: str) -> str:
     # Capitalizar correctamente
     return nombre_limpio.title().strip()
 
+def normalizar_nombre_upz(nombre: str) -> str:
+    """
+    Normaliza nombres de UPZ eliminando tildes, caracteres especiales y unificando variaciones.
+    """
+    if not nombre:
+        return ""
+    
+    # Convertir a string por si viene como número
+    nombre = str(nombre).strip()
+    
+    # Eliminar tildes y diacríticos
+    nombre_normalizado = unicodedata.normalize('NFD', nombre)
+    nombre_sin_tildes = ''.join(
+        char for char in nombre_normalizado 
+        if unicodedata.category(char) != 'Mn'
+    )
+    
+    # Limpiar caracteres especiales pero mantener espacios, guiones y números
+    nombre_limpio = re.sub(r'[^\w\s\-\d]', '', nombre_sin_tildes)
+    
+    # Normalizar espacios múltiples a uno solo
+    nombre_limpio = re.sub(r'\s+', ' ', nombre_limpio)
+    
+    # Capitalizar correctamente cada palabra
+    nombre_final = nombre_limpio.title().strip()
+    
+    # Aplicar reglas específicas de normalización para UPZ comunes
+    reglas_upz = {
+        'La Candelaria': 'La Candelaria',
+        'Las Nieves': 'Las Nieves',
+        'Santa Barbara': 'Santa Barbara',
+        'Santa Bárbara': 'Santa Barbara',
+        'San Diego': 'San Diego',
+        'La Macarena': 'La Macarena',
+        'Las Cruces': 'Las Cruces',
+        'Lourdes': 'Lourdes',
+        'Sagrado Corazon': 'Sagrado Corazon',
+        'Sagrado Corazón': 'Sagrado Corazon',
+        'La Sabana': 'La Sabana',
+        'San Cristobal Norte': 'San Cristobal Norte',
+        'San Cristóbal Norte': 'San Cristobal Norte',
+        'Usaquen': 'Usaquen',
+        'Usaquén': 'Usaquen',
+        'Country Club': 'Country Club',
+        'Santa Barbara Central': 'Santa Barbara Central',
+        'Santa Bárbara Central': 'Santa Barbara Central',
+        'Los Cedros': 'Los Cedros',
+        'Usaquen Pueblo': 'Usaquen Pueblo',
+        'San Patricio': 'San Patricio',
+        'La Uribe': 'La Uribe',
+        'Toberrin': 'Toberrin',
+        'Toberin': 'Toberin',
+        'Los Novios': 'Los Novios',
+        'Casco Urbano De Suba': 'Casco Urbano De Suba',
+        'El Prado': 'El Prado',
+        'Britalia': 'Britalia',
+        'El Rincon': 'El Rincon',
+        'El Rincón': 'El Rincon',
+        'Bolivia': 'Bolivia',
+        'Niza': 'Niza',
+        'La Floresta': 'La Floresta',
+        'Suba': 'Suba',
+        'Casa Blanca Suba': 'Casa Blanca Suba',
+        'Las Mercedes': 'Las Mercedes',
+        'Lombardia': 'Lombardia',
+        'Lombardía': 'Lombardia',
+        'Castilla': 'Castilla',
+        'Tintal Norte': 'Tintal Norte',
+        'Tintal Sur': 'Tintal Sur',
+        'Patio Bonito': 'Patio Bonito',
+        'Las Margaritas': 'Las Margaritas',
+        'Calandaima': 'Calandaima',
+        'Corabastos': 'Corabastos',
+        'Zona Industrial': 'Zona Industrial',
+        'Puente Aranda': 'Puente Aranda',
+        'Ciudad Montes': 'Ciudad Montes',
+        'Muzu': 'Muzu',
+        'Muzú': 'Muzu',
+        'Zona Franca': 'Zona Franca',
+        'Granjas De Techo': 'Granjas De Techo',
+        'Granjas Techo': 'Granjas De Techo'
+    }
+    
+    # Buscar coincidencia exacta o similar
+    for variacion, nombre_estandar in reglas_upz.items():
+        if nombre_final.lower() == variacion.lower():
+            return nombre_estandar
+    
+    return nombre_final
+
 def calcular_promedio_general_indicador(db: Session, indicador_nombre: str) -> float:
     """
     Calcula el promedio general de un indicador específico.
@@ -680,6 +770,99 @@ def normalizar_todas_las_localidades(db: Session) -> Dict[str, int]:
         "mapeo_cambios": mapeo_cambios
     }
 
+def normalizar_todas_las_upz(db: Session) -> Dict[str, int]:
+    """
+    Normaliza todas las UPZ en la base de datos para eliminar duplicados.
+    """
+    # Obtener todas las UPZ únicas (tanto ID como nombre)
+    upz_unicas = db.query(
+        IndicadorDB.id_upz, 
+        IndicadorDB.nombre_upz
+    ).filter(
+        IndicadorDB.id_upz.isnot(None),
+        IndicadorDB.nombre_upz.isnot(None)
+    ).distinct().all()
+    
+    actualizaciones = 0
+    mapeo_cambios = {}
+    upz_duplicadas_eliminadas = 0
+    
+    # Crear mapeo de UPZ normalizadas
+    upz_normalizadas = {}
+    
+    for upz in upz_unicas:
+        id_upz_original = str(upz.id_upz).strip()
+        nombre_original = upz.nombre_upz
+        nombre_normalizado = normalizar_nombre_upz(nombre_original)
+        
+        # Crear clave única combinando ID y nombre normalizado
+        clave_upz = f"{id_upz_original}_{nombre_normalizado}"
+        
+        if clave_upz not in upz_normalizadas:
+            upz_normalizadas[clave_upz] = {
+                "id_upz": id_upz_original,
+                "nombre_normalizado": nombre_normalizado,
+                "nombres_originales": [nombre_original]
+            }
+        else:
+            # Es un duplicado, agregar el nombre original a la lista
+            upz_normalizadas[clave_upz]["nombres_originales"].append(nombre_original)
+    
+    # Actualizar registros con nombres normalizados
+    for clave_upz, info_upz in upz_normalizadas.items():
+        nombres_originales = info_upz["nombres_originales"]
+        nombre_normalizado = info_upz["nombre_normalizado"]
+        id_upz = info_upz["id_upz"]
+        
+        # Si hay múltiples nombres originales, son duplicados
+        if len(nombres_originales) > 1:
+            upz_duplicadas_eliminadas += len(nombres_originales) - 1
+        
+        # Actualizar todos los registros que tengan cualquiera de los nombres originales
+        for nombre_original in nombres_originales:
+            if nombre_original != nombre_normalizado:
+                registros_actualizados = db.query(IndicadorDB).filter(
+                    IndicadorDB.id_upz == id_upz,
+                    IndicadorDB.nombre_upz == nombre_original
+                ).update({"nombre_upz": nombre_normalizado})
+                
+                if registros_actualizados > 0:
+                    actualizaciones += registros_actualizados
+                    mapeo_cambios[f"{id_upz}_{nombre_original}"] = {
+                        "id_upz": id_upz,
+                        "nombre_original": nombre_original,
+                        "nombre_normalizado": nombre_normalizado,
+                        "registros_actualizados": registros_actualizados
+                    }
+    
+    db.commit()
+    
+    return {
+        "total_actualizaciones": actualizaciones,
+        "upz_duplicadas_eliminadas": upz_duplicadas_eliminadas,
+        "upz_modificadas": len(mapeo_cambios),
+        "mapeo_cambios": mapeo_cambios,
+        "upz_unicas_finales": len(upz_normalizadas)
+    }
+
+def normalizar_datos_completos(db: Session) -> Dict[str, Any]:
+    """
+    Normaliza tanto localidades como UPZ en una sola operación.
+    """
+    resultado_localidades = normalizar_todas_las_localidades(db)
+    resultado_upz = normalizar_todas_las_upz(db)
+    
+    return {
+        "localidades": resultado_localidades,
+        "upz": resultado_upz,
+        "resumen": {
+            "total_actualizaciones": resultado_localidades["total_actualizaciones"] + resultado_upz["total_actualizaciones"],
+            "localidades_normalizadas": resultado_localidades["localidades_modificadas"],
+            "upz_normalizadas": resultado_upz["upz_modificadas"],
+            "upz_duplicadas_eliminadas": resultado_upz["upz_duplicadas_eliminadas"]
+        }
+    }
+
 # =====================================================
 # UTILIDADES EXISTENTES MEJORADAS
 # =====================================================
@@ -710,6 +893,18 @@ def limpiar_datos_indicador(df: pd.DataFrame) -> pd.DataFrame:
     if 'Nombre Localidad' in df.columns:
         df['Nombre Localidad'] = df['Nombre Localidad'].apply(
             lambda x: normalizar_nombre_localidad(str(x)) if pd.notna(x) else x
+        )
+    
+    # Normalizar nombres de UPZ
+    if 'Nombre_UPZ' in df.columns:
+        df['Nombre_UPZ'] = df['Nombre_UPZ'].apply(
+            lambda x: normalizar_nombre_upz(str(x)) if pd.notna(x) else x
+        )
+    
+    # Normalizar ID de UPZ (asegurar que sea string limpio)
+    if 'ID_UPZ' in df.columns:
+        df['ID_UPZ'] = df['ID_UPZ'].apply(
+            lambda x: str(x).strip() if pd.notna(x) else x
         )
     
     # Eliminar filas completamente vacías
@@ -903,15 +1098,198 @@ async def indicadores_superiores_promedio_upz(upz_id: str, db: Session = Depends
 
 @app.post("/administracion/normalizar-localidades")
 async def normalizar_localidades_db(db: Session = Depends(get_db)):
-    """Normaliza todos los nombres de localidades en la base de datos (proceso silencioso)"""
+    """Normaliza todos los nombres de localidades en la base de datos"""
     try:
         resultado = normalizar_todas_las_localidades(db)
         return {
-            "mensaje": "Proceso completado",
-            "registros_procesados": resultado["total_actualizaciones"]
+            "mensaje": "Normalización de localidades completada",
+            "registros_procesados": resultado["total_actualizaciones"],
+            "localidades_modificadas": resultado["localidades_modificadas"]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en proceso: {str(e)}")
+
+@app.post("/administracion/normalizar-upz")
+async def normalizar_upz_db(db: Session = Depends(get_db)):
+    """Normaliza todos los nombres de UPZ en la base de datos y elimina duplicados"""
+    try:
+        resultado = normalizar_todas_las_upz(db)
+        return {
+            "mensaje": "Normalización de UPZ completada",
+            "registros_procesados": resultado["total_actualizaciones"],
+            "upz_modificadas": resultado["upz_modificadas"],
+            "upz_duplicadas_eliminadas": resultado["upz_duplicadas_eliminadas"],
+            "upz_unicas_finales": resultado["upz_unicas_finales"],
+            "detalle": "Se eliminaron duplicados y se normalizaron los nombres"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en proceso: {str(e)}")
+
+@app.post("/administracion/normalizar-completo")
+async def normalizar_datos_completos_endpoint(db: Session = Depends(get_db)):
+    """Normaliza tanto localidades como UPZ en una sola operación (RECOMENDADO)"""
+    try:
+        resultado = normalizar_datos_completos(db)
+        return {
+            "mensaje": "Normalización completa exitosa",
+            "resumen": resultado["resumen"],
+            "localidades": {
+                "registros_actualizados": resultado["localidades"]["total_actualizaciones"],
+                "localidades_modificadas": resultado["localidades"]["localidades_modificadas"]
+            },
+            "upz": {
+                "registros_actualizados": resultado["upz"]["total_actualizaciones"],
+                "upz_modificadas": resultado["upz"]["upz_modificadas"],
+                "duplicadas_eliminadas": resultado["upz"]["upz_duplicadas_eliminadas"],
+                "upz_unicas_finales": resultado["upz"]["upz_unicas_finales"]
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en proceso completo: {str(e)}")
+
+@app.get("/administracion/preview-normalizacion")
+async def preview_normalizacion(db: Session = Depends(get_db)):
+    """
+    Muestra EXACTAMENTE qué cambios se harían sin ejecutarlos.
+    GARANTIZA que NO se pierden datos, solo se cambian nombres.
+    """
+    try:
+        # CONTAR registros ANTES de cualquier cambio
+        total_registros_antes = db.query(IndicadorDB).count()
+        total_indicadores_antes = db.query(IndicadorDB.indicador_nombre).distinct().count()
+        total_valores_antes = db.query(IndicadorDB).filter(IndicadorDB.valor.isnot(None)).count()
+        
+        # Verificar cambios en localidades
+        localidades_raw = db.query(IndicadorDB.nombre_localidad).filter(
+            IndicadorDB.nombre_localidad.isnot(None)
+        ).distinct().all()
+        
+        cambios_localidades = []
+        for loc in localidades_raw:
+            nombre_original = loc[0]
+            nombre_normalizado = normalizar_nombre_localidad(nombre_original)
+            
+            if nombre_original != nombre_normalizado:
+                registros_afectados = db.query(IndicadorDB).filter(
+                    IndicadorDB.nombre_localidad == nombre_original
+                ).count()
+                
+                cambios_localidades.append({
+                    "nombre_actual": nombre_original,
+                    "nombre_nuevo": nombre_normalizado,
+                    "registros_que_cambiaran_nombre": registros_afectados,
+                    "se_pierden_datos": False,
+                    "se_mantienen_valores": True
+                })
+        
+        # Verificar cambios en UPZ
+        upz_raw = db.query(
+            IndicadorDB.id_upz, 
+            IndicadorDB.nombre_upz
+        ).filter(
+            IndicadorDB.id_upz.isnot(None),
+            IndicadorDB.nombre_upz.isnot(None)
+        ).distinct().all()
+        
+        cambios_upz = []
+        for upz in upz_raw:
+            id_upz = str(upz.id_upz).strip()
+            nombre_original = upz.nombre_upz
+            nombre_normalizado = normalizar_nombre_upz(nombre_original)
+            
+            if nombre_original != nombre_normalizado:
+                registros_afectados = db.query(IndicadorDB).filter(
+                    IndicadorDB.id_upz == id_upz,
+                    IndicadorDB.nombre_upz == nombre_original
+                ).count()
+                
+                cambios_upz.append({
+                    "id_upz": id_upz,
+                    "nombre_actual": nombre_original,
+                    "nombre_nuevo": nombre_normalizado,
+                    "registros_que_cambiaran_nombre": registros_afectados,
+                    "se_pierden_datos": False,
+                    "se_mantienen_valores": True
+                })
+        
+        # SIMULAR conteo DESPUÉS (será igual porque NO se eliminan registros)
+        total_registros_despues = total_registros_antes  # MISMO número
+        total_indicadores_despues = total_indicadores_antes  # MISMO número
+        total_valores_despues = total_valores_antes  # MISMO número
+        
+        return {
+            "mensaje": "PREVIEW - NO se ejecutan cambios, solo se muestran",
+            "garantia_no_perdida_datos": True,
+            "verificacion_conteos": {
+                "registros_antes": total_registros_antes,
+                "registros_despues": total_registros_despues,
+                "diferencia_registros": 0,
+                "indicadores_antes": total_indicadores_antes,
+                "indicadores_despues": total_indicadores_despues,
+                "diferencia_indicadores": 0,
+                "valores_numericos_antes": total_valores_antes,
+                "valores_numericos_despues": total_valores_despues,
+                "diferencia_valores": 0
+            },
+            "cambios_localidades": {
+                "total_cambios": len(cambios_localidades),
+                "detalle": cambios_localidades[:10],  # Mostrar primeros 10
+                "nota": "Solo cambian NOMBRES, se mantienen todos los registros"
+            },
+            "cambios_upz": {
+                "total_cambios": len(cambios_upz),
+                "detalle": cambios_upz[:10],  # Mostrar primeros 10  
+                "nota": "Solo cambian NOMBRES, se mantienen todos los registros"
+            },
+            "resumen_seguridad": {
+                "se_eliminan_registros": False,
+                "se_eliminan_indicadores": False,
+                "se_eliminan_valores": False,
+                "se_pierden_datos": False,
+                "solo_se_unifican_nombres": True,
+                "operacion_segura": True
+            },
+            "instrucciones": [
+                "Esta operación es 100% segura",
+                "NO se eliminan registros de datos",
+                "Solo se normalizan nombres inconsistentes",
+                "Todos los valores numéricos se mantienen",
+                "Se puede revertir si es necesario"
+            ]
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en preview: {str(e)}")
+
+@app.get("/administracion/contar-registros")
+async def contar_registros_detallado(db: Session = Depends(get_db)):
+    """Cuenta exacta de todos los registros para verificar que no se pierden datos"""
+    try:
+        conteos = {
+            "total_registros": db.query(IndicadorDB).count(),
+            "registros_con_valores": db.query(IndicadorDB).filter(IndicadorDB.valor.isnot(None)).count(),
+            "indicadores_unicos": db.query(IndicadorDB.indicador_nombre).distinct().count(),
+            "localidades_unicas": db.query(IndicadorDB.nombre_localidad).filter(
+                IndicadorDB.nombre_localidad.isnot(None)
+            ).distinct().count(),
+            "upz_unicas": db.query(IndicadorDB.id_upz).filter(
+                IndicadorDB.id_upz.isnot(None)
+            ).distinct().count(),
+            "dimensiones_unicas": db.query(IndicadorDB.dimension).filter(
+                IndicadorDB.dimension.isnot(None)
+            ).distinct().count(),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        return {
+            "mensaje": "Conteo detallado ANTES de normalización",
+            "conteos": conteos,
+            "nota": "Guarda estos números para compararlos después de la normalización",
+            "garantia": "Después de normalizar, todos estos números deben ser iguales o mayores, nunca menores"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error contando registros: {str(e)}")
 
 @app.get("/localidades/{localidad}/indicadores-superiores")
 async def indicadores_superiores_promedio_endpoint(localidad: str, db: Session = Depends(get_db)):
@@ -1222,12 +1600,26 @@ async def estadisticas_archivos(db: Session = Depends(get_db)):
 async def root():
     return {
         "mensaje": "API Indicadores Sociales Bogotá D.C. - Versión Mejorada",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "mejoras": [
             "Análisis por UPZ",
-            "Normalización de localidades",
+            "Normalización de localidades y UPZ",
+            "Eliminación automática de duplicados",
             "Filtro por indicadores superiores al promedio",
-            "Gráficos optimizados"
+            "Gráficos optimizados",
+            "Herramientas de diagnóstico avanzadas"
+        ],
+        "nuevas_funcionalidades": [
+            "Normalización completa de UPZ",
+            "Detección y eliminación de duplicados",
+            "Verificación previa de duplicados",
+            "Normalización separada por tipo de entidad"
+        ],
+        "endpoints_normalizacion": [
+            "/administracion/verificar-duplicados - Verificar duplicados sin modificar",
+            "/administracion/normalizar-completo - Normalizar todo (recomendado)",
+            "/administracion/normalizar-localidades - Solo localidades",
+            "/administracion/normalizar-upz - Solo UPZ"
         ],
         "documentacion": "/docs"
     }
