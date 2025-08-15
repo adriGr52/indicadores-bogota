@@ -580,6 +580,8 @@ def generar_datos_graficos_upz(db: Session, upz_id: str) -> Dict[str, Any]:
             "fecha_generacion": datetime.utcnow().isoformat()
         }
     }
+
+def generar_datos_graficos_localidad(db: Session, localidad: str) -> Dict[str, Any]:
     """
     Genera datos específicos para gráficos de una localidad.
     """
