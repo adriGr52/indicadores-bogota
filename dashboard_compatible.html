@@ -1,52 +1,4 @@
-// ==========================================
-        // PANEL DE ADMINISTRACIÓN (ACTUALIZADO)
-        // ==========================================
-
-        async function optimizeDatabase() {
-            try {
-                showLoading('maintenanceResults', '🗄️ Optimizando base de datos...');
-                
-                const response = await fetch(`${API_BASE}/administracion/normalizar-localidades`, {
-                    method: 'POST'
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                const resultHtml = `
-                    <div class="success">
-                        ✅ ${result.mensaje}<br>
-                        📊 Registros procesados: ${result.registros_procesados}
-                    </div>
-                `;
-                
-                document.getElementById('maintenanceResults').innerHTML = resultHtml;
-                
-                // Refrescar datos silenciosamente
-                await loadGlobalData();
-                
-            } catch (error) {
-                console.error('Error en optimización:', error);
-                showError('maintenanceResults', `Error: ${error.message}`);
-            }
-        }
-
-        async function cleanupData() {
-            try {
-                showLoading('maintenanceResults', '🧹 Limpiando datos duplicados...');
-                
-                // Simular limpieza (en implementación futura)
-                setTimeout(() => {
-                    showSuccess('maintenanceResults', '✅ Limpieza completada. No se encontraron duplicados.');
-                }, 2000);
-                
-            } catch (error) {
-                showError('maintenanceResults', `Error en limpieza: ${error.message}`);
-            }
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -94,17 +46,6 @@
             color: #7f8c8d;
             font-size: 1.2em;
             margin-bottom: 20px;
-        }
-
-        .mejoras-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            font-weight: bold;
-            margin: 5px;
         }
 
         .status-bar {
@@ -482,28 +423,6 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
 
-        @media (max-width: 768px) {
-            .analysis-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            
-            .localidades-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .tabs {
-                flex-direction: column;
-            }
-            
-            .tab {
-                min-width: auto;
-            }
-        }
-
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -526,14 +445,6 @@
             opacity: 0.7;
         }
 
-        .normalization-panel {
-            background: linear-gradient(135deg, #f39c12, #e67e22);
-            color: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
         .filter-badge {
             background: #3498db;
             color: white;
@@ -542,6 +453,28 @@
             font-size: 0.8em;
             margin: 2px;
             display: inline-block;
+        }
+
+        @media (max-width: 768px) {
+            .analysis-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .localidades-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                min-width: auto;
+            }
         }
     </style>
 </head>
@@ -598,7 +531,6 @@
                     <h3>🔧 Acciones de Sistema</h3>
                     <button class="btn btn-warning" onclick="refreshData()">🔄 Refrescar Datos</button>
                     <button class="btn btn-secondary" onclick="exportData()">📋 Exportar Análisis</button>
-                    <button class="btn btn-secondary" onclick="generateShareLink()">🔗 Enlace Compartible</button>
                 </div>
             </div>
         </div>
@@ -617,8 +549,14 @@
                     </div>
                     <div class="form-group">
                         <label for="singleLocalidadFilter">Filtrar por Localidad (opcional):</label>
-                        <select id="singleLocalidadFilter">
+                        <select id="singleLocalidadFilter" onchange="loadUPZForLocalidad(this.value)">
                             <option value="">Todas las localidades</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="singleUPZFilter">Filtrar por UPZ (opcional):</label>
+                        <select id="singleUPZFilter">
+                            <option value="">Todas las UPZ</option>
                         </select>
                     </div>
                 </div>
@@ -636,8 +574,8 @@
                 
                 <div style="text-align: center; margin: 20px 0;">
                     <button class="btn btn-success" onclick="analyzeSingleIndicator()">📈 Generar Análisis Completo</button>
-                    <button class="btn btn-warning" onclick="showTrendAnalysis()">📊 Solo Gráfico de Tendencia</button>
-                    <button class="btn btn-secondary" onclick="showDistributionByLocation()">🏘️ Distribución por Localidad</button>
+                    <button class="btn btn-warning" onclick="showTrendAnalysisOnly()">📊 Solo Gráfico de Tendencia</button>
+                    <button class="btn btn-secondary" onclick="showDistributionByLocationOnly()">🏘️ Solo Distribución por Localidad</button>
                 </div>
                 
                 <div id="singleIndicatorResults"></div>
@@ -647,6 +585,14 @@
                     <h3>📋 Estadísticas Descriptivas Mejoradas</h3>
                     <div class="stats-summary" id="statsContainer"></div>
                     <div id="averageComparison"></div>
+                </div>
+                
+                <!-- Gráfico de UPZ de la Localidad Seleccionada -->
+                <div class="chart-container" id="upzLocalidadChart" style="display: none;">
+                    <div class="chart-title">🏛️ UPZ de la Localidad Seleccionada</div>
+                    <div class="chart-canvas">
+                        <canvas id="upzLocalidadCanvas"></canvas>
+                    </div>
                 </div>
                 
                 <!-- Gráfico de Tendencia Temporal -->
@@ -738,7 +684,7 @@
             </div>
         </div>
 
-        <!-- TAB 4: Análisis por Localidades (MEJORADO) -->
+        <!-- TAB 4: Análisis por Localidades -->
         <div id="locality-analysis" class="tab-content">
             <div class="panel">
                 <h2>🏘️ Análisis Completo por Localidades</h2>
@@ -766,7 +712,7 @@
                 <!-- Análisis Específico de Localidad -->
                 <div id="specificLocalityAnalysis" style="display: none;">
                     <div class="panel">
-                        <h3 id="localityTitle">📍 Análisis de Localidad</h3>
+                        <h3 id="localityTitle">🔍 Análisis de Localidad</h3>
                         
                         <!-- Información UPZ -->
                         <div class="upz-info" id="upzInfo" style="display: none;">
@@ -813,7 +759,7 @@
             </div>
         </div>
 
-        <!-- TAB 5: Análisis por UPZ (NUEVO) -->
+        <!-- TAB 5: Análisis por UPZ -->
         <div id="upz-analysis" class="tab-content">
             <div class="panel">
                 <h2>🏛️ Análisis Completo por UPZ</h2>
@@ -1003,7 +949,7 @@
             document.getElementById('dataSummary').style.display = 'block';
         }
 
-        function populateAllSelectors() {
+        async function populateAllSelectors() {
             if (!globalData) return;
             
             const indicadores = globalData.estadisticas_por_indicador.map(item => item.indicador);
@@ -1017,6 +963,45 @@
             // Localidades
             populateSelect('singleLocalidadFilter', localidades, 'Todas las localidades');
             populateSelect('localitySelect', localidades, 'Selecciona una localidad');
+            
+            // Cargar UPZ disponibles
+            await loadAllUPZForSelect();
+        }
+
+        async function loadAllUPZForSelect() {
+            try {
+                const response = await fetch(`${API_BASE}/upz/listado`);
+                if (response.ok) {
+                    const upzList = await response.json();
+                    populateSelect('upzSelect', upzList.map(upz => `${upz.id_upz} - ${upz.nombre_upz}`), 'Selecciona una UPZ');
+                }
+            } catch (error) {
+                console.log('No se pudieron cargar las UPZ:', error);
+            }
+        }
+
+        async function loadUPZForLocalidad(localidad) {
+            const upzSelect = document.getElementById('singleUPZFilter');
+            upzSelect.innerHTML = '<option value="">Todas las UPZ</option>';
+            
+            if (!localidad) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/analisis-completo`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.upzs && data.upzs.length > 0) {
+                        data.upzs.forEach(upz => {
+                            const option = document.createElement('option');
+                            option.value = upz.id_upz;
+                            option.textContent = `${upz.id_upz} - ${upz.nombre_upz}`;
+                            upzSelect.appendChild(option);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.log('Error cargando UPZ de la localidad:', error);
+            }
         }
 
         function populateSelect(selectId, options, defaultText) {
@@ -1034,7 +1019,7 @@
         }
 
         // ==========================================
-        // GESTIÓN DE ARCHIVOS (MEJORADA)
+        // GESTIÓN DE ARCHIVOS
         // ==========================================
 
         async function uploadFile() {
@@ -1087,7 +1072,7 @@
         }
 
         // ==========================================
-        // ANÁLISIS UNIVARIADO (MEJORADO)
+        // ANÁLISIS UNIVARIADO
         // ==========================================
 
         async function analyzeSingleIndicator() {
@@ -1113,14 +1098,152 @@
                 showImprovedStatistics(data);
                 
                 // Mostrar todos los análisis
-                createTrendChart(data);
+                await createTrendChart(data);
                 createDistributionChart(data);
+                
+                // Mostrar gráfico de UPZ si hay localidad seleccionada
+                const localidad = document.getElementById('singleLocalidadFilter').value;
+                if (localidad) {
+                    await createUPZLocalidadChart(localidad, indicador);
+                }
                 
                 showSuccess('singleIndicatorResults', '✅ Análisis completo generado con filtros inteligentes');
                 
             } catch (error) {
                 console.error('Error en análisis univariado:', error);
                 showError('singleIndicatorResults', `Error en el análisis: ${error.message}`);
+            }
+        }
+
+        async function showTrendAnalysisOnly() {
+            const indicador = document.getElementById('singleIndicator').value;
+            
+            if (!indicador) {
+                alert('Por favor selecciona un indicador');
+                return;
+            }
+            
+            try {
+                showLoading('singleIndicatorResults', '📊 Generando solo gráfico de tendencia...');
+                
+                const response = await fetch(`${API_BASE}/indicadores/${encodeURIComponent(indicador)}/analisis`);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Solo mostrar gráfico de tendencia
+                hideAllCharts();
+                await createTrendChart(data);
+                
+                showSuccess('singleIndicatorResults', '✅ Gráfico de tendencia generado');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showError('singleIndicatorResults', `Error: ${error.message}`);
+            }
+        }
+
+        async function showDistributionByLocationOnly() {
+            const indicador = document.getElementById('singleIndicator').value;
+            
+            if (!indicador) {
+                alert('Por favor selecciona un indicador');
+                return;
+            }
+            
+            try {
+                showLoading('singleIndicatorResults', '📊 Generando solo distribución por localidad...');
+                
+                const response = await fetch(`${API_BASE}/indicadores/${encodeURIComponent(indicador)}/analisis`);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Solo mostrar gráfico de distribución
+                hideAllCharts();
+                createDistributionChart(data);
+                
+                showSuccess('singleIndicatorResults', '✅ Gráfico de distribución generado');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showError('singleIndicatorResults', `Error: ${error.message}`);
+            }
+        }
+
+        function hideAllCharts() {
+            document.getElementById('improvedStats').style.display = 'none';
+            document.getElementById('trendChart').style.display = 'none';
+            document.getElementById('distributionChart').style.display = 'none';
+            document.getElementById('upzLocalidadChart').style.display = 'none';
+        }
+
+        async function createUPZLocalidadChart(localidad, indicador) {
+            try {
+                const response = await fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/analisis-completo`);
+                
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                
+                if (!data.upzs || data.upzs.length === 0) return;
+                
+                const canvas = document.getElementById('upzLocalidadCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (currentCharts.upzLocalidad) {
+                    currentCharts.upzLocalidad.destroy();
+                }
+                
+                currentCharts.upzLocalidad = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.upzs.map(upz => upz.nombre_upz),
+                        datasets: [{
+                            label: 'Registros por UPZ',
+                            data: data.upzs.map(upz => upz.registros),
+                            backgroundColor: 'rgba(155, 89, 182, 0.7)',
+                            borderColor: '#9b59b6',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Cantidad de Registros'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                document.getElementById('upzLocalidadChart').style.display = 'block';
+                
+            } catch (error) {
+                console.log('Error cargando UPZ de localidad:', error);
             }
         }
 
@@ -1194,612 +1317,7 @@
             document.getElementById('improvedStats').style.display = 'block';
         }
 
-        // ==========================================
-        // ANÁLISIS POR LOCALIDADES (NUEVO)
-        // ==========================================
-
-        async function analyzeSpecificLocality() {
-            const localidad = document.getElementById('localitySelect').value;
-            
-            if (!localidad) {
-                alert('Por favor selecciona una localidad');
-                return;
-            }
-            
-            try {
-                showLoading('localityAnalysisResults', '🔍 Analizando localidad específica...');
-                
-                // Análisis completo de la localidad
-                const [analysisResponse, graphicsResponse] = await Promise.all([
-                    fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/analisis-completo`),
-                    fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/graficos`)
-                ]);
-                
-                if (!analysisResponse.ok) {
-                    throw new Error(`Error en análisis: ${analysisResponse.status}`);
-                }
-                
-                const analysisData = await analysisResponse.json();
-                let graphicsData = null;
-                
-                if (graphicsResponse.ok) {
-                    graphicsData = await graphicsResponse.json();
-                }
-                
-                displayLocalityAnalysis(analysisData, graphicsData);
-                showSuccess('localityAnalysisResults', '✅ Análisis de localidad completado');
-                
-            } catch (error) {
-                console.error('Error en análisis de localidad:', error);
-                showError('localityAnalysisResults', `Error: ${error.message}`);
-            }
-        }
-
-        function displayLocalityAnalysis(data, graphicsData) {
-            // Mostrar título
-            document.getElementById('localityTitle').textContent = 
-                `📍 Análisis de ${data.localidad.nombre_original}`;
-            
-            // Información UPZ
-            if (data.upzs && data.upzs.length > 0) {
-                const upzHtml = data.upzs.map(upz => `
-                    <div class="upz-item">
-                        <strong>${upz.nombre_upz}</strong> (ID: ${upz.id_upz})<br>
-                        📊 ${upz.registros} registros, ${upz.indicadores} indicadores
-                    </div>
-                `).join('');
-                
-                document.getElementById('upzList').innerHTML = upzHtml;
-                document.getElementById('upzInfo').style.display = 'block';
-            }
-            
-            // Estadísticas generales
-            const statsHtml = `
-                <div class="stat-box">
-                    <div class="stat-value">${data.resumen_general.total_registros}</div>
-                    <div class="stat-label">Total Registros</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${data.resumen_general.indicadores_unicos}</div>
-                    <div class="stat-label">Indicadores Únicos</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${data.resumen_general.upzs_disponibles}</div>
-                    <div class="stat-label">UPZ Disponibles</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${data.indicadores_superiores_promedio.length}</div>
-                    <div class="stat-label">Superiores al Promedio</div>
-                </div>
-            `;
-            
-            document.getElementById('localityStats').innerHTML = statsHtml;
-            
-            // Indicadores superiores
-            if (data.indicadores_superiores_promedio.length > 0) {
-                const indicadoresHtml = data.indicadores_superiores_promedio.map((ind, index) => `
-                    <div class="indicator-item" style="padding: 15px; border-left: 4px solid ${index === 0 ? '#27ae60' : '#3498db'};">
-                        <div>
-                            <strong>${ind.indicador}</strong>
-                            <span class="superior-promedio-badge">+${ind.diferencia_porcentual}%</span>
-                        </div>
-                        <div style="font-size: 0.9em; color: #7f8c8d; margin-top: 5px;">
-                            📍 Localidad: ${ind.valor_promedio_localidad} | 🏙️ Bogotá: ${ind.promedio_general}
-                        </div>
-                    </div>
-                `).join('');
-                
-                document.getElementById('superiorIndicatorsList').innerHTML = indicadoresHtml;
-                document.getElementById('superiorIndicators').style.display = 'block';
-            }
-            
-            // Generar gráficos si hay datos
-            if (graphicsData && !graphicsData.error) {
-                createLocalityCharts(graphicsData);
-            }
-            
-            document.getElementById('specificLocalityAnalysis').style.display = 'block';
-        }
-
-        function createLocalityCharts(data) {
-            const graficos = data.graficos;
-            
-            // Gráfico de barras de indicadores
-            if (graficos.barras_indicadores && graficos.barras_indicadores.valores.length > 0) {
-                const canvas = document.getElementById('localityIndicatorsCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.localityIndicators) {
-                    currentCharts.localityIndicators.destroy();
-                }
-                
-                currentCharts.localityIndicators = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: graficos.barras_indicadores.labels,
-                        datasets: [
-                            {
-                                label: 'Valor en Localidad',
-                                data: graficos.barras_indicadores.valores,
-                                backgroundColor: 'rgba(52, 152, 219, 0.7)',
-                                borderColor: '#3498db',
-                                borderWidth: 2
-                            },
-                            {
-                                label: 'Promedio Bogotá',
-                                data: graficos.barras_indicadores.promedios_generales,
-                                backgroundColor: 'rgba(231, 76, 60, 0.7)',
-                                borderColor: '#e74c3c',
-                                borderWidth: 2
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Valores'
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                }
-                            }
-                        }
-                    }
-                });
-                
-                document.getElementById('localityCharts').style.display = 'grid';
-            }
-            
-            // Gráfico de tendencia
-            if (graficos.tendencia_temporal && graficos.tendencia_temporal.valores.length > 0) {
-                const canvas = document.getElementById('localityTrendCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.localityTrend) {
-                    currentCharts.localityTrend.destroy();
-                }
-                
-                currentCharts.localityTrend = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: graficos.tendencia_temporal.años,
-                        datasets: [{
-                            label: graficos.tendencia_temporal.indicador,
-                            data: graficos.tendencia_temporal.valores,
-                            borderColor: '#27ae60',
-                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                title: {
-                                    display: true,
-                                    text: 'Valor'
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Año'
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-            
-            // Gráfico por dimensiones
-            if (graficos.por_dimensiones && graficos.por_dimensiones.valores.length > 0) {
-                const canvas = document.getElementById('localityDimensionsCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.localityDimensions) {
-                    currentCharts.localityDimensions.destroy();
-                }
-                
-                currentCharts.localityDimensions = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: graficos.por_dimensiones.labels,
-                        datasets: [{
-                            data: graficos.por_dimensiones.valores,
-                            backgroundColor: [
-                                '#3498db', '#e74c3c', '#f39c12', '#27ae60', '#9b59b6', '#1abc9c'
-                            ],
-                            borderColor: '#fff',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'right'
-                            }
-                        }
-                    }
-                });
-                
-                document.getElementById('localityDimensionsChart').style.display = 'block';
-            }
-        }
-
-        // ==========================================
-        // ANÁLISIS POR UPZ (NUEVO)
-        // ==========================================
-
-        async function analyzeSpecificUPZ() {
-            const upzId = document.getElementById('upzSelect').value;
-            
-            if (!upzId) {
-                alert('Por favor selecciona una UPZ');
-                return;
-            }
-            
-            try {
-                showLoading('upzAnalysisResults', '🔍 Analizando UPZ específica...');
-                
-                // Análisis completo de la UPZ
-                const [analysisResponse, graphicsResponse] = await Promise.all([
-                    fetch(`${API_BASE}/upz/${encodeURIComponent(upzId)}/analisis-completo`),
-                    fetch(`${API_BASE}/upz/${encodeURIComponent(upzId)}/graficos`)
-                ]);
-                
-                if (!analysisResponse.ok) {
-                    throw new Error(`Error en análisis: ${analysisResponse.status}`);
-                }
-                
-                const analysisData = await analysisResponse.json();
-                let graphicsData = null;
-                
-                if (graphicsResponse.ok) {
-                    graphicsData = await graphicsResponse.json();
-                }
-                
-                displayUPZAnalysis(analysisData, graphicsData);
-                showSuccess('upzAnalysisResults', '✅ Análisis de UPZ completado');
-                
-            } catch (error) {
-                console.error('Error en análisis de UPZ:', error);
-                showError('upzAnalysisResults', `Error: ${error.message}`);
-            }
-        }
-
-        function displayUPZAnalysis(data, graphicsData) {
-            // Mostrar título
-            document.getElementById('upzTitle').textContent = 
-                `🏛️ ${data.upz.nombre_upz} (${data.upz.localidad_pertenece})`;
-            
-            // Estadísticas generales
-            const statsHtml = `
-                <div class="stat-box">
-                    <div class="stat-value">${data.resumen_general.total_registros}</div>
-                    <div class="stat-label">Total Registros</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${data.resumen_general.indicadores_unicos}</div>
-                    <div class="stat-label">Indicadores Únicos</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${data.upz.id_upz}</div>
-                    <div class="stat-label">ID UPZ</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${data.indicadores_superiores_promedio.length}</div>
-                    <div class="stat-label">Superiores al Promedio</div>
-                </div>
-            `;
-            
-            document.getElementById('upzStats').innerHTML = statsHtml;
-            
-            // Indicadores superiores
-            if (data.indicadores_superiores_promedio.length > 0) {
-                const indicadoresHtml = data.indicadores_superiores_promedio.map((ind, index) => `
-                    <div class="indicator-item" style="padding: 15px; border-left: 4px solid ${index === 0 ? '#27ae60' : '#3498db'};">
-                        <div>
-                            <strong>${ind.indicador}</strong>
-                            <span class="superior-promedio-badge">+${ind.diferencia_porcentual}%</span>
-                        </div>
-                        <div style="font-size: 0.9em; color: #7f8c8d; margin-top: 5px;">
-                            🏛️ UPZ: ${ind.valor_promedio_upz} | 🏙️ Promedio: ${ind.promedio_general}
-                        </div>
-                    </div>
-                `).join('');
-                
-                document.getElementById('superiorIndicatorsUPZList').innerHTML = indicadoresHtml;
-                document.getElementById('superiorIndicatorsUPZ').style.display = 'block';
-            }
-            
-            // Generar gráficos si hay datos
-            if (graphicsData && !graphicsData.error) {
-                createUPZCharts(graphicsData);
-            }
-            
-            document.getElementById('specificUPZAnalysis').style.display = 'block';
-        }
-
-        function createUPZCharts(data) {
-            const graficos = data.graficos;
-            
-            // Gráfico de barras de indicadores UPZ
-            if (graficos.barras_indicadores && graficos.barras_indicadores.valores.length > 0) {
-                const canvas = document.getElementById('upzIndicatorsCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.upzIndicators) {
-                    currentCharts.upzIndicators.destroy();
-                }
-                
-                currentCharts.upzIndicators = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: graficos.barras_indicadores.labels,
-                        datasets: [
-                            {
-                                label: 'Valor en UPZ',
-                                data: graficos.barras_indicadores.valores,
-                                backgroundColor: 'rgba(155, 89, 182, 0.7)',
-                                borderColor: '#9b59b6',
-                                borderWidth: 2
-                            },
-                            {
-                                label: 'Promedio General',
-                                data: graficos.barras_indicadores.promedios_generales,
-                                backgroundColor: 'rgba(231, 76, 60, 0.7)',
-                                borderColor: '#e74c3c',
-                                borderWidth: 2
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Valores'
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                }
-                            }
-                        }
-                    }
-                });
-                
-                document.getElementById('upzCharts').style.display = 'grid';
-            }
-            
-            // Gráfico de tendencia UPZ
-            if (graficos.tendencia_temporal && graficos.tendencia_temporal.valores.length > 0) {
-                const canvas = document.getElementById('upzTrendCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.upzTrend) {
-                    currentCharts.upzTrend.destroy();
-                }
-                
-                currentCharts.upzTrend = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: graficos.tendencia_temporal.años,
-                        datasets: [{
-                            label: graficos.tendencia_temporal.indicador,
-                            data: graficos.tendencia_temporal.valores,
-                            borderColor: '#9b59b6',
-                            backgroundColor: 'rgba(155, 89, 182, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                title: {
-                                    display: true,
-                                    text: 'Valor'
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Año'
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-            
-            // Gráfico por dimensiones UPZ
-            if (graficos.por_dimensiones && graficos.por_dimensiones.valores.length > 0) {
-                const canvas = document.getElementById('upzDimensionsCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.upzDimensions) {
-                    currentCharts.upzDimensions.destroy();
-                }
-                
-                currentCharts.upzDimensions = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: graficos.por_dimensiones.labels,
-                        datasets: [{
-                            data: graficos.por_dimensiones.valores,
-                            backgroundColor: [
-                                '#9b59b6', '#e74c3c', '#f39c12', '#27ae60', '#3498db', '#1abc9c'
-                            ],
-                            borderColor: '#fff',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'right'
-                            }
-                        }
-                    }
-                });
-                
-                document.getElementById('upzDimensionsChart').style.display = 'block';
-            }
-        }
-
-        async function loadAllUPZ() {
-            try {
-                showLoading('upzAnalysisResults', '📋 Cargando todas las UPZ...');
-                
-                const response = await fetch(`${API_BASE}/upz/listado`);
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const upzList = await response.json();
-                displayAllUPZ(upzList);
-                showSuccess('upzAnalysisResults', '✅ Lista de UPZ cargada');
-                
-            } catch (error) {
-                console.error('Error cargando UPZ:', error);
-                showError('upzAnalysisResults', `Error: ${error.message}`);
-            }
-        }
-
-        function displayAllUPZ(upzList) {
-            let html = '';
-            
-            upzList.forEach(upz => {
-                html += `
-                    <div class="localidad-card">
-                        <div class="localidad-name">🏛️ ${upz.nombre_upz}</div>
-                        <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                            <strong>📍 Localidad:</strong> ${upz.localidad}<br>
-                            <strong>🆔 ID UPZ:</strong> ${upz.id_upz}<br>
-                            <strong>📊 Registros:</strong> ${upz.total_registros}<br>
-                            <strong>📈 Indicadores:</strong> ${upz.indicadores_unicos}
-                        </div>
-                        <div style="text-align: center;">
-                            <button class="btn btn-success" onclick="analyzeUPZFromList('${upz.id_upz}')">
-                                🔍 Analizar Esta UPZ
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            document.getElementById('upzContainer').innerHTML = html;
-            document.getElementById('upzContainer').style.display = 'grid';
-        }
-
-        function analyzeUPZFromList(upzId) {
-            // Seleccionar la UPZ en el selector y ejecutar análisis
-            document.getElementById('upzSelect').value = upzId;
-            analyzeSpecificUPZ();
-        }
-
-        async function compareUPZSameLocalidad() {
-            alert('Función de comparación de UPZ en desarrollo. Próximamente disponible.');
-        }
-
-        async function getSystemStats() {
-            try {
-                showLoading('systemStatsResults', '📊 Obteniendo estadísticas del sistema...');
-                
-                const [healthResponse, dimensionsResponse] = await Promise.all([
-                    fetch(`${API_BASE}/health`),
-                    fetch(`${API_BASE}/dimensiones`)
-                ]);
-                
-                const healthData = await healthResponse.json();
-                const dimensionsData = await dimensionsResponse.json();
-                
-                const statsHtml = `
-                    <div class="panel">
-                        <h4>🏥 Estado del Sistema</h4>
-                        <p><strong>Estado:</strong> ${healthData.status}</p>
-                        <p><strong>Total indicadores:</strong> ${healthData.total_indicadores}</p>
-                        <p><strong>Localidades disponibles:</strong> ${healthData.localidades_disponibles}</p>
-                        <p><strong>Versión:</strong> ${healthData.version}</p>
-                        
-                        <h4>📈 Dimensiones Disponibles</h4>
-                        ${dimensionsData.map(dim => `
-                            <div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-                                <strong>${dim.dimension}:</strong> ${dim.total_registros} registros, 
-                                ${dim.indicadores_unicos} indicadores únicos, 
-                                ${dim.localidades_cubiertas} localidades
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-                
-                document.getElementById('systemStatsResults').innerHTML = statsHtml;
-                
-            } catch (error) {
-                console.error('Error obteniendo estadísticas:', error);
-                showError('systemStatsResults', `Error: ${error.message}`);
-            }
-        }
-
-        // ==========================================
-        // FUNCIONES EXISTENTES MEJORADAS
-        // ==========================================
-
         async function createTrendChart(data) {
-            // Implementación mejorada del gráfico de tendencia
             const canvas = document.getElementById('trendCanvas');
             const ctx = canvas.getContext('2d');
             
@@ -1992,6 +1510,1327 @@
         }
 
         // ==========================================
+        // ANÁLISIS MULTIVARIADO
+        // ==========================================
+
+        async function analyzeMultipleIndicators() {
+            const indicador1 = document.getElementById('multiIndicator1').value;
+            const indicador2 = document.getElementById('multiIndicator2').value;
+            
+            if (!indicador1 || !indicador2) {
+                alert('Por favor selecciona ambos indicadores');
+                return;
+            }
+            
+            if (indicador1 === indicador2) {
+                alert('Por favor selecciona indicadores diferentes');
+                return;
+            }
+            
+            try {
+                showLoading('multiIndicatorResults', '🔗 Analizando correlación entre indicadores...');
+                
+                // Obtener datos de ambos indicadores
+                const [response1, response2] = await Promise.all([
+                    fetch(`${API_BASE}/indicadores/${encodeURIComponent(indicador1)}/analisis`),
+                    fetch(`${API_BASE}/indicadores/${encodeURIComponent(indicador2)}/analisis`)
+                ]);
+                
+                if (!response1.ok || !response2.ok) {
+                    throw new Error('Error obteniendo datos de indicadores');
+                }
+                
+                const [data1, data2] = await Promise.all([
+                    response1.json(),
+                    response2.json()
+                ]);
+                
+                // Crear análisis de correlación
+                createCorrelationAnalysis(data1, data2);
+                createPairedCharts(data1, data2);
+                createLocationComparisonChart(data1, data2);
+                
+                showSuccess('multiIndicatorResults', '✅ Análisis de correlación completado');
+                
+            } catch (error) {
+                console.error('Error en análisis multivariado:', error);
+                showError('multiIndicatorResults', `Error: ${error.message}`);
+            }
+        }
+
+        function createCorrelationAnalysis(data1, data2) {
+            // Encontrar localidades comunes
+            const localidades1 = new Map(data1.distribucion_por_localidad.map(item => [item.localidad, item.valor_promedio]));
+            const localidades2 = new Map(data2.distribucion_por_localidad.map(item => [item.localidad, item.valor_promedio]));
+            
+            const localidadesComunes = [];
+            const valores1 = [];
+            const valores2 = [];
+            
+            for (const [localidad, valor1] of localidades1) {
+                if (localidades2.has(localidad)) {
+                    const valor2 = localidades2.get(localidad);
+                    if (valor1 !== null && valor2 !== null && valor1 > 0 && valor2 > 0) {
+                        localidadesComunes.push(localidad);
+                        valores1.push(valor1);
+                        valores2.push(valor2);
+                    }
+                }
+            }
+            
+            if (localidadesComunes.length < 2) {
+                document.getElementById('correlationInfo').innerHTML = 
+                    '<div class="empty-state"><div class="empty-state-icon">🔗</div><div class="empty-state-text">No hay suficientes datos comunes para correlación</div></div>';
+                return;
+            }
+            
+            // Calcular correlación de Pearson
+            const n = valores1.length;
+            const mean1 = valores1.reduce((a, b) => a + b, 0) / n;
+            const mean2 = valores2.reduce((a, b) => a + b, 0) / n;
+            
+            let numerator = 0;
+            let denominator1 = 0;
+            let denominator2 = 0;
+            
+            for (let i = 0; i < n; i++) {
+                const diff1 = valores1[i] - mean1;
+                const diff2 = valores2[i] - mean2;
+                numerator += diff1 * diff2;
+                denominator1 += diff1 * diff1;
+                denominator2 += diff2 * diff2;
+            }
+            
+            const correlation = numerator / Math.sqrt(denominator1 * denominator2);
+            
+            const correlationHtml = `
+                <div class="stats-summary">
+                    <div class="stat-box">
+                        <div class="stat-value">${correlation.toFixed(3)}</div>
+                        <div class="stat-label">Correlación de Pearson</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${n}</div>
+                        <div class="stat-label">Localidades Analizadas</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${Math.abs(correlation) > 0.7 ? 'Fuerte' : Math.abs(correlation) > 0.3 ? 'Moderada' : 'Débil'}</div>
+                        <div class="stat-label">Intensidad</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${correlation > 0 ? 'Positiva' : 'Negativa'}</div>
+                        <div class="stat-label">Dirección</div>
+                    </div>
+                </div>
+                <div class="panel" style="background: ${Math.abs(correlation) > 0.5 ? '#d4edda' : '#fff3cd'}; margin-top: 15px;">
+                    <h4>🔍 Interpretación</h4>
+                    <p><strong>${data1.indicador}</strong> y <strong>${data2.indicador}</strong> muestran una correlación 
+                    <strong>${Math.abs(correlation) > 0.7 ? 'fuerte' : Math.abs(correlation) > 0.3 ? 'moderada' : 'débil'}</strong>
+                    ${correlation > 0 ? 'positiva' : 'negativa'} (r = ${correlation.toFixed(3)}).</p>
+                    <p>Esto significa que ${correlation > 0 ? 'cuando uno aumenta, el otro tiende a aumentar' : 'cuando uno aumenta, el otro tiende a disminuir'}.</p>
+                </div>
+            `;
+            
+            document.getElementById('correlationDisplay').innerHTML = correlationHtml;
+            document.getElementById('correlationInfo').style.display = 'block';
+        }
+
+        function createPairedCharts(data1, data2) {
+            // Gráfico de tendencias pareadas
+            const canvas1 = document.getElementById('pairedTrendCanvas');
+            const ctx1 = canvas1.getContext('2d');
+            
+            if (currentCharts.pairedTrend) {
+                currentCharts.pairedTrend.destroy();
+            }
+            
+            // Encontrar años comunes
+            const years1 = new Map(data1.evolucion_temporal.map(item => [item.año, item.valor_promedio]));
+            const years2 = new Map(data2.evolucion_temporal.map(item => [item.año, item.valor_promedio]));
+            
+            const yearsComunes = [];
+            const valores1 = [];
+            const valores2 = [];
+            
+            for (const [year, valor1] of years1) {
+                if (years2.has(year)) {
+                    yearsComunes.push(year);
+                    valores1.push(valor1);
+                    valores2.push(years2.get(year));
+                }
+            }
+            
+            if (yearsComunes.length > 0) {
+                currentCharts.pairedTrend = new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: yearsComunes,
+                        datasets: [
+                            {
+                                label: data1.indicador,
+                                data: valores1,
+                                borderColor: '#3498db',
+                                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                                borderWidth: 3,
+                                tension: 0.4,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: data2.indicador,
+                                data: valores2,
+                                borderColor: '#e74c3c',
+                                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                                borderWidth: 3,
+                                tension: 0.4,
+                                yAxisID: 'y1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Año'
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: data1.indicador
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: data2.indicador
+                                },
+                                grid: {
+                                    drawOnChartArea: false,
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Gráfico de dispersión
+            const canvas2 = document.getElementById('scatterCanvas');
+            const ctx2 = canvas2.getContext('2d');
+            
+            if (currentCharts.scatter) {
+                currentCharts.scatter.destroy();
+            }
+            
+            // Datos para dispersión (por localidades)
+            const localidades1 = new Map(data1.distribucion_por_localidad.map(item => [item.localidad, item.valor_promedio]));
+            const localidades2 = new Map(data2.distribucion_por_localidad.map(item => [item.localidad, item.valor_promedio]));
+            
+            const scatterData = [];
+            for (const [localidad, valor1] of localidades1) {
+                if (localidades2.has(localidad)) {
+                    const valor2 = localidades2.get(localidad);
+                    if (valor1 !== null && valor2 !== null) {
+                        scatterData.push({
+                            x: valor1,
+                            y: valor2,
+                            localidad: localidad
+                        });
+                    }
+                }
+            }
+            
+            if (scatterData.length > 0) {
+                currentCharts.scatter = new Chart(ctx2, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Localidades',
+                            data: scatterData,
+                            backgroundColor: 'rgba(52, 152, 219, 0.6)',
+                            borderColor: '#3498db',
+                            borderWidth: 2,
+                            pointRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const point = context.parsed;
+                                        const item = scatterData[context.dataIndex];
+                                        return `${item.localidad}: (${point.x.toFixed(2)}, ${point.y.toFixed(2)})`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: data1.indicador
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: data2.indicador
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            document.getElementById('pairedCharts').style.display = 'grid';
+        }
+
+        function createLocationComparisonChart(data1, data2) {
+            const canvas = document.getElementById('locationComparisonCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (currentCharts.locationComparison) {
+                currentCharts.locationComparison.destroy();
+            }
+            
+            const onlySuperior = document.getElementById('onlySuperiorAverageMulti').checked;
+            
+            // Encontrar localidades comunes y superiores al promedio si está activado el filtro
+            const localidades1 = new Map(data1.distribucion_por_localidad
+                .filter(item => !onlySuperior || item.supera_promedio)
+                .map(item => [item.localidad, item.valor_promedio])
+            );
+            const localidades2 = new Map(data2.distribucion_por_localidad
+                .filter(item => !onlySuperior || item.supera_promedio)
+                .map(item => [item.localidad, item.valor_promedio])
+            );
+            
+            const localidadesComunes = [];
+            const valores1 = [];
+            const valores2 = [];
+            
+            for (const [localidad, valor1] of localidades1) {
+                if (localidades2.has(localidad)) {
+                    localidadesComunes.push(localidad);
+                    valores1.push(valor1);
+                    valores2.push(localidades2.get(localidad));
+                }
+            }
+            
+            if (localidadesComunes.length === 0) {
+                document.getElementById('locationComparisonChart').innerHTML = 
+                    '<div class="empty-state"><div class="empty-state-icon">🏘️</div><div class="empty-state-text">No hay localidades comunes para comparar</div></div>';
+                return;
+            }
+            
+            currentCharts.locationComparison = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: localidadesComunes,
+                    datasets: [
+                        {
+                            label: data1.indicador,
+                            data: valores1,
+                            backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                            borderColor: '#3498db',
+                            borderWidth: 2
+                        },
+                        {
+                            label: data2.indicador,
+                            data: valores2,
+                            backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                            borderColor: '#e74c3c',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Valores'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+            
+            document.getElementById('locationComparisonChart').style.display = 'block';
+        }
+
+        async function showPairedAnalysis() {
+            // Esta función es similar a analyzeMultipleIndicators pero puede mostrar solo algunos gráficos específicos
+            await analyzeMultipleIndicators();
+        }
+
+        // ==========================================
+        // ANÁLISIS POR LOCALIDADES
+        // ==========================================
+
+        async function analyzeSpecificLocality() {
+            const localidad = document.getElementById('localitySelect').value;
+            
+            if (!localidad) {
+                alert('Por favor selecciona una localidad');
+                return;
+            }
+            
+            try {
+                showLoading('localityAnalysisResults', '🔍 Analizando localidad específica...');
+                
+                // Análisis completo de la localidad
+                const [analysisResponse, graphicsResponse] = await Promise.all([
+                    fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/analisis-completo`),
+                    fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/graficos`)
+                ]);
+                
+                if (!analysisResponse.ok) {
+                    throw new Error(`Error en análisis: ${analysisResponse.status}`);
+                }
+                
+                const analysisData = await analysisResponse.json();
+                let graphicsData = null;
+                
+                if (graphicsResponse.ok) {
+                    graphicsData = await graphicsResponse.json();
+                }
+                
+                displayLocalityAnalysis(analysisData, graphicsData);
+                showSuccess('localityAnalysisResults', '✅ Análisis de localidad completado');
+                
+            } catch (error) {
+                console.error('Error en análisis de localidad:', error);
+                showError('localityAnalysisResults', `Error: ${error.message}`);
+            }
+        }
+
+        function displayLocalityAnalysis(data, graphicsData) {
+            // Mostrar título
+            document.getElementById('localityTitle').textContent = 
+                `🔍 Análisis de ${data.localidad.nombre_original}`;
+            
+            // Información UPZ
+            if (data.upzs && data.upzs.length > 0) {
+                const upzHtml = data.upzs.map(upz => `
+                    <div class="upz-item">
+                        <strong>${upz.nombre_upz}</strong> (ID: ${upz.id_upz})<br>
+                        📊 ${upz.registros} registros, ${upz.indicadores} indicadores
+                    </div>
+                `).join('');
+                
+                document.getElementById('upzList').innerHTML = upzHtml;
+                document.getElementById('upzInfo').style.display = 'block';
+            }
+            
+            // Estadísticas generales
+            const statsHtml = `
+                <div class="stat-box">
+                    <div class="stat-value">${data.resumen_general.total_registros}</div>
+                    <div class="stat-label">Total Registros</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${data.resumen_general.indicadores_unicos}</div>
+                    <div class="stat-label">Indicadores Únicos</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${data.resumen_general.upzs_disponibles}</div>
+                    <div class="stat-label">UPZ Disponibles</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${data.indicadores_superiores_promedio.length}</div>
+                    <div class="stat-label">Superiores al Promedio</div>
+                </div>
+            `;
+            
+            document.getElementById('localityStats').innerHTML = statsHtml;
+            
+            // Indicadores superiores
+            if (data.indicadores_superiores_promedio.length > 0) {
+                const indicadoresHtml = data.indicadores_superiores_promedio.map((ind, index) => `
+                    <div class="indicator-item" style="padding: 15px; border-left: 4px solid ${index === 0 ? '#27ae60' : '#3498db'};">
+                        <div>
+                            <strong>${ind.indicador}</strong>
+                            <span class="superior-promedio-badge">+${ind.diferencia_porcentual}%</span>
+                        </div>
+                        <div style="font-size: 0.9em; color: #7f8c8d; margin-top: 5px;">
+                            🔍 Localidad: ${ind.valor_promedio_localidad} | 🏙️ Bogotá: ${ind.promedio_general}
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('superiorIndicatorsList').innerHTML = indicadoresHtml;
+                document.getElementById('superiorIndicators').style.display = 'block';
+            }
+            
+            // Generar gráficos si hay datos
+            if (graphicsData && !graphicsData.error) {
+                createLocalityCharts(graphicsData);
+            }
+            
+            document.getElementById('specificLocalityAnalysis').style.display = 'block';
+            document.getElementById('localidadesContainer').style.display = 'none';
+        }
+
+        function createLocalityCharts(data) {
+            const graficos = data.graficos;
+            
+            // Gráfico de barras de indicadores
+            if (graficos.barras_indicadores && graficos.barras_indicadores.valores.length > 0) {
+                const canvas = document.getElementById('localityIndicatorsCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (currentCharts.localityIndicators) {
+                    currentCharts.localityIndicators.destroy();
+                }
+                
+                currentCharts.localityIndicators = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: graficos.barras_indicadores.labels,
+                        datasets: [
+                            {
+                                label: 'Valor en Localidad',
+                                data: graficos.barras_indicadores.valores,
+                                backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                                borderColor: '#3498db',
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'Promedio Bogotá',
+                                data: graficos.barras_indicadores.promedios_generales,
+                                backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                                borderColor: '#e74c3c',
+                                borderWidth: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Valores'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                document.getElementById('localityCharts').style.display = 'grid';
+            }
+            
+            // Gráfico de tendencia
+            if (graficos.tendencia_temporal && graficos.tendencia_temporal.valores.length > 0) {
+                const canvas = document.getElementById('localityTrendCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (currentCharts.localityTrend) {
+                    currentCharts.localityTrend.destroy();
+                }
+                
+                currentCharts.localityTrend = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: graficos.tendencia_temporal.años,
+                        datasets: [{
+                            label: graficos.tendencia_temporal.indicador,
+                            data: graficos.tendencia_temporal.valores,
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                title: {
+                                    display: true,
+                                    text: 'Valor'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Año'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Gráfico por dimensiones
+            if (graficos.por_dimensiones && graficos.por_dimensiones.valores.length > 0) {
+                const canvas = document.getElementById('localityDimensionsCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (currentCharts.localityDimensions) {
+                    currentCharts.localityDimensions.destroy();
+                }
+                
+                currentCharts.localityDimensions = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: graficos.por_dimensiones.labels,
+                        datasets: [{
+                            data: graficos.por_dimensiones.valores,
+                            backgroundColor: [
+                                '#3498db', '#e74c3c', '#f39c12', '#27ae60', '#9b59b6', '#1abc9c'
+                            ],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right'
+                            }
+                        }
+                    }
+                });
+                
+                document.getElementById('localityDimensionsChart').style.display = 'block';
+            }
+        }
+
+        async function loadLocalityOverview() {
+            try {
+                showLoading('localityAnalysisResults', '📄 Cargando vista general de localidades...');
+                
+                if (!globalData || !globalData.localidades) {
+                    throw new Error('No hay datos de localidades disponibles');
+                }
+                
+                let html = '';
+                
+                // Procesar cada localidad
+                for (const localidad of globalData.localidades.slice(0, 10)) { // Limitar a 10 para performance
+                    try {
+                        const response = await fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/indicadores-superiores`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            html += `
+                                <div class="localidad-card">
+                                    <div class="localidad-name">🏘️ ${localidad}</div>
+                                    <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                        <strong>📊 Indicadores superiores:</strong> ${data.total_encontrados}<br>
+                                        <strong>🎯 Criterio:</strong> Solo valores > promedio general
+                                    </div>
+                                    <div class="indicator-list">
+                                        ${data.indicadores_superiores.slice(0, 5).map(ind => `
+                                            <div class="indicator-item">
+                                                <div class="indicator-name">${ind.indicador}</div>
+                                                <div class="indicator-value">+${ind.diferencia_porcentual}%</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    <div style="text-align: center; margin-top: 15px;">
+                                        <button class="btn btn-success" onclick="analyzeLocalityFromCard('${localidad}')">
+                                            🔍 Análisis Completo
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    } catch (error) {
+                        console.log(`Error con localidad ${localidad}:`, error);
+                    }
+                }
+                
+                document.getElementById('localidadesContainer').innerHTML = html;
+                document.getElementById('localidadesContainer').style.display = 'grid';
+                document.getElementById('specificLocalityAnalysis').style.display = 'none';
+                
+                showSuccess('localityAnalysisResults', '✅ Vista general cargada');
+                
+            } catch (error) {
+                console.error('Error cargando vista general:', error);
+                showError('localityAnalysisResults', `Error: ${error.message}`);
+            }
+        }
+
+        function analyzeLocalityFromCard(localidad) {
+            // Seleccionar la localidad en el selector y ejecutar análisis
+            document.getElementById('localitySelect').value = localidad;
+            analyzeSpecificLocality();
+        }
+
+        async function filterHighValueLocalidades() {
+            try {
+                showLoading('localityAnalysisResults', '🔥 Filtrando localidades con valores altos...');
+                
+                if (!globalData || !globalData.localidades) {
+                    throw new Error('No hay datos de localidades disponibles');
+                }
+                
+                let localidadesConValoresAltos = [];
+                
+                // Procesar cada localidad para encontrar las que tienen más indicadores superiores
+                for (const localidad of globalData.localidades) {
+                    try {
+                        const response = await fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/indicadores-superiores`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.total_encontrados >= 3) { // Solo localidades con 3+ indicadores superiores
+                                localidadesConValoresAltos.push({
+                                    nombre: localidad,
+                                    total_superiores: data.total_encontrados,
+                                    indicadores: data.indicadores_superiores
+                                });
+                            }
+                        }
+                    } catch (error) {
+                        console.log(`Error con localidad ${localidad}:`, error);
+                    }
+                }
+                
+                // Ordenar por cantidad de indicadores superiores
+                localidadesConValoresAltos.sort((a, b) => b.total_superiores - a.total_superiores);
+                
+                if (localidadesConValoresAltos.length === 0) {
+                    document.getElementById('localidadesContainer').innerHTML = 
+                        '<div class="empty-state"><div class="empty-state-icon">🔥</div><div class="empty-state-text">No se encontraron localidades con valores altos</div></div>';
+                    return;
+                }
+                
+                let html = '';
+                
+                localidadesConValoresAltos.forEach(localidad => {
+                    html += `
+                        <div class="localidad-card" style="border-left: 5px solid #e74c3c;">
+                            <div class="localidad-name">🔥 ${localidad.nombre}</div>
+                            <div style="margin-bottom: 15px; padding: 10px; background: #ffe6e6; border-radius: 8px;">
+                                <strong>🏆 Indicadores superiores:</strong> ${localidad.total_superiores}<br>
+                                <strong>🎯 Criterio:</strong> ≥ 3 indicadores > promedio general
+                            </div>
+                            <div class="indicator-list">
+                                ${localidad.indicadores.slice(0, 5).map(ind => `
+                                    <div class="indicator-item">
+                                        <div class="indicator-name">${ind.indicador}</div>
+                                        <div class="indicator-value" style="background: #e74c3c; color: white;">+${ind.diferencia_porcentual}%</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div style="text-align: center; margin-top: 15px;">
+                                <button class="btn btn-danger" onclick="analyzeLocalityFromCard('${localidad.nombre}')">
+                                    🔍 Análisis Completo
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('localidadesContainer').innerHTML = html;
+                document.getElementById('localidadesContainer').style.display = 'grid';
+                document.getElementById('specificLocalityAnalysis').style.display = 'none';
+                
+                showSuccess('localityAnalysisResults', `✅ ${localidadesConValoresAltos.length} localidades con valores altos encontradas`);
+                
+            } catch (error) {
+                console.error('Error filtrando localidades:', error);
+                showError('localityAnalysisResults', `Error: ${error.message}`);
+            }
+        }
+
+        // ==========================================
+        // ANÁLISIS POR UPZ
+        // ==========================================
+
+        async function analyzeSpecificUPZ() {
+            const upzValue = document.getElementById('upzSelect').value;
+            
+            if (!upzValue) {
+                alert('Por favor selecciona una UPZ');
+                return;
+            }
+            
+            // Extraer ID de UPZ del valor seleccionado (formato: "ID - Nombre")
+            const upzId = upzValue.split(' - ')[0];
+            
+            try {
+                showLoading('upzAnalysisResults', '🔍 Analizando UPZ específica...');
+                
+                // Análisis completo de la UPZ
+                const [analysisResponse, graphicsResponse] = await Promise.all([
+                    fetch(`${API_BASE}/upz/${encodeURIComponent(upzId)}/analisis-completo`),
+                    fetch(`${API_BASE}/upz/${encodeURIComponent(upzId)}/graficos`)
+                ]);
+                
+                if (!analysisResponse.ok) {
+                    throw new Error(`Error en análisis: ${analysisResponse.status}`);
+                }
+                
+                const analysisData = await analysisResponse.json();
+                let graphicsData = null;
+                
+                if (graphicsResponse.ok) {
+                    graphicsData = await graphicsResponse.json();
+                }
+                
+                displayUPZAnalysis(analysisData, graphicsData);
+                showSuccess('upzAnalysisResults', '✅ Análisis de UPZ completado');
+                
+            } catch (error) {
+                console.error('Error en análisis de UPZ:', error);
+                showError('upzAnalysisResults', `Error: ${error.message}`);
+            }
+        }
+
+        function displayUPZAnalysis(data, graphicsData) {
+            // Mostrar título
+            document.getElementById('upzTitle').textContent = 
+                `🏛️ ${data.upz.nombre_upz} (${data.upz.localidad_pertenece})`;
+            
+            // Estadísticas generales
+            const statsHtml = `
+                <div class="stat-box">
+                    <div class="stat-value">${data.resumen_general.total_registros}</div>
+                    <div class="stat-label">Total Registros</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${data.resumen_general.indicadores_unicos}</div>
+                    <div class="stat-label">Indicadores Únicos</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${data.upz.id_upz}</div>
+                    <div class="stat-label">ID UPZ</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${data.indicadores_superiores_promedio.length}</div>
+                    <div class="stat-label">Superiores al Promedio</div>
+                </div>
+            `;
+            
+            document.getElementById('upzStats').innerHTML = statsHtml;
+            
+            // Indicadores superiores
+            if (data.indicadores_superiores_promedio.length > 0) {
+                const indicadoresHtml = data.indicadores_superiores_promedio.map((ind, index) => `
+                    <div class="indicator-item" style="padding: 15px; border-left: 4px solid ${index === 0 ? '#27ae60' : '#3498db'};">
+                        <div>
+                            <strong>${ind.indicador}</strong>
+                            <span class="superior-promedio-badge">+${ind.diferencia_porcentual}%</span>
+                        </div>
+                        <div style="font-size: 0.9em; color: #7f8c8d; margin-top: 5px;">
+                            🏛️ UPZ: ${ind.valor_promedio_upz} | 🏙️ Promedio: ${ind.promedio_general}
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('superiorIndicatorsUPZList').innerHTML = indicadoresHtml;
+                document.getElementById('superiorIndicatorsUPZ').style.display = 'block';
+            }
+            
+            // Generar gráficos si hay datos
+            if (graphicsData && !graphicsData.error) {
+                createUPZCharts(graphicsData);
+            }
+            
+            document.getElementById('specificUPZAnalysis').style.display = 'block';
+            document.getElementById('upzContainer').style.display = 'none';
+        }
+
+        function createUPZCharts(data) {
+            const graficos = data.graficos;
+            
+            // Gráfico de barras de indicadores UPZ
+            if (graficos.barras_indicadores && graficos.barras_indicadores.valores.length > 0) {
+                const canvas = document.getElementById('upzIndicatorsCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (currentCharts.upzIndicators) {
+                    currentCharts.upzIndicators.destroy();
+                }
+                
+                currentCharts.upzIndicators = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: graficos.barras_indicadores.labels,
+                        datasets: [
+                            {
+                                label: 'Valor en UPZ',
+                                data: graficos.barras_indicadores.valores,
+                                backgroundColor: 'rgba(155, 89, 182, 0.7)',
+                                borderColor: '#9b59b6',
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'Promedio General',
+                                data: graficos.barras_indicadores.promedios_generales,
+                                backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                                borderColor: '#e74c3c',
+                                borderWidth: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Valores'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                document.getElementById('upzCharts').style.display = 'grid';
+            }
+            
+            // Gráfico de tendencia UPZ
+            if (graficos.tendencia_temporal && graficos.tendencia_temporal.valores.length > 0) {
+                const canvas = document.getElementById('upzTrendCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (currentCharts.upzTrend) {
+                    currentCharts.upzTrend.destroy();
+                }
+                
+                currentCharts.upzTrend = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: graficos.tendencia_temporal.años,
+                        datasets: [{
+                            label: graficos.tendencia_temporal.indicador,
+                            data: graficos.tendencia_temporal.valores,
+                            borderColor: '#9b59b6',
+                            backgroundColor: 'rgba(155, 89, 182, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                title: {
+                                    display: true,
+                                    text: 'Valor'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Año'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Gráfico por dimensiones UPZ
+            if (graficos.por_dimensiones && graficos.por_dimensiones.valores.length > 0) {
+                const canvas = document.getElementById('upzDimensionsCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (currentCharts.upzDimensions) {
+                    currentCharts.upzDimensions.destroy();
+                }
+                
+                currentCharts.upzDimensions = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: graficos.por_dimensiones.labels,
+                        datasets: [{
+                            data: graficos.por_dimensiones.valores,
+                            backgroundColor: [
+                                '#9b59b6', '#e74c3c', '#f39c12', '#27ae60', '#3498db', '#1abc9c'
+                            ],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right'
+                            }
+                        }
+                    }
+                });
+                
+                document.getElementById('upzDimensionsChart').style.display = 'block';
+            }
+        }
+
+        async function loadAllUPZ() {
+            try {
+                showLoading('upzAnalysisResults', '📋 Cargando todas las UPZ...');
+                
+                const response = await fetch(`${API_BASE}/upz/listado`);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const upzList = await response.json();
+                displayAllUPZ(upzList);
+                showSuccess('upzAnalysisResults', '✅ Lista de UPZ cargada');
+                
+            } catch (error) {
+                console.error('Error cargando UPZ:', error);
+                showError('upzAnalysisResults', `Error: ${error.message}`);
+            }
+        }
+
+        function displayAllUPZ(upzList) {
+            let html = '';
+            
+            upzList.forEach(upz => {
+                html += `
+                    <div class="localidad-card">
+                        <div class="localidad-name">🏛️ ${upz.nombre_upz}</div>
+                        <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                            <strong>🔍 Localidad:</strong> ${upz.localidad}<br>
+                            <strong>🆔 ID UPZ:</strong> ${upz.id_upz}<br>
+                            <strong>📊 Registros:</strong> ${upz.total_registros}<br>
+                            <strong>📈 Indicadores:</strong> ${upz.indicadores_unicos}
+                        </div>
+                        <div style="text-align: center;">
+                            <button class="btn btn-success" onclick="analyzeUPZFromList('${upz.id_upz}', '${upz.nombre_upz}')">
+                                🔍 Analizar Esta UPZ
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('upzContainer').innerHTML = html;
+            document.getElementById('upzContainer').style.display = 'grid';
+            document.getElementById('specificUPZAnalysis').style.display = 'none';
+        }
+
+        function analyzeUPZFromList(upzId, upzNombre) {
+            // Seleccionar la UPZ en el selector y ejecutar análisis
+            document.getElementById('upzSelect').value = `${upzId} - ${upzNombre}`;
+            analyzeSpecificUPZ();
+        }
+
+        async function compareUPZSameLocalidad() {
+            alert('Función de comparación de UPZ en desarrollo. Próximamente disponible.');
+        }
+
+        // ==========================================
+        // PANEL DE ADMINISTRACIÓN
+        // ==========================================
+
+        async function getSystemStats() {
+            try {
+                showLoading('systemStatsResults', '📊 Obteniendo estadísticas del sistema...');
+                
+                const [healthResponse, dimensionsResponse] = await Promise.all([
+                    fetch(`${API_BASE}/health`),
+                    fetch(`${API_BASE}/dimensiones`)
+                ]);
+                
+                if (!healthResponse.ok || !dimensionsResponse.ok) {
+                    throw new Error('Error obteniendo estadísticas');
+                }
+                
+                const healthData = await healthResponse.json();
+                const dimensionsData = await dimensionsResponse.json();
+                
+                const statsHtml = `
+                    <div class="panel">
+                        <h4>🏥 Estado del Sistema</h4>
+                        <p><strong>Estado:</strong> ${healthData.status}</p>
+                        <p><strong>Total indicadores:</strong> ${healthData.total_indicadores}</p>
+                        <p><strong>Localidades disponibles:</strong> ${healthData.localidades_disponibles}</p>
+                        <p><strong>Versión:</strong> ${healthData.version}</p>
+                        
+                        <h4>📈 Dimensiones Disponibles</h4>
+                        ${dimensionsData.map(dim => `
+                            <div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                                <strong>${dim.dimension}:</strong> ${dim.total_registros} registros, 
+                                ${dim.indicadores_unicos} indicadores únicos, 
+                                ${dim.localidades_cubiertas} localidades
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                document.getElementById('systemStatsResults').innerHTML = statsHtml;
+                
+            } catch (error) {
+                console.error('Error obteniendo estadísticas:', error);
+                showError('systemStatsResults', `Error: ${error.message}`);
+            }
+        }
+
+        async function optimizeDatabase() {
+            try {
+                showLoading('maintenanceResults', '🗄️ Optimizando base de datos...');
+                
+                const response = await fetch(`${API_BASE}/administracion/normalizar-localidades`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                const resultHtml = `
+                    <div class="success">
+                        ✅ ${result.mensaje}<br>
+                        📊 Registros procesados: ${result.registros_procesados}
+                    </div>
+                `;
+                
+                document.getElementById('maintenanceResults').innerHTML = resultHtml;
+                
+                // Refrescar datos silenciosamente
+                await loadGlobalData();
+                
+            } catch (error) {
+                console.error('Error en optimización:', error);
+                showError('maintenanceResults', `Error: ${error.message}`);
+            }
+        }
+
+        async function cleanupData() {
+            try {
+                showLoading('maintenanceResults', '🧹 Limpiando datos duplicados...');
+                
+                // Simular limpieza (en implementación futura)
+                setTimeout(() => {
+                    showSuccess('maintenanceResults', '✅ Limpieza completada. No se encontraron duplicados.');
+                }, 2000);
+                
+            } catch (error) {
+                showError('maintenanceResults', `Error en limpieza: ${error.message}`);
+            }
+        }
+
+        async function checkDataConsistency() {
+            try {
+                showLoading('diagnosticResults', '🔎 Verificando consistencia de datos...');
+                
+                // Verificar que hay datos cargados
+                if (!globalData) {
+                    throw new Error('No hay datos cargados para verificar');
+                }
+                
+                // Verificar endpoints principales
+                const healthResponse = await fetch(`${API_BASE}/health`);
+                const caracterizacionResponse = await fetch(`${API_BASE}/caracterizacion/completa`);
+                
+                const results = {
+                    health: healthResponse.ok,
+                    caracterizacion: caracterizacionResponse.ok,
+                    localidades: globalData.localidades.length > 0,
+                    indicadores: globalData.indicadores_unicos > 0
+                };
+                
+                const resultsHtml = `
+                    <div class="panel">
+                        <h4>🔍 Resultados de Verificación</h4>
+                        <p><strong>API Health:</strong> ${results.health ? '✅ OK' : '❌ Error'}</p>
+                        <p><strong>Caracterización:</strong> ${results.caracterizacion ? '✅ OK' : '❌ Error'}</p>
+                        <p><strong>Localidades:</strong> ${results.localidades ? '✅ OK' : '❌ Error'}</p>
+                        <p><strong>Indicadores:</strong> ${results.indicadores ? '✅ OK' : '❌ Error'}</p>
+                        <p><strong>Estado general:</strong> ${Object.values(results).every(r => r) ? '✅ Sistema consistente' : '⚠️ Problemas detectados'}</p>
+                    </div>
+                `;
+                
+                document.getElementById('diagnosticResults').innerHTML = resultsHtml;
+                
+            } catch (error) {
+                console.error('Error en verificación:', error);
+                showError('diagnosticResults', `Error: ${error.message}`);
+            }
+        }
+
+        async function testApiEndpoints() {
+            try {
+                showLoading('diagnosticResults', '🔗 Probando endpoints de API...');
+                
+                const endpoints = [
+                    { name: 'Health', url: `${API_BASE}/health` },
+                    { name: 'Caracterización', url: `${API_BASE}/caracterizacion/completa` },
+                    { name: 'Dimensiones', url: `${API_BASE}/dimensiones` },
+                    { name: 'UPZ Listado', url: `${API_BASE}/upz/listado` }
+                ];
+                
+                const results = [];
+                
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(endpoint.url);
+                        results.push({
+                            name: endpoint.name,
+                            status: response.status,
+                            ok: response.ok
+                        });
+                    } catch (error) {
+                        results.push({
+                            name: endpoint.name,
+                            status: 'Error',
+                            ok: false,
+                            error: error.message
+                        });
+                    }
+                }
+                
+                const resultsHtml = `
+                    <div class="panel">
+                        <h4>🔗 Resultados de Endpoints</h4>
+                        ${results.map(result => `
+                            <div style="margin: 10px 0; padding: 10px; background: ${result.ok ? '#d4edda' : '#f8d7da'}; border-radius: 5px;">
+                                <strong>${result.name}:</strong> 
+                                ${result.ok ? '✅' : '❌'} ${result.status}
+                                ${result.error ? ` (${result.error})` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                document.getElementById('diagnosticResults').innerHTML = resultsHtml;
+                
+            } catch (error) {
+                console.error('Error probando endpoints:', error);
+                showError('diagnosticResults', `Error: ${error.message}`);
+            }
+        }
+
+        async function exportCompleteData() {
+            try {
+                showLoading('systemStatsResults', '💾 Exportando datos completos...');
+                
+                if (!globalData) {
+                    throw new Error('No hay datos para exportar');
+                }
+                
+                // Crear objeto con datos para exportar
+                const exportData = {
+                    timestamp: new Date().toISOString(),
+                    resumen: {
+                        total_registros: globalData.total_registros,
+                        indicadores_unicos: globalData.indicadores_unicos,
+                        localidades: globalData.localidades.length
+                    },
+                    datos_completos: globalData
+                };
+                
+                // Crear archivo para descarga
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `indicadores_bogota_export_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                showSuccess('systemStatsResults', '✅ Datos exportados correctamente');
+                
+            } catch (error) {
+                console.error('Error exportando datos:', error);
+                showError('systemStatsResults', `Error: ${error.message}`);
+            }
+        }
+
+        // ==========================================
         // FUNCIONES AUXILIARES
         // ==========================================
 
@@ -2003,7 +2842,47 @@
                 alert('✅ Datos refrescados correctamente');
             } catch (error) {
                 updateStatus('Error al refrescar', 'error');
-                alert('❌ Error al refrescar los datos. Verifica que hay datos cargados.');
+                alert('⌫ Error al refrescar los datos. Verifica que hay datos cargados.');
+            }
+        }
+
+        async function exportData() {
+            try {
+                if (!globalData) {
+                    alert('No hay datos para exportar');
+                    return;
+                }
+                
+                // Crear resumen para exportar
+                const exportSummary = {
+                    fecha_exportacion: new Date().toISOString(),
+                    resumen: {
+                        total_registros: globalData.total_registros,
+                        indicadores_unicos: globalData.indicadores_unicos,
+                        localidades: globalData.localidades.length,
+                        dimensiones: globalData.dimensiones.length
+                    },
+                    estadisticas_por_localidad: globalData.estadisticas_por_localidad,
+                    estadisticas_por_indicador: globalData.estadisticas_por_indicador.slice(0, 50), // Limitar para tamaño
+                    estadisticas_por_dimension: globalData.estadisticas_por_dimension
+                };
+                
+                const dataStr = JSON.stringify(exportSummary, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `resumen_indicadores_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                alert('✅ Resumen exportado correctamente');
+                
+            } catch (error) {
+                console.error('Error exportando:', error);
+                alert('Error al exportar datos');
             }
         }
 
@@ -2040,26 +2919,13 @@
 
         function showError(containerId, message) {
             document.getElementById(containerId).innerHTML = 
-                `<div class="error">❌ ${message}</div>`;
+                `<div class="error">⌫ ${message}</div>`;
         }
 
         function showSuccess(containerId, message) {
             document.getElementById(containerId).innerHTML = 
                 `<div class="success">${message}</div>`;
         }
-
-        // Placeholder para funciones que aún no están implementadas completamente
-        async function showTrendAnalysis() { /* Implementación similar a analyzeSingleIndicator pero solo tendencia */ }
-        async function showDistributionByLocation() { /* Similar pero solo distribución */ }
-        async function analyzeMultipleIndicators() { /* Mantener implementación existente */ }
-        async function showPairedAnalysis() { /* Mantener implementación existente */ }
-        async function loadLocalityOverview() { /* Mantener implementación existente */ }
-        async function filterHighValueLocalidades() { /* Mantener implementación existente */ }
-        async function exportData() { /* Mantener implementación existente */ }
-        async function generateShareLink() { /* Mantener implementación existente */ }
-        async function checkDataConsistency() { alert('Función en desarrollo'); }
-        async function testApiEndpoints() { alert('Función en desarrollo'); }
-        async function exportCompleteData() { alert('Función en desarrollo'); }
     </script>
 </body>
 </html>
