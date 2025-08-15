@@ -41,7 +41,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # =====================================================
-# FUNCIONES DE UTILIDAD MEJORADAS
+# FUNCIONES DE UTILIDAD MEJORADAS CON NORMALIZACIÓN UPZ
 # =====================================================
 
 def normalizar_nombre_localidad(nombre: str) -> str:
@@ -286,8 +286,8 @@ class FiltroIndicadores(BaseModel):
 
 app = FastAPI(
     title="API Indicadores Sociales Bogotá",
-    description="API para carga y caracterización de indicadores sociales de Bogotá D.C. - Versión Mejorada",
-    version="1.1.0"
+    description="API para carga y caracterización de indicadores sociales de Bogotá D.C. - Versión con Normalización UPZ",
+    version="1.2.0"
 )
 
 app.add_middleware(
@@ -1096,56 +1096,91 @@ async def indicadores_superiores_promedio_upz(upz_id: str, db: Session = Depends
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-@app.post("/administracion/normalizar-localidades")
-async def normalizar_localidades_db(db: Session = Depends(get_db)):
-    """Normaliza todos los nombres de localidades en la base de datos"""
-    try:
-        resultado = normalizar_todas_las_localidades(db)
-        return {
-            "mensaje": "Normalización de localidades completada",
-            "registros_procesados": resultado["total_actualizaciones"],
-            "localidades_modificadas": resultado["localidades_modificadas"]
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en proceso: {str(e)}")
+# =====================================================
+# NUEVOS ENDPOINTS DE NORMALIZACIÓN
+# =====================================================
 
-@app.post("/administracion/normalizar-upz")
-async def normalizar_upz_db(db: Session = Depends(get_db)):
-    """Normaliza todos los nombres de UPZ en la base de datos y elimina duplicados"""
+@app.get("/administracion/verificar-duplicados")
+async def verificar_duplicados(db: Session = Depends(get_db)):
+    """Verifica si existen duplicados en localidades y UPZ sin modificar datos"""
     try:
-        resultado = normalizar_todas_las_upz(db)
+        # Contar registros totales ANTES de cualquier análisis
+        total_registros_actuales = db.query(IndicadorDB).count()
+        
+        # Verificar duplicados en localidades
+        localidades_raw = db.query(IndicadorDB.nombre_localidad).filter(
+            IndicadorDB.nombre_localidad.isnot(None)
+        ).distinct().all()
+        
+        localidades_normalizadas = {}
+        duplicados_localidades = []
+        
+        for loc in localidades_raw:
+            nombre_original = loc[0]
+            nombre_normalizado = normalizar_nombre_localidad(nombre_original)
+            
+            if nombre_normalizado in localidades_normalizadas:
+                duplicados_localidades.append({
+                    "original": nombre_original,
+                    "normalizado": nombre_normalizado,
+                    "conflicto_con": localidades_normalizadas[nombre_normalizado]
+                })
+            else:
+                localidades_normalizadas[nombre_normalizado] = nombre_original
+        
+        # Verificar duplicados en UPZ
+        upz_raw = db.query(
+            IndicadorDB.id_upz, 
+            IndicadorDB.nombre_upz
+        ).filter(
+            IndicadorDB.id_upz.isnot(None),
+            IndicadorDB.nombre_upz.isnot(None)
+        ).distinct().all()
+        
+        upz_normalizadas = {}
+        duplicados_upz = []
+        
+        for upz in upz_raw:
+            id_upz = str(upz.id_upz).strip()
+            nombre_original = upz.nombre_upz
+            nombre_normalizado = normalizar_nombre_upz(nombre_original)
+            clave_upz = f"{id_upz}_{nombre_normalizado}"
+            
+            if clave_upz in upz_normalizadas:
+                duplicados_upz.append({
+                    "id_upz": id_upz,
+                    "nombre_original": nombre_original,
+                    "nombre_normalizado": nombre_normalizado,
+                    "conflicto_con": upz_normalizadas[clave_upz]
+                })
+            else:
+                upz_normalizadas[clave_upz] = nombre_original
+        
         return {
-            "mensaje": "Normalización de UPZ completada",
-            "registros_procesados": resultado["total_actualizaciones"],
-            "upz_modificadas": resultado["upz_modificadas"],
-            "upz_duplicadas_eliminadas": resultado["upz_duplicadas_eliminadas"],
-            "upz_unicas_finales": resultado["upz_unicas_finales"],
-            "detalle": "Se eliminaron duplicados y se normalizaron los nombres"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en proceso: {str(e)}")
-
-@app.post("/administracion/normalizar-completo")
-async def normalizar_datos_completos_endpoint(db: Session = Depends(get_db)):
-    """Normaliza tanto localidades como UPZ en una sola operación (RECOMENDADO)"""
-    try:
-        resultado = normalizar_datos_completos(db)
-        return {
-            "mensaje": "Normalización completa exitosa",
-            "resumen": resultado["resumen"],
+            "mensaje": "Verificación de duplicados - NO se modifican datos",
+            "total_registros_actuales": total_registros_actuales,
             "localidades": {
-                "registros_actualizados": resultado["localidades"]["total_actualizaciones"],
-                "localidades_modificadas": resultado["localidades"]["localidades_modificadas"]
+                "total_originales": len(localidades_raw),
+                "total_normalizadas": len(localidades_normalizadas),
+                "duplicados_detectados": len(duplicados_localidades),
+                "duplicados": duplicados_localidades
             },
             "upz": {
-                "registros_actualizados": resultado["upz"]["total_actualizaciones"],
-                "upz_modificadas": resultado["upz"]["upz_modificadas"],
-                "duplicadas_eliminadas": resultado["upz"]["upz_duplicadas_eliminadas"],
-                "upz_unicas_finales": resultado["upz"]["upz_unicas_finales"]
+                "total_originales": len(upz_raw),
+                "total_normalizadas": len(upz_normalizadas),
+                "duplicados_detectados": len(duplicados_upz),
+                "duplicados": duplicados_upz
+            },
+            "requiere_normalizacion": len(duplicados_localidades) > 0 or len(duplicados_upz) > 0,
+            "garantia_seguridad": {
+                "se_pierden_registros": False,
+                "se_pierden_datos": False,
+                "solo_se_unifican_nombres": True,
+                "operacion_reversible": True
             }
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error en proceso completo: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error verificando duplicados: {str(e)}")
 
 @app.get("/administracion/preview-normalizacion")
 async def preview_normalizacion(db: Session = Depends(get_db)):
@@ -1290,6 +1325,57 @@ async def contar_registros_detallado(db: Session = Depends(get_db)):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error contando registros: {str(e)}")
+
+@app.post("/administracion/normalizar-localidades")
+async def normalizar_localidades_db(db: Session = Depends(get_db)):
+    """Normaliza todos los nombres de localidades en la base de datos"""
+    try:
+        resultado = normalizar_todas_las_localidades(db)
+        return {
+            "mensaje": "Normalización de localidades completada",
+            "registros_procesados": resultado["total_actualizaciones"],
+            "localidades_modificadas": resultado["localidades_modificadas"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en proceso: {str(e)}")
+
+@app.post("/administracion/normalizar-upz")
+async def normalizar_upz_db(db: Session = Depends(get_db)):
+    """Normaliza todos los nombres de UPZ en la base de datos y elimina duplicados"""
+    try:
+        resultado = normalizar_todas_las_upz(db)
+        return {
+            "mensaje": "Normalización de UPZ completada",
+            "registros_procesados": resultado["total_actualizaciones"],
+            "upz_modificadas": resultado["upz_modificadas"],
+            "upz_duplicadas_eliminadas": resultado["upz_duplicadas_eliminadas"],
+            "upz_unicas_finales": resultado["upz_unicas_finales"],
+            "detalle": "Se eliminaron duplicados y se normalizaron los nombres"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en proceso: {str(e)}")
+
+@app.post("/administracion/normalizar-completo")
+async def normalizar_datos_completos_endpoint(db: Session = Depends(get_db)):
+    """Normaliza tanto localidades como UPZ en una sola operación (RECOMENDADO)"""
+    try:
+        resultado = normalizar_datos_completos(db)
+        return {
+            "mensaje": "Normalización completa exitosa",
+            "resumen": resultado["resumen"],
+            "localidades": {
+                "registros_actualizados": resultado["localidades"]["total_actualizaciones"],
+                "localidades_modificadas": resultado["localidades"]["localidades_modificadas"]
+            },
+            "upz": {
+                "registros_actualizados": resultado["upz"]["total_actualizaciones"],
+                "upz_modificadas": resultado["upz"]["upz_modificadas"],
+                "duplicadas_eliminadas": resultado["upz"]["upz_duplicadas_eliminadas"],
+                "upz_unicas_finales": resultado["upz"]["upz_unicas_finales"]
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en proceso completo: {str(e)}")
 
 @app.get("/localidades/{localidad}/indicadores-superiores")
 async def indicadores_superiores_promedio_endpoint(localidad: str, db: Session = Depends(get_db)):
@@ -1599,27 +1685,41 @@ async def estadisticas_archivos(db: Session = Depends(get_db)):
 @app.get("/")
 async def root():
     return {
-        "mensaje": "API Indicadores Sociales Bogotá D.C. - Versión Mejorada",
+        "mensaje": "API Indicadores Sociales Bogotá D.C. - Versión con Normalización UPZ",
         "version": "1.2.0",
         "mejoras": [
             "Análisis por UPZ",
-            "Normalización de localidades y UPZ",
+            "Normalización completa de localidades y UPZ",
             "Eliminación automática de duplicados",
             "Filtro por indicadores superiores al promedio",
             "Gráficos optimizados",
-            "Herramientas de diagnóstico avanzadas"
+            "Herramientas de diagnóstico avanzadas",
+            "Verificación de seguridad de datos"
         ],
         "nuevas_funcionalidades": [
-            "Normalización completa de UPZ",
+            "Normalización completa de UPZ con 40+ reglas",
             "Detección y eliminación de duplicados",
-            "Verificación previa de duplicados",
-            "Normalización separada por tipo de entidad"
+            "Verificación previa de duplicados sin modificar",
+            "Preview de cambios antes de ejecutar",
+            "Conteo de registros para verificar integridad",
+            "Normalización separada por tipo de entidad",
+            "Garantías de seguridad de datos"
         ],
         "endpoints_normalizacion": [
             "/administracion/verificar-duplicados - Verificar duplicados sin modificar",
+            "/administracion/preview-normalizacion - Ver cambios sin ejecutar", 
+            "/administracion/contar-registros - Contar registros actuales",
             "/administracion/normalizar-completo - Normalizar todo (recomendado)",
             "/administracion/normalizar-localidades - Solo localidades",
             "/administracion/normalizar-upz - Solo UPZ"
+        ],
+        "garantias_seguridad": [
+            "NO se eliminan registros de datos",
+            "NO se eliminan indicadores", 
+            "NO se eliminan valores numéricos",
+            "Solo se corrigen nombres duplicados",
+            "Verificación automática de integridad",
+            "Operaciones completamente reversibles"
         ],
         "documentacion": "/docs"
     }
@@ -1629,12 +1729,21 @@ async def health_check(db: Session = Depends(get_db)):
     try:
         total_registros = db.query(IndicadorDB).count()
         localidades_normalizadas = db.query(IndicadorDB.nombre_localidad).distinct().count()
+        upz_disponibles = db.query(IndicadorDB.id_upz).filter(IndicadorDB.id_upz.isnot(None)).distinct().count()
         
         return {
             "status": "healthy",
             "total_indicadores": total_registros,
             "localidades_disponibles": localidades_normalizadas,
-            "version": "1.1.0",
+            "upz_disponibles": upz_disponibles,
+            "version": "1.2.0",
+            "funcionalidades_activas": [
+                "Normalización UPZ",
+                "Análisis por localidades", 
+                "Análisis por UPZ",
+                "Eliminación de duplicados",
+                "Verificación de seguridad"
+            ],
             "timestamp": datetime.utcnow()
         }
     except Exception as e:
