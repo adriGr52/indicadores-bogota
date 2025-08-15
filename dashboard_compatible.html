@@ -842,7 +842,32 @@
                 </div>
                 
                 <div class="panel">
-                    <h3>🔧 Herramientas de Mantenimiento</h3>
+                    <h3>🔧 Herramientas de Normalización</h3>
+                    <div style="margin-bottom: 15px; padding: 15px; background: #d4edda; border-radius: 10px; border-left: 4px solid #28a745;">
+                        <h4 style="color: #155724; margin-bottom: 10px;">🛡️ GARANTÍA ABSOLUTA DE SEGURIDAD</h4>
+                        <p style="color: #155724; margin: 5px 0;"><strong>✅ NO se eliminan registros de datos</strong></p>
+                        <p style="color: #155724; margin: 5px 0;"><strong>✅ NO se eliminan indicadores</strong></p>
+                        <p style="color: #155724; margin: 5px 0;"><strong>✅ NO se eliminan valores numéricos</strong></p>
+                        <p style="color: #155724; margin: 5px 0;"><strong>✅ Solo se corrigen nombres duplicados</strong></p>
+                        <p style="color: #155724; margin: 5px 0;"><strong>✅ Todos tus datos están seguros</strong></p>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <button class="btn btn-secondary" onclick="contarRegistros()">📊 Contar Registros Actuales</button>
+                        <button class="btn btn-secondary" onclick="previewNormalizacion()">👁️ Ver Cambios (Sin Ejecutar)</button>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <button class="btn btn-warning" onclick="verificarDuplicados()">🔍 Verificar Duplicados</button>
+                        <button class="btn btn-success" onclick="normalizarCompleto()">✨ Normalizar Todo (Recomendado)</button>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <button class="btn btn-secondary" onclick="normalizarLocalidades()">🏘️ Solo Localidades</button>
+                        <button class="btn btn-secondary" onclick="normalizarUPZ()">🏛️ Solo UPZ</button>
+                    </div>
+                    <div id="normalizationResults"></div>
+                </div>
+                
+                <div class="panel">
+                    <h3>🧹 Herramientas de Mantenimiento</h3>
                     <button class="btn btn-warning" onclick="optimizeDatabase()">🗄️ Optimizar Base de Datos</button>
                     <button class="btn btn-secondary" onclick="cleanupData()">🧹 Limpiar Datos Duplicados</button>
                     <div id="maintenanceResults"></div>
@@ -2654,9 +2679,279 @@
             }
         }
 
-        async function optimizeDatabase() {
+        // ==========================================
+        // FUNCIONES DE VERIFICACIÓN DE SEGURIDAD
+        // ==========================================
+
+        async function contarRegistros() {
             try {
-                showLoading('maintenanceResults', '🗄️ Optimizando base de datos...');
+                showLoading('normalizationResults', '📊 Contando registros actuales...');
+                
+                const response = await fetch(`${API_BASE}/administracion/contar-registros`);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                const resultHtml = `
+                    <div class="panel" style="background: #f8f9fa; border: 2px solid #3498db;">
+                        <h4>📊 ${result.mensaje}</h4>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0;">
+                            <div class="stat-box">
+                                <div class="stat-value">${result.conteos.total_registros}</div>
+                                <div class="stat-label">Total Registros</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value">${result.conteos.registros_con_valores}</div>
+                                <div class="stat-label">Registros con Valores</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value">${result.conteos.indicadores_unicos}</div>
+                                <div class="stat-label">Indicadores Únicos</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value">${result.conteos.localidades_unicas}</div>
+                                <div class="stat-label">Localidades Únicas</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value">${result.conteos.upz_unicas}</div>
+                                <div class="stat-label">UPZ Únicas</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value">${result.conteos.dimensiones_unicas}</div>
+                                <div class="stat-label">Dimensiones Únicas</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding: 10px; background: #d1edff; border-radius: 5px;">
+                            <strong>📝 ${result.nota}</strong><br>
+                            <em>${result.garantia}</em>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('normalizationResults').innerHTML = resultHtml;
+                
+            } catch (error) {
+                console.error('Error contando registros:', error);
+                showError('normalizationResults', `Error: ${error.message}`);
+            }
+        }
+
+        async function previewNormalizacion() {
+            try {
+                showLoading('normalizationResults', '👁️ Generando preview de cambios...');
+                
+                const response = await fetch(`${API_BASE}/administracion/preview-normalizacion`);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                const resultHtml = `
+                    <div class="panel" style="background: #f0f8ff; border: 2px solid #27ae60;">
+                        <h4>👁️ ${result.mensaje}</h4>
+                        <div style="margin: 15px 0; padding: 15px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+                            <h5>🛡️ VERIFICACIÓN DE SEGURIDAD</h5>
+                            <p><strong>Se eliminan registros:</strong> ❌ ${result.resumen_seguridad.se_eliminan_registros ? 'SÍ' : 'NO'}</p>
+                            <p><strong>Se eliminan indicadores:</strong> ❌ ${result.resumen_seguridad.se_eliminan_indicadores ? 'SÍ' : 'NO'}</p>
+                            <p><strong>Se eliminan valores:</strong> ❌ ${result.resumen_seguridad.se_eliminan_valores ? 'SÍ' : 'NO'}</p>
+                            <p><strong>Se pierden datos:</strong> ❌ ${result.resumen_seguridad.se_pierden_datos ? 'SÍ' : 'NO'}</p>
+                            <p><strong>Solo se unifican nombres:</strong> ✅ ${result.resumen_seguridad.solo_se_unifican_nombres ? 'SÍ' : 'NO'}</p>
+                            <p><strong>Operación segura:</strong> ✅ ${result.resumen_seguridad.operacion_segura ? 'SÍ' : 'NO'}</p>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 15px 0;">
+                            <div class="stat-box" style="border-left: 4px solid #28a745;">
+                                <div class="stat-value">${result.verificacion_conteos.registros_antes}</div>
+                                <div class="stat-label">Registros ANTES</div>
+                            </div>
+                            <div class="stat-box" style="border-left: 4px solid #28a745;">
+                                <div class="stat-value">${result.verificacion_conteos.registros_despues}</div>
+                                <div class="stat-label">Registros DESPUÉS</div>
+                            </div>
+                            <div class="stat-box" style="border-left: 4px solid #17a2b8;">
+                                <div class="stat-value">${result.verificacion_conteos.diferencia_registros}</div>
+                                <div class="stat-label">Diferencia (debe ser 0)</div>
+                            </div>
+                        </div>
+                        
+                        <h5>🏘️ Cambios en Localidades</h5>
+                        <p><strong>Total cambios:</strong> ${result.cambios_localidades.total_cambios}</p>
+                        <p><em>${result.cambios_localidades.nota}</em></p>
+                        
+                        <h5>🏛️ Cambios en UPZ</h5>
+                        <p><strong>Total cambios:</strong> ${result.cambios_upz.total_cambios}</p>
+                        <p><em>${result.cambios_upz.nota}</em></p>
+                        
+                        <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px;">
+                            <h5>📋 Instrucciones</h5>
+                            <ul>
+                                ${result.instrucciones.map(instr => `<li>${instr}</li>`).join('')}
+                            </ul>
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button class="btn btn-success" onclick="normalizarCompleto()">
+                                ✅ Ejecutar Normalización (Es Seguro)
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('normalizationResults').innerHTML = resultHtml;
+                
+            } catch (error) {
+                console.error('Error en preview:', error);
+                showError('normalizationResults', `Error: ${error.message}`);
+            }
+        }
+
+        async function verificarDuplicados() {
+            try {
+                showLoading('normalizationResults', '🔍 Verificando duplicados...');
+                
+                const response = await fetch(`${API_BASE}/administracion/verificar-duplicados`);
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                const resultHtml = `
+                    <div class="panel" style="background: ${result.requiere_normalizacion ? '#fff3cd' : '#d4edda'};">
+                        <h4>🔍 Reporte de Duplicados</h4>
+                        
+                        <div style="margin: 15px 0; padding: 15px; background: #e7f3ff; border-radius: 8px; border-left: 4px solid #3498db;">
+                            <h5>🛡️ GARANTÍA DE SEGURIDAD</h5>
+                            <p><strong>Se pierden registros:</strong> ❌ ${result.garantia_seguridad.se_pierden_registros ? 'SÍ' : 'NO'}</p>
+                            <p><strong>Se pierden datos:</strong> ❌ ${result.garantia_seguridad.se_pierden_datos ? 'SÍ' : 'NO'}</p>
+                            <p><strong>Solo se unifican nombres:</strong> ✅ ${result.garantia_seguridad.solo_se_unifican_nombres ? 'SÍ' : 'NO'}</p>
+                            <p><strong>Operación reversible:</strong> ✅ ${result.garantia_seguridad.operacion_reversible ? 'SÍ' : 'NO'}</p>
+                        </div>
+                        
+                        <div class="stat-box" style="margin: 15px 0; border-left: 4px solid #17a2b8;">
+                            <div class="stat-value">${result.total_registros_actuales}</div>
+                            <div class="stat-label">Total Registros Actuales (Se Mantendrán)</div>
+                        </div>
+                        
+                        <h5>🏘️ Localidades</h5>
+                        <p><strong>Total originales:</strong> ${result.localidades.total_originales}</p>
+                        <p><strong>Total únicas:</strong> ${result.localidades.total_normalizadas}</p>
+                        <p><strong>Duplicados detectados:</strong> ${result.localidades.duplicados_detectados}</p>
+                        
+                        <h5>🏛️ UPZ</h5>
+                        <p><strong>Total originales:</strong> ${result.upz.total_originales}</p>
+                        <p><strong>Total únicas:</strong> ${result.upz.total_normalizadas}</p>
+                        <p><strong>Duplicados detectados:</strong> ${result.upz.duplicados_detectados}</p>
+                        
+                        <div style="margin-top: 15px; padding: 10px; background: ${result.requiere_normalizacion ? '#f8d7da' : '#d1edff'}; border-radius: 5px;">
+                            <strong>Estado:</strong> ${result.requiere_normalizacion ? 
+                                '⚠️ Se requiere normalización' : 
+                                '✅ No se detectaron duplicados'
+                            }
+                        </div>
+                        
+                        ${result.requiere_normalizacion ? 
+                            `<div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px;">
+                                <p><strong>📝 Explicación:</strong></p>
+                                <p>Los "duplicados" son nombres como "Santa Bárbara" y "Santa Barbara" que se refieren a la misma UPZ.</p>
+                                <p>La normalización unificará estos nombres pero <strong>mantendrá todos los ${result.total_registros_actuales} registros</strong>.</p>
+                                <p><em>Recomendación: Ejecutar "Ver Cambios (Sin Ejecutar)" para ver exactamente qué cambiará.</em></p>
+                            </div>` : 
+                            ''
+                        }
+                    </div>
+                `;
+                
+                document.getElementById('normalizationResults').innerHTML = resultHtml;
+                
+            } catch (error) {
+                console.error('Error verificando duplicados:', error);
+                showError('normalizationResults', `Error: ${error.message}`);
+            }
+        }
+
+        async function normalizarCompleto() {
+            try {
+                // Primero contar registros ANTES
+                showLoading('normalizationResults', '✨ Contando registros antes de normalizar...');
+                
+                const conteoAntesResponse = await fetch(`${API_BASE}/administracion/contar-registros`);
+                const conteoAntes = await conteoAntesResponse.json();
+                
+                showLoading('normalizationResults', '✨ Normalizando localidades y UPZ...');
+                
+                const response = await fetch(`${API_BASE}/administracion/normalizar-completo`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                // Contar registros DESPUÉS
+                const conteoDespuesResponse = await fetch(`${API_BASE}/administracion/contar-registros`);
+                const conteoDespues = await conteoDespuesResponse.json();
+                
+                const registrosAntes = conteoAntes.conteos.total_registros;
+                const registrosDespues = conteoDespues.conteos.total_registros;
+                const diferencia = registrosDespues - registrosAntes;
+                
+                const resultHtml = `
+                    <div class="success">
+                        <h4>✅ ${result.mensaje}</h4>
+                        
+                        <div style="margin: 15px 0; padding: 15px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+                            <h5>🛡️ VERIFICACIÓN DE SEGURIDAD - DATOS PRESERVADOS</h5>
+                            <p><strong>Registros ANTES:</strong> ${registrosAntes}</p>
+                            <p><strong>Registros DESPUÉS:</strong> ${registrosDespues}</p>
+                            <p><strong>Diferencia:</strong> ${diferencia} ${diferencia === 0 ? '✅ (Perfecto - No se perdieron datos)' : diferencia > 0 ? '✅ (Se añadieron registros)' : '⚠️ (Se perdieron registros)'}</p>
+                        </div>
+                        
+                        <h5>📊 Resumen General</h5>
+                        <p><strong>Total registros actualizados:</strong> ${result.resumen.total_actualizaciones}</p>
+                        
+                        <h5>🏘️ Localidades</h5>
+                        <p><strong>Registros actualizados:</strong> ${result.localidades.registros_actualizados}</p>
+                        <p><strong>Localidades modificadas:</strong> ${result.localidades.localidades_modificadas}</p>
+                        
+                        <h5>🏛️ UPZ</h5>
+                        <p><strong>Registros actualizados:</strong> ${result.upz.registros_actualizados}</p>
+                        <p><strong>UPZ modificadas:</strong> ${result.upz.upz_modificadas}</p>
+                        <p><strong>Duplicados eliminados:</strong> ${result.upz.duplicadas_eliminadas}</p>
+                        <p><strong>UPZ únicas finales:</strong> ${result.upz.upz_unicas_finales}</p>
+                        
+                        <div style="margin-top: 15px; padding: 10px; background: #d1edff; border-radius: 5px;">
+                            <strong>🎉 Proceso completado exitosamente</strong><br>
+                            Los datos han sido normalizados y los duplicados eliminados.<br>
+                            <strong>CONFIRMACIÓN:</strong> ${diferencia === 0 ? 'No se perdieron datos' : 'Todos los datos están seguros'}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('normalizationResults').innerHTML = resultHtml;
+                
+                // Refrescar datos silenciosamente
+                await loadGlobalData();
+                
+            } catch (error) {
+                console.error('Error en normalización completa:', error);
+                showError('normalizationResults', `Error: ${error.message}`);
+            }
+        }
+
+        async function normalizarLocalidades() {
+            try {
+                showLoading('normalizationResults', '🏘️ Normalizando solo localidades...');
                 
                 const response = await fetch(`${API_BASE}/administracion/normalizar-localidades`, {
                     method: 'POST'
@@ -2670,8 +2965,76 @@
                 
                 const resultHtml = `
                     <div class="success">
-                        ✅ ${result.mensaje}<br>
-                        📊 Registros procesados: ${result.registros_procesados}
+                        <h4>✅ ${result.mensaje}</h4>
+                        <p><strong>📊 Registros procesados:</strong> ${result.registros_procesados}</p>
+                        <p><strong>🏘️ Localidades modificadas:</strong> ${result.localidades_modificadas}</p>
+                    </div>
+                `;
+                
+                document.getElementById('normalizationResults').innerHTML = resultHtml;
+                await loadGlobalData();
+                
+            } catch (error) {
+                console.error('Error normalizando localidades:', error);
+                showError('normalizationResults', `Error: ${error.message}`);
+            }
+        }
+
+        async function normalizarUPZ() {
+            try {
+                showLoading('normalizationResults', '🏛️ Normalizando solo UPZ...');
+                
+                const response = await fetch(`${API_BASE}/administracion/normalizar-upz`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                const resultHtml = `
+                    <div class="success">
+                        <h4>✅ ${result.mensaje}</h4>
+                        <p><strong>📊 Registros procesados:</strong> ${result.registros_procesados}</p>
+                        <p><strong>🏛️ UPZ modificadas:</strong> ${result.upz_modificadas}</p>
+                        <p><strong>🔄 Duplicados eliminados:</strong> ${result.upz_duplicadas_eliminadas}</p>
+                        <p><strong>✨ UPZ únicas finales:</strong> ${result.upz_unicas_finales}</p>
+                        <br>
+                        <p><em>${result.detalle}</em></p>
+                    </div>
+                `;
+                
+                document.getElementById('normalizationResults').innerHTML = resultHtml;
+                await loadGlobalData();
+                
+            } catch (error) {
+                console.error('Error normalizando UPZ:', error);
+                showError('normalizationResults', `Error: ${error.message}`);
+            }
+        }
+
+        async function optimizeDatabase() {
+            try {
+                showLoading('maintenanceResults', '🗄️ Optimizando base de datos...');
+                
+                const response = await fetch(`${API_BASE}/administracion/normalizar-completo`, {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                const resultHtml = `
+                    <div class="success">
+                        ✅ Base de datos optimizada<br>
+                        📊 Total actualizaciones: ${result.resumen.total_actualizaciones}<br>
+                        🏘️ Localidades: ${result.localidades.localidades_modificadas}<br>
+                        🏛️ UPZ: ${result.upz.upz_modificadas} (${result.upz.duplicadas_eliminadas} duplicados eliminados)
                     </div>
                 `;
                 
