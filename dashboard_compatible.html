@@ -1,3294 +1,594 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Indicadores Sociales Bogotá - Análisis Avanzado</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-
-        .header h1 {
-            color: #2c3e50;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .header p {
-            color: #7f8c8d;
-            font-size: 1.2em;
-            margin-bottom: 20px;
-        }
-
-        .status-bar {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 10px;
-            margin-top: 15px;
-        }
-
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        .status-connected { background: #27ae60; }
-        .status-loading { background: #f39c12; }
-        .status-error { background: #e74c3c; }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .tab {
-            background: rgba(255, 255, 255, 0.9);
-            border: none;
-            padding: 15px 25px;
-            border-radius: 25px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            color: #7f8c8d;
-            min-width: 200px;
-            text-align: center;
-        }
-
-        .tab.active {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
-        }
-
-        .tab:hover:not(.active) {
-            background: rgba(52, 152, 219, 0.1);
-            color: #3498db;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        .panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .panel h2 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-size: 1.8em;
-            border-bottom: 3px solid #3498db;
-            padding-bottom: 10px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #34495e;
-        }
-
-        .form-group select, .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #ecf0f1;
-            border-radius: 10px;
-            font-size: 1em;
-            transition: border-color 0.3s ease;
-            background: white;
-        }
-
-        .form-group select:focus, .form-group input:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 15px 0;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            width: auto;
-            transform: scale(1.2);
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 5px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-        }
-
-        .btn-warning {
-            background: linear-gradient(135deg, #f39c12, #e67e22);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-        }
-
-        .stats-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 15px;
-        }
-
-        .stat-box {
-            text-align: center;
-            padding: 15px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            border-left: 4px solid #3498db;
-        }
-
-        .stat-value {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 0.9em;
-            color: #7f8c8d;
-        }
-
-        .chart-container {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-
-        .chart-canvas {
-            position: relative;
-            height: 400px;
-            width: 100%;
-        }
-
-        .chart-title {
-            color: #2c3e50;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 1.4em;
-            font-weight: 600;
-        }
-
-        .analysis-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #7f8c8d;
-            font-size: 1.1em;
-        }
-
-        .error {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 10px 0;
-        }
-
-        .success {
-            background: #d1edff;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 10px 0;
-        }
-
-        .localidades-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .localidad-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            border-left: 5px solid #3498db;
-            transition: transform 0.3s ease;
-        }
-
-        .localidad-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .localidad-name {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #ecf0f1;
-            padding-bottom: 10px;
-        }
-
-        .indicator-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .indicator-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #ecf0f1;
-        }
-
-        .indicator-item:last-child {
-            border-bottom: none;
-        }
-
-        .indicator-name {
-            font-size: 0.9em;
-            color: #34495e;
-            flex: 1;
-        }
-
-        .indicator-value {
-            font-weight: bold;
-            color: #3498db;
-            background: #f8f9fa;
-            padding: 4px 8px;
-            border-radius: 15px;
-            font-size: 0.8em;
-        }
-
-        .superior-promedio-badge {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.7em;
-            margin-left: 5px;
-        }
-
-        .upz-info {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 15px 0;
-        }
-
-        .upz-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .upz-item {
-            background: white;
-            padding: 10px;
-            border-radius: 8px;
-            border-left: 3px solid #3498db;
-        }
-
-        .file-upload-area {
-            border: 3px dashed #3498db;
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(41, 128, 185, 0.05));
-            margin-bottom: 30px;
-            transition: all 0.3s ease;
-        }
-
-        .file-upload-area:hover {
-            border-color: #2980b9;
-            background: linear-gradient(135deg, rgba(52, 152, 219, 0.15), rgba(41, 128, 185, 0.1));
-        }
-
-        .file-upload-icon {
-            font-size: 3em;
-            color: #3498db;
-            margin-bottom: 20px;
-        }
-
-        .data-summary {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 20px 0;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #7f8c8d;
-        }
-
-        .empty-state-icon {
-            font-size: 4em;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
-        .empty-state-text {
-            font-size: 1.2em;
-            margin-bottom: 10px;
-        }
-
-        .empty-state-subtext {
-            font-size: 0.9em;
-            opacity: 0.7;
-        }
-
-        .filter-badge {
-            background: #3498db;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.8em;
-            margin: 2px;
-            display: inline-block;
-        }
-
-        @media (max-width: 768px) {
-            .analysis-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            
-            .localidades-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .tabs {
-                flex-direction: column;
-            }
-            
-            .tab {
-                min-width: auto;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>📊 Dashboard Indicadores Sociales Bogotá D.C.</h1>
-            <p>Análisis Estadístico Completo por Localidades y UPZ</p>
-            
-            <div class="status-bar">
-                <div class="status-indicator" id="statusIndicator"></div>
-                <span id="connectionStatus">Iniciando sistema...</span>
-            </div>
-        </div>
-
-        <!-- Navegación por Tabs -->
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('data-management')">📂 Gestión de Datos</button>
-            <button class="tab" onclick="showTab('single-indicator')">📊 Análisis Univariado</button>
-            <button class="tab" onclick="showTab('multi-indicator')">⚖️ Análisis Multivariado</button>
-            <button class="tab" onclick="showTab('locality-analysis')">🏘️ Análisis por Localidades</button>
-            <button class="tab" onclick="showTab('upz-analysis')">🏛️ Análisis por UPZ</button>
-            <button class="tab" onclick="showTab('admin-panel')">⚙️ Administración</button>
-        </div>
-
-        <!-- TAB 1: Gestión de Datos -->
-        <div id="data-management" class="tab-content active">
-            <div class="panel">
-                <h2>📂 Gestión y Carga de Datos</h2>
-                
-                <div class="file-upload-area">
-                    <div class="file-upload-icon">📄</div>
-                    <h3 style="color: #2c3e50; margin-bottom: 15px;">Cargar Archivo de Indicadores</h3>
-                    <p style="color: #7f8c8d; margin-bottom: 20px;">
-                        Selecciona un archivo Excel (.xlsx, .xls) con los datos de indicadores sociales
-                    </p>
-                    <input type="file" id="fileInput" accept=".xlsx,.xls" style="margin-bottom: 20px;">
-                    <br>
-                    <button class="btn btn-success" onclick="uploadFile()">📤 Cargar Archivo</button>
-                    <div style="margin-top: 20px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: 10px;">
-                        <strong>ℹ️ Información:</strong> Al cargar un nuevo archivo, se reemplazarán todos los datos existentes.
-                    </div>
-                </div>
-                
-                <div id="uploadStatus"></div>
-                
-                <div class="data-summary" id="dataSummary" style="display: none;">
-                    <h3>📊 Resumen de Datos Cargados</h3>
-                    <div class="stats-summary" id="dataStats"></div>
-                </div>
-                
-                <div class="panel">
-                    <h3>🔧 Acciones de Sistema</h3>
-                    <button class="btn btn-warning" onclick="refreshData()">🔄 Refrescar Datos</button>
-                    <button class="btn btn-secondary" onclick="exportData()">📋 Exportar Análisis</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 2: Análisis de Un Solo Indicador -->
-        <div id="single-indicator" class="tab-content">
-            <div class="panel">
-                <h2>📊 Análisis Univariado - Un Solo Indicador</h2>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="singleIndicator">Seleccionar Indicador:</label>
-                        <select id="singleIndicator">
-                            <option value="">Primero carga los datos en "Gestión de Datos"</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="singleLocalidadFilter">Filtrar por Localidad (opcional):</label>
-                        <select id="singleLocalidadFilter" onchange="loadUPZForLocalidad(this.value)">
-                            <option value="">Todas las localidades</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="singleUPZFilter">Filtrar por UPZ (opcional):</label>
-                        <select id="singleUPZFilter">
-                            <option value="">Todas las UPZ</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="checkbox-group">
-                    <input type="checkbox" id="excludeNullsSingle" checked>
-                    <label for="excludeNullsSingle">Excluir valores nulos, vacíos y ceros</label>
-                </div>
-                
-                <div class="checkbox-group">
-                    <input type="checkbox" id="onlySuperiorAverageSingle" checked>
-                    <label for="onlySuperiorAverageSingle">Mostrar solo localidades superiores al promedio general</label>
-                    <span class="filter-badge">NUEVO</span>
-                </div>
-                
-                <div style="text-align: center; margin: 20px 0;">
-                    <button class="btn btn-success" onclick="analyzeSingleIndicator()">📈 Generar Análisis Completo</button>
-                    <button class="btn btn-warning" onclick="showTrendAnalysisOnly()">📊 Solo Gráfico de Tendencia</button>
-                    <button class="btn btn-secondary" onclick="showDistributionByLocationOnly()">🏘️ Solo Distribución por Localidad</button>
-                </div>
-                
-                <div id="singleIndicatorResults"></div>
-                
-                <!-- Estadísticas Mejoradas -->
-                <div class="panel" id="improvedStats" style="display: none;">
-                    <h3>📋 Estadísticas Descriptivas Mejoradas</h3>
-                    <div class="stats-summary" id="statsContainer"></div>
-                    <div id="averageComparison"></div>
-                </div>
-                
-                <!-- Gráfico de UPZ de la Localidad Seleccionada -->
-                <div class="chart-container" id="upzLocalidadChart" style="display: none;">
-                    <div class="chart-title">🏛️ UPZ de la Localidad Seleccionada</div>
-                    <div class="chart-canvas">
-                        <canvas id="upzLocalidadCanvas"></canvas>
-                    </div>
-                </div>
-                
-                <!-- Gráfico de Tendencia Temporal -->
-                <div class="chart-container" id="trendChart" style="display: none;">
-                    <div class="chart-title">📈 Evolución Temporal</div>
-                    <div class="chart-canvas">
-                        <canvas id="trendCanvas"></canvas>
-                    </div>
-                </div>
-                
-                <!-- Histograma por Localidades -->
-                <div class="chart-container" id="distributionChart" style="display: none;">
-                    <div class="chart-title">📊 Distribución por Localidades (Solo Superiores al Promedio)</div>
-                    <div class="chart-canvas">
-                        <canvas id="distributionCanvas"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 3: Análisis de Dos Indicadores -->
-        <div id="multi-indicator" class="tab-content">
-            <div class="panel">
-                <h2>⚖️ Análisis Multivariado - Dos Indicadores</h2>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="multiIndicator1">Primer Indicador:</label>
-                        <select id="multiIndicator1">
-                            <option value="">Selecciona primer indicador</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="multiIndicator2">Segundo Indicador:</label>
-                        <select id="multiIndicator2">
-                            <option value="">Selecciona segundo indicador</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="checkbox-group">
-                    <input type="checkbox" id="excludeNullsMulti" checked>
-                    <label for="excludeNullsMulti">Excluir valores nulos, vacíos y ceros</label>
-                </div>
-                
-                <div class="checkbox-group">
-                    <input type="checkbox" id="onlySuperiorAverageMulti" checked>
-                    <label for="onlySuperiorAverageMulti">Solo localidades con valores superiores al promedio</label>
-                    <span class="filter-badge">NUEVO</span>
-                </div>
-                
-                <div style="text-align: center; margin: 20px 0;">
-                    <button class="btn btn-success" onclick="analyzeMultipleIndicators()">🔗 Análisis de Correlación Completo</button>
-                    <button class="btn btn-warning" onclick="showPairedAnalysis()">📊 Análisis Pareado por Localidad</button>
-                </div>
-                
-                <div id="multiIndicatorResults"></div>
-                
-                <!-- Información de Correlación -->
-                <div class="panel" id="correlationInfo" style="display: none;">
-                    <h3>🔗 Análisis de Correlación</h3>
-                    <div id="correlationDisplay"></div>
-                </div>
-                
-                <!-- Gráficos Transpuestos -->
-                <div class="analysis-grid" id="pairedCharts" style="display: none;">
-                    <div class="chart-container">
-                        <div class="chart-title">📈 Tendencias Temporales Transpuestas</div>
-                        <div class="chart-canvas">
-                            <canvas id="pairedTrendCanvas"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div class="chart-container">
-                        <div class="chart-title">🎯 Diagrama de Dispersión</div>
-                        <div class="chart-canvas">
-                            <canvas id="scatterCanvas"></canvas>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Análisis por Localidad/UPZ -->
-                <div class="chart-container" id="locationComparisonChart" style="display: none;">
-                    <div class="chart-title">🏘️ Comportamiento por Localidad (Solo Valores Superiores)</div>
-                    <div class="chart-canvas">
-                        <canvas id="locationComparisonCanvas"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 4: Análisis por Localidades -->
-        <div id="locality-analysis" class="tab-content">
-            <div class="panel">
-                <h2>🏘️ Análisis Completo por Localidades</h2>
-                <p style="margin-bottom: 20px; color: #7f8c8d;">
-                    Visualiza indicadores por localidad, incluyendo información de UPZ y solo valores superiores al promedio
-                </p>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="localitySelect">Seleccionar Localidad Específica:</label>
-                        <select id="localitySelect">
-                            <option value="">Selecciona una localidad para análisis detallado</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div style="text-align: center; margin: 20px 0;">
-                    <button class="btn btn-success" onclick="analyzeSpecificLocality()">🔍 Análisis Detallado de Localidad</button>
-                    <button class="btn btn-warning" onclick="loadLocalityOverview()">📄 Vista General de Todas</button>
-                    <button class="btn btn-secondary" onclick="filterHighValueLocalidades()">🔥 Solo Localidades con Valores Altos</button>
-                </div>
-                
-                <div id="localityAnalysisResults"></div>
-                
-                <!-- Análisis Específico de Localidad -->
-                <div id="specificLocalityAnalysis" style="display: none;">
-                    <div class="panel">
-                        <h3 id="localityTitle">🔍 Análisis de Localidad</h3>
-                        
-                        <!-- Información UPZ -->
-                        <div class="upz-info" id="upzInfo" style="display: none;">
-                            <h4>🏛️ Unidades de Planeamiento Zonal (UPZ)</h4>
-                            <div class="upz-list" id="upzList"></div>
-                        </div>
-                        
-                        <!-- Estadísticas de la Localidad -->
-                        <div class="stats-summary" id="localityStats"></div>
-                        
-                        <!-- Indicadores Superiores al Promedio -->
-                        <div class="panel" id="superiorIndicators" style="display: none;">
-                            <h4>📈 Indicadores Superiores al Promedio General</h4>
-                            <div id="superiorIndicatorsList"></div>
-                        </div>
-                        
-                        <!-- Gráficos Específicos de Localidad -->
-                        <div class="analysis-grid" id="localityCharts" style="display: none;">
-                            <div class="chart-container">
-                                <div class="chart-title">📊 Top Indicadores vs Promedio General</div>
-                                <div class="chart-canvas">
-                                    <canvas id="localityIndicatorsCanvas"></canvas>
-                                </div>
-                            </div>
-                            
-                            <div class="chart-container">
-                                <div class="chart-title">📈 Evolución del Mejor Indicador</div>
-                                <div class="chart-canvas">
-                                    <canvas id="localityTrendCanvas"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="chart-container" id="localityDimensionsChart" style="display: none;">
-                            <div class="chart-title">🎯 Análisis por Dimensiones</div>
-                            <div class="chart-canvas">
-                                <canvas id="localityDimensionsCanvas"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="localidades-grid" id="localidadesContainer" style="display: none;"></div>
-            </div>
-        </div>
-
-        <!-- TAB 5: Análisis por UPZ -->
-        <div id="upz-analysis" class="tab-content">
-            <div class="panel">
-                <h2>🏛️ Análisis Completo por UPZ</h2>
-                <p style="margin-bottom: 20px; color: #7f8c8d;">
-                    Análisis específico por Unidades de Planeamiento Zonal con indicadores superiores al promedio
-                </p>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="upzSelect">Seleccionar UPZ:</label>
-                        <select id="upzSelect">
-                            <option value="">Primero carga datos para ver UPZ disponibles</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div style="text-align: center; margin: 20px 0;">
-                    <button class="btn btn-success" onclick="analyzeSpecificUPZ()">🔍 Análisis Detallado de UPZ</button>
-                    <button class="btn btn-warning" onclick="loadAllUPZ()">📋 Listar Todas las UPZ</button>
-                    <button class="btn btn-secondary" onclick="compareUPZSameLocalidad()">⚖️ Comparar UPZ de Misma Localidad</button>
-                </div>
-                
-                <div id="upzAnalysisResults"></div>
-                
-                <!-- Análisis Específico de UPZ -->
-                <div id="specificUPZAnalysis" style="display: none;">
-                    <div class="panel">
-                        <h3 id="upzTitle">🏛️ Análisis de UPZ</h3>
-                        
-                        <!-- Información Básica UPZ -->
-                        <div class="stats-summary" id="upzStats"></div>
-                        
-                        <!-- Indicadores Superiores al Promedio -->
-                        <div class="panel" id="superiorIndicatorsUPZ" style="display: none;">
-                            <h4>📈 Indicadores Superiores al Promedio General</h4>
-                            <div id="superiorIndicatorsUPZList"></div>
-                        </div>
-                        
-                        <!-- Gráficos Específicos de UPZ -->
-                        <div class="analysis-grid" id="upzCharts" style="display: none;">
-                            <div class="chart-container">
-                                <div class="chart-title">📊 Top Indicadores UPZ vs Promedio General</div>
-                                <div class="chart-canvas">
-                                    <canvas id="upzIndicatorsCanvas"></canvas>
-                                </div>
-                            </div>
-                            
-                            <div class="chart-container">
-                                <div class="chart-title">📈 Evolución Temporal UPZ</div>
-                                <div class="chart-canvas">
-                                    <canvas id="upzTrendCanvas"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="chart-container" id="upzDimensionsChart" style="display: none;">
-                            <div class="chart-title">🎯 Análisis por Dimensiones - UPZ</div>
-                            <div class="chart-canvas">
-                                <canvas id="upzDimensionsCanvas"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Lista de Todas las UPZ -->
-                <div class="localidades-grid" id="upzContainer" style="display: none;"></div>
-            </div>
-        </div>
-
-        <!-- TAB 6: Panel de Administración -->
-        <div id="admin-panel" class="tab-content">
-            <div class="panel">
-                <h2>⚙️ Panel de Administración</h2>
-                
-                <div class="panel">
-                    <h3>📊 Estadísticas del Sistema</h3>
-                    <button class="btn btn-warning" onclick="getSystemStats()">📈 Obtener Estadísticas Detalladas</button>
-                    <button class="btn btn-secondary" onclick="exportCompleteData()">💾 Exportar Datos Completos</button>
-                    <div id="systemStatsResults"></div>
-                </div>
-                
-                <div class="panel">
-                    <h3>🔧 Herramientas de Normalización</h3>
-                    <div style="margin-bottom: 15px; padding: 15px; background: #d4edda; border-radius: 10px; border-left: 4px solid #28a745;">
-                        <h4 style="color: #155724; margin-bottom: 10px;">🛡️ GARANTÍA ABSOLUTA DE SEGURIDAD</h4>
-                        <p style="color: #155724; margin: 5px 0;"><strong>✅ NO se eliminan registros de datos</strong></p>
-                        <p style="color: #155724; margin: 5px 0;"><strong>✅ NO se eliminan indicadores</strong></p>
-                        <p style="color: #155724; margin: 5px 0;"><strong>✅ NO se eliminan valores numéricos</strong></p>
-                        <p style="color: #155724; margin: 5px 0;"><strong>✅ Solo se corrigen nombres duplicados</strong></p>
-                        <p style="color: #155724; margin: 5px 0;"><strong>✅ Todos tus datos están seguros</strong></p>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <button class="btn btn-secondary" onclick="contarRegistros()">📊 Contar Registros Actuales</button>
-                        <button class="btn btn-secondary" onclick="previewNormalizacion()">👁️ Ver Cambios (Sin Ejecutar)</button>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <button class="btn btn-warning" onclick="verificarDuplicados()">🔍 Verificar Duplicados</button>
-                        <button class="btn btn-success" onclick="normalizarCompleto()">✨ Normalizar Todo (Recomendado)</button>
-                    </div>
-                    <div style="margin-bottom: 15px;">
-                        <button class="btn btn-secondary" onclick="normalizarLocalidades()">🏘️ Solo Localidades</button>
-                        <button class="btn btn-secondary" onclick="normalizarUPZ()">🏛️ Solo UPZ</button>
-                    </div>
-                    <div id="normalizationResults"></div>
-                </div>
-                
-                <div class="panel">
-                    <h3>🧹 Herramientas de Mantenimiento</h3>
-                    <button class="btn btn-warning" onclick="optimizeDatabase()">🗄️ Optimizar Base de Datos</button>
-                    <button class="btn btn-secondary" onclick="cleanupData()">🧹 Limpiar Datos Duplicados</button>
-                    <div id="maintenanceResults"></div>
-                </div>
-                
-                <div class="panel">
-                    <h3>🔍 Herramientas de Diagnóstico</h3>
-                    <button class="btn btn-warning" onclick="checkDataConsistency()">🔎 Verificar Consistencia de Datos</button>
-                    <button class="btn btn-secondary" onclick="testApiEndpoints()">🔗 Probar Endpoints de API</button>
-                    <div id="diagnosticResults"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const API_BASE = window.location.origin;
-        let globalData = null;
-        let currentCharts = {};
-
-        // Inicialización del Sistema
-        document.addEventListener('DOMContentLoaded', function() {
-            updateStatus('Iniciando sistema mejorado...', 'loading');
-            initializeSystem();
-        });
-
-        async function initializeSystem() {
-            try {
-                // Verificar conexión con la API
-                const healthResponse = await fetch(`${API_BASE}/health`);
-                if (!healthResponse.ok) {
-                    throw new Error('API no disponible');
-                }
-                
-                const healthData = await healthResponse.json();
-                console.log('✅ Sistema conectado:', healthData);
-                
-                updateStatus('Conexión establecida - Verificando datos...', 'loading');
-                
-                // Intentar cargar datos existentes
-                try {
-                    await loadGlobalData();
-                    updateStatus(`Sistema listo - ${globalData.total_registros} registros cargados`, 'connected');
-                } catch (dataError) {
-                    updateStatus('Sistema listo - Sin datos cargados', 'connected');
-                    console.log('No hay datos previos cargados, esperando carga de archivo');
-                }
-                
-            } catch (error) {
-                console.error('Error de inicialización:', error);
-                updateStatus('Error de conexión con la API', 'error');
-            }
-        }
-
-        async function loadGlobalData() {
-            try {
-                const response = await fetch(`${API_BASE}/caracterizacion/completa`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                globalData = await response.json();
-                
-                if (globalData.total_registros === 0) {
-                    throw new Error('No hay datos cargados');
-                }
-                
-                updateDataSummary();
-                populateAllSelectors();
-                
-                console.log('✅ Datos cargados:', globalData.total_registros, 'registros');
-                
-            } catch (error) {
-                console.error('Error cargando datos globales:', error);
-                globalData = null;
-                throw error;
-            }
-        }
-
-        function updateDataSummary() {
-            if (!globalData) return;
-            
-            const statsHtml = `
-                <div class="stat-box">
-                    <div class="stat-value">${globalData.total_registros.toLocaleString()}</div>
-                    <div class="stat-label">Total Registros</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${globalData.indicadores_unicos}</div>
-                    <div class="stat-label">Indicadores Únicos</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${globalData.localidades.length}</div>
-                    <div class="stat-label">Localidades</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${globalData.rango_años.desde}-${globalData.rango_años.hasta}</div>
-                    <div class="stat-label">Rango de Años</div>
-                </div>
-            `;
-            
-            document.getElementById('dataStats').innerHTML = statsHtml;
-            document.getElementById('dataSummary').style.display = 'block';
-        }
-
-        async function populateAllSelectors() {
-            if (!globalData) return;
-            
-            const indicadores = globalData.estadisticas_por_indicador.map(item => item.indicador);
-            const localidades = globalData.localidades;
-            
-            // Indicadores
-            populateSelect('singleIndicator', indicadores, 'Selecciona un indicador');
-            populateSelect('multiIndicator1', indicadores, 'Selecciona primer indicador');
-            populateSelect('multiIndicator2', indicadores, 'Selecciona segundo indicador');
-            
-            // Localidades
-            populateSelect('singleLocalidadFilter', localidades, 'Todas las localidades');
-            populateSelect('localitySelect', localidades, 'Selecciona una localidad');
-            
-            // Cargar UPZ disponibles
-            await loadAllUPZForSelect();
-        }
-
-        async function loadAllUPZForSelect() {
-            try {
-                const response = await fetch(`${API_BASE}/upz/listado`);
-                if (response.ok) {
-                    const upzList = await response.json();
-                    populateSelect('upzSelect', upzList.map(upz => `${upz.id_upz} - ${upz.nombre_upz}`), 'Selecciona una UPZ');
-                }
-            } catch (error) {
-                console.log('No se pudieron cargar las UPZ:', error);
-            }
-        }
-
-        async function loadUPZForLocalidad(localidad) {
-            const upzSelect = document.getElementById('singleUPZFilter');
-            upzSelect.innerHTML = '<option value="">Todas las UPZ</option>';
-            
-            if (!localidad) return;
-            
-            try {
-                const response = await fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/analisis-completo`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.upzs && data.upzs.length > 0) {
-                        data.upzs.forEach(upz => {
-                            const option = document.createElement('option');
-                            option.value = upz.id_upz;
-                            option.textContent = `${upz.id_upz} - ${upz.nombre_upz}`;
-                            upzSelect.appendChild(option);
-                        });
-                    }
-                }
-            } catch (error) {
-                console.log('Error cargando UPZ de la localidad:', error);
-            }
-        }
-
-        function populateSelect(selectId, options, defaultText) {
-            const select = document.getElementById(selectId);
-            if (!select) return;
-            
-            select.innerHTML = `<option value="">${defaultText}</option>`;
-            
-            options.forEach(option => {
-                const optionElement = document.createElement('option');
-                optionElement.value = option;
-                optionElement.textContent = option;
-                select.appendChild(optionElement);
-            });
-        }
-
-        // ==========================================
-        // GESTIÓN DE ARCHIVOS
-        // ==========================================
-
-        async function uploadFile() {
-            const fileInput = document.getElementById('fileInput');
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                alert('Por favor selecciona un archivo');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            try {
-                showLoading('uploadStatus', '📤 Cargando y procesando archivo...');
-                updateStatus('Cargando archivo...', 'loading');
-                
-                const response = await fetch(`${API_BASE}/upload/consolidado`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    showSuccess('uploadStatus', 
-                        `✅ Archivo cargado exitosamente<br>
-                        📊 Registros procesados: ${result.registros_procesados.toLocaleString()}<br>
-                        📄 Hojas procesadas: ${result.hojas_procesadas.join(', ')}`
-                    );
-                    
-                    // Recargar datos automáticamente
-                    setTimeout(async () => {
-                        await loadGlobalData();
-                        updateStatus('Archivo cargado - Sistema actualizado', 'connected');
-                        alert('✅ Datos cargados correctamente. Ya puedes usar todos los análisis.');
-                    }, 1500);
-                    
-                } else {
-                    showError('uploadStatus', result.detail || 'Error al cargar archivo');
-                    updateStatus('Error en carga de archivo', 'error');
-                }
-                
-            } catch (error) {
-                console.error('Error en carga:', error);
-                showError('uploadStatus', 'Error de conexión al cargar archivo');
-                updateStatus('Error de conexión', 'error');
-            }
-        }
-
-        // ==========================================
-        // ANÁLISIS UNIVARIADO
-        // ==========================================
-
-        async function analyzeSingleIndicator() {
-            const indicador = document.getElementById('singleIndicator').value;
-            
-            if (!indicador) {
-                alert('Por favor selecciona un indicador');
-                return;
-            }
-            
-            try {
-                showLoading('singleIndicatorResults', '📊 Generando análisis completo mejorado...');
-                
-                const response = await fetch(`${API_BASE}/indicadores/${encodeURIComponent(indicador)}/analisis`);
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                // Mostrar estadísticas mejoradas
-                showImprovedStatistics(data);
-                
-                // Mostrar todos los análisis
-                await createTrendChart(data);
-                createDistributionChart(data);
-                
-                // Mostrar gráfico de UPZ si hay localidad seleccionada
-                const localidad = document.getElementById('singleLocalidadFilter').value;
-                if (localidad) {
-                    await createUPZLocalidadChart(localidad, indicador);
-                }
-                
-                showSuccess('singleIndicatorResults', '✅ Análisis completo generado con filtros inteligentes');
-                
-            } catch (error) {
-                console.error('Error en análisis univariado:', error);
-                showError('singleIndicatorResults', `Error en el análisis: ${error.message}`);
-            }
-        }
-
-        async function showTrendAnalysisOnly() {
-            const indicador = document.getElementById('singleIndicator').value;
-            
-            if (!indicador) {
-                alert('Por favor selecciona un indicador');
-                return;
-            }
-            
-            try {
-                showLoading('singleIndicatorResults', '📊 Generando solo gráfico de tendencia...');
-                
-                const response = await fetch(`${API_BASE}/indicadores/${encodeURIComponent(indicador)}/analisis`);
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                // Solo mostrar gráfico de tendencia
-                hideAllCharts();
-                await createTrendChart(data);
-                
-                showSuccess('singleIndicatorResults', '✅ Gráfico de tendencia generado');
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showError('singleIndicatorResults', `Error: ${error.message}`);
-            }
-        }
-
-        async function showDistributionByLocationOnly() {
-            const indicador = document.getElementById('singleIndicator').value;
-            
-            if (!indicador) {
-                alert('Por favor selecciona un indicador');
-                return;
-            }
-            
-            try {
-                showLoading('singleIndicatorResults', '📊 Generando solo distribución por localidad...');
-                
-                const response = await fetch(`${API_BASE}/indicadores/${encodeURIComponent(indicador)}/analisis`);
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                // Solo mostrar gráfico de distribución
-                hideAllCharts();
-                createDistributionChart(data);
-                
-                showSuccess('singleIndicatorResults', '✅ Gráfico de distribución generado');
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showError('singleIndicatorResults', `Error: ${error.message}`);
-            }
-        }
-
-        function hideAllCharts() {
-            document.getElementById('improvedStats').style.display = 'none';
-            document.getElementById('trendChart').style.display = 'none';
-            document.getElementById('distributionChart').style.display = 'none';
-            document.getElementById('upzLocalidadChart').style.display = 'none';
-        }
-
-        async function createUPZLocalidadChart(localidad, indicador) {
-            try {
-                const response = await fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/analisis-completo`);
-                
-                if (!response.ok) return;
-                
-                const data = await response.json();
-                
-                if (!data.upzs || data.upzs.length === 0) return;
-                
-                const canvas = document.getElementById('upzLocalidadCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.upzLocalidad) {
-                    currentCharts.upzLocalidad.destroy();
-                }
-                
-                currentCharts.upzLocalidad = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: data.upzs.map(upz => upz.nombre_upz),
-                        datasets: [{
-                            label: 'Registros por UPZ',
-                            data: data.upzs.map(upz => upz.registros),
-                            backgroundColor: 'rgba(155, 89, 182, 0.7)',
-                            borderColor: '#9b59b6',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Cantidad de Registros'
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                }
-                            }
-                        }
-                    }
-                });
-                
-                document.getElementById('upzLocalidadChart').style.display = 'block';
-                
-            } catch (error) {
-                console.log('Error cargando UPZ de localidad:', error);
-            }
-        }
-
-        function showImprovedStatistics(data) {
-            const localidades = data.distribucion_por_localidad;
-            
-            if (localidades.length === 0) {
-                document.getElementById('improvedStats').innerHTML = 
-                    '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No hay datos suficientes para estadísticas</div></div>';
-                return;
-            }
-            
-            const valores = localidades.map(loc => loc.valor_promedio).filter(v => v !== null);
-            const n = valores.length;
-            
-            if (n === 0) return;
-            
-            valores.sort((a, b) => a - b);
-            const mean = valores.reduce((a, b) => a + b, 0) / n;
-            const median = n % 2 === 0 ? (valores[n/2 - 1] + valores[n/2]) / 2 : valores[Math.floor(n/2)];
-            const variance = valores.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / n;
-            const stdDev = Math.sqrt(variance);
-            
-            const promedioGeneral = data.estadisticas_generales.promedio_general_bogota;
-            
-            const statsHtml = `
-                <div class="stat-box">
-                    <div class="stat-value">${n}</div>
-                    <div class="stat-label">Localidades Superiores</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${mean.toFixed(2)}</div>
-                    <div class="stat-label">Media Local</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${promedioGeneral}</div>
-                    <div class="stat-label">Promedio Bogotá</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${median.toFixed(2)}</div>
-                    <div class="stat-label">Mediana</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${stdDev.toFixed(2)}</div>
-                    <div class="stat-label">Desviación Estándar</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${valores[0].toFixed(2)}</div>
-                    <div class="stat-label">Mínimo</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${valores[n-1].toFixed(2)}</div>
-                    <div class="stat-label">Máximo</div>
-                </div>
-            `;
-            
-            document.getElementById('statsContainer').innerHTML = statsHtml;
-            
-            // Comparación con promedio
-            const comparison = `
-                <div class="panel" style="background: ${mean > promedioGeneral ? '#d4edda' : '#f8d7da'}; margin-top: 15px;">
-                    <h4>📊 Comparación con Promedio General</h4>
-                    <p><strong>Promedio de localidades superiores:</strong> ${mean.toFixed(2)}</p>
-                    <p><strong>Promedio general de Bogotá:</strong> ${promedioGeneral}</p>
-                    <p><strong>Diferencia:</strong> ${(mean - promedioGeneral).toFixed(2)} 
-                    (${(((mean - promedioGeneral) / promedioGeneral) * 100).toFixed(1)}%)</p>
-                </div>
-            `;
-            
-            document.getElementById('averageComparison').innerHTML = comparison;
-            document.getElementById('improvedStats').style.display = 'block';
-        }
-
-        async function createTrendChart(data) {
-            const canvas = document.getElementById('trendCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            if (currentCharts.trend) {
-                currentCharts.trend.destroy();
-            }
-            
-            const excludeNulls = document.getElementById('excludeNullsSingle').checked;
-            let timeData = data.evolucion_temporal.filter(item => 
-                item.año && 
-                (!excludeNulls || (item.valor_promedio !== null && item.valor_promedio !== 0))
-            );
-            
-            if (timeData.length === 0) {
-                document.getElementById('trendChart').innerHTML = 
-                    '<div class="empty-state"><div class="empty-state-icon">📈</div><div class="empty-state-text">No hay datos temporales suficientes</div></div>';
-                return;
-            }
-            
-            // Línea del promedio general
-            const promedioGeneral = data.estadisticas_generales.promedio_general_bogota;
-            
-            currentCharts.trend = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: timeData.map(item => item.año),
-                    datasets: [
-                        {
-                            label: `${data.indicador} - Evolución Temporal`,
-                            data: timeData.map(item => item.valor_promedio),
-                            borderColor: '#3498db',
-                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4,
-                            pointBackgroundColor: '#2980b9',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 2,
-                            pointRadius: 6
-                        },
-                        {
-                            label: 'Promedio General Bogotá',
-                            data: timeData.map(() => promedioGeneral),
-                            borderColor: '#e74c3c',
-                            backgroundColor: 'transparent',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            pointRadius: 0
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: 'Valor Promedio'
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Año'
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
-                            }
-                        }
-                    },
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
-                    }
-                }
-            });
-            
-            document.getElementById('trendChart').style.display = 'block';
-        }
-
-        function createDistributionChart(data) {
-            const canvas = document.getElementById('distributionCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            if (currentCharts.distribution) {
-                currentCharts.distribution.destroy();
-            }
-            
-            const excludeNulls = document.getElementById('excludeNullsSingle').checked;
-            const onlySuperior = document.getElementById('onlySuperiorAverageSingle').checked;
-            
-            let locationData = data.distribucion_por_localidad.filter(item => 
-                item.localidad && 
-                (!excludeNulls || (item.valor_promedio !== null && item.valor_promedio !== 0)) &&
-                (!onlySuperior || item.supera_promedio)
-            );
-            
-            if (locationData.length === 0) {
-                document.getElementById('distributionChart').innerHTML = 
-                    '<div class="empty-state"><div class="empty-state-icon">📊</div><div class="empty-state-text">No hay datos de localidades suficientes</div></div>';
-                return;
-            }
-            
-            // Ordenar por valor para mejor visualización
-            locationData.sort((a, b) => (b.valor_promedio || 0) - (a.valor_promedio || 0));
-            
-            currentCharts.distribution = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: locationData.map(item => item.localidad),
-                    datasets: [{
-                        label: `${data.indicador} por Localidad${onlySuperior ? ' (Solo Superiores al Promedio)' : ''}`,
-                        data: locationData.map(item => item.valor_promedio),
-                        backgroundColor: locationData.map((item, index) => 
-                            item.supera_promedio ? 
-                                `hsla(120, 70%, ${50 + index * 5}%, 0.7)` : 
-                                `hsla(210, 70%, ${50 + index * 5}%, 0.7)`
-                        ),
-                        borderColor: locationData.map((item, index) => 
-                            item.supera_promedio ? 
-                                `hsla(120, 70%, ${40 + index * 5}%, 1)` : 
-                                `hsla(210, 70%, ${40 + index * 5}%, 1)`
-                        ),
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                afterLabel: function(context) {
-                                    const item = locationData[context.dataIndex];
-                                    return [
-                                        `Registros: ${item.registros}`,
-                                        item.diferencia_porcentual !== undefined ? 
-                                            `Diferencia: +${item.diferencia_porcentual}%` : ''
-                                    ].filter(Boolean);
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Valor Promedio'
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.1)'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Localidades'
-                            },
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
-                        }
-                    }
-                }
-            });
-            
-            document.getElementById('distributionChart').style.display = 'block';
-        }
-
-        // ==========================================
-        // ANÁLISIS MULTIVARIADO
-        // ==========================================
-
-        async function analyzeMultipleIndicators() {
-            const indicador1 = document.getElementById('multiIndicator1').value;
-            const indicador2 = document.getElementById('multiIndicator2').value;
-            
-            if (!indicador1 || !indicador2) {
-                alert('Por favor selecciona ambos indicadores');
-                return;
-            }
-            
-            if (indicador1 === indicador2) {
-                alert('Por favor selecciona indicadores diferentes');
-                return;
-            }
-            
-            try {
-                showLoading('multiIndicatorResults', '🔗 Analizando correlación entre indicadores...');
-                
-                // Obtener datos de ambos indicadores
-                const [response1, response2] = await Promise.all([
-                    fetch(`${API_BASE}/indicadores/${encodeURIComponent(indicador1)}/analisis`),
-                    fetch(`${API_BASE}/indicadores/${encodeURIComponent(indicador2)}/analisis`)
-                ]);
-                
-                if (!response1.ok || !response2.ok) {
-                    throw new Error('Error obteniendo datos de indicadores');
-                }
-                
-                const [data1, data2] = await Promise.all([
-                    response1.json(),
-                    response2.json()
-                ]);
-                
-                // Crear análisis de correlación
-                createCorrelationAnalysis(data1, data2);
-                createPairedCharts(data1, data2);
-                createLocationComparisonChart(data1, data2);
-                
-                showSuccess('multiIndicatorResults', '✅ Análisis de correlación completado');
-                
-            } catch (error) {
-                console.error('Error en análisis multivariado:', error);
-                showError('multiIndicatorResults', `Error: ${error.message}`);
-            }
-        }
-
-        function createCorrelationAnalysis(data1, data2) {
-            // Encontrar localidades comunes
-            const localidades1 = new Map(data1.distribucion_por_localidad.map(item => [item.localidad, item.valor_promedio]));
-            const localidades2 = new Map(data2.distribucion_por_localidad.map(item => [item.localidad, item.valor_promedio]));
-            
-            const localidadesComunes = [];
-            const valores1 = [];
-            const valores2 = [];
-            
-            for (const [localidad, valor1] of localidades1) {
-                if (localidades2.has(localidad)) {
-                    const valor2 = localidades2.get(localidad);
-                    if (valor1 !== null && valor2 !== null && valor1 > 0 && valor2 > 0) {
-                        localidadesComunes.push(localidad);
-                        valores1.push(valor1);
-                        valores2.push(valor2);
-                    }
-                }
-            }
-            
-            if (localidadesComunes.length < 2) {
-                document.getElementById('correlationInfo').innerHTML = 
-                    '<div class="empty-state"><div class="empty-state-icon">🔗</div><div class="empty-state-text">No hay suficientes datos comunes para correlación</div></div>';
-                return;
-            }
-            
-            // Calcular correlación de Pearson
-            const n = valores1.length;
-            const mean1 = valores1.reduce((a, b) => a + b, 0) / n;
-            const mean2 = valores2.reduce((a, b) => a + b, 0) / n;
-            
-            let numerator = 0;
-            let denominator1 = 0;
-            let denominator2 = 0;
-            
-            for (let i = 0; i < n; i++) {
-                const diff1 = valores1[i] - mean1;
-                const diff2 = valores2[i] - mean2;
-                numerator += diff1 * diff2;
-                denominator1 += diff1 * diff1;
-                denominator2 += diff2 * diff2;
-            }
-            
-            const correlation = numerator / Math.sqrt(denominator1 * denominator2);
-            
-            const correlationHtml = `
-                <div class="stats-summary">
-                    <div class="stat-box">
-                        <div class="stat-value">${correlation.toFixed(3)}</div>
-                        <div class="stat-label">Correlación de Pearson</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value">${n}</div>
-                        <div class="stat-label">Localidades Analizadas</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value">${Math.abs(correlation) > 0.7 ? 'Fuerte' : Math.abs(correlation) > 0.3 ? 'Moderada' : 'Débil'}</div>
-                        <div class="stat-label">Intensidad</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value">${correlation > 0 ? 'Positiva' : 'Negativa'}</div>
-                        <div class="stat-label">Dirección</div>
-                    </div>
-                </div>
-                <div class="panel" style="background: ${Math.abs(correlation) > 0.5 ? '#d4edda' : '#fff3cd'}; margin-top: 15px;">
-                    <h4>🔍 Interpretación</h4>
-                    <p><strong>${data1.indicador}</strong> y <strong>${data2.indicador}</strong> muestran una correlación 
-                    <strong>${Math.abs(correlation) > 0.7 ? 'fuerte' : Math.abs(correlation) > 0.3 ? 'moderada' : 'débil'}</strong>
-                    ${correlation > 0 ? 'positiva' : 'negativa'} (r = ${correlation.toFixed(3)}).</p>
-                    <p>Esto significa que ${correlation > 0 ? 'cuando uno aumenta, el otro tiende a aumentar' : 'cuando uno aumenta, el otro tiende a disminuir'}.</p>
-                </div>
-            `;
-            
-            document.getElementById('correlationDisplay').innerHTML = correlationHtml;
-            document.getElementById('correlationInfo').style.display = 'block';
-        }
-
-        function createPairedCharts(data1, data2) {
-            // Gráfico de tendencias pareadas
-            const canvas1 = document.getElementById('pairedTrendCanvas');
-            const ctx1 = canvas1.getContext('2d');
-            
-            if (currentCharts.pairedTrend) {
-                currentCharts.pairedTrend.destroy();
-            }
-            
-            // Encontrar años comunes
-            const years1 = new Map(data1.evolucion_temporal.map(item => [item.año, item.valor_promedio]));
-            const years2 = new Map(data2.evolucion_temporal.map(item => [item.año, item.valor_promedio]));
-            
-            const yearsComunes = [];
-            const valores1 = [];
-            const valores2 = [];
-            
-            for (const [year, valor1] of years1) {
-                if (years2.has(year)) {
-                    yearsComunes.push(year);
-                    valores1.push(valor1);
-                    valores2.push(years2.get(year));
-                }
-            }
-            
-            if (yearsComunes.length > 0) {
-                currentCharts.pairedTrend = new Chart(ctx1, {
-                    type: 'line',
-                    data: {
-                        labels: yearsComunes,
-                        datasets: [
-                            {
-                                label: data1.indicador,
-                                data: valores1,
-                                borderColor: '#3498db',
-                                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                                borderWidth: 3,
-                                tension: 0.4,
-                                yAxisID: 'y'
-                            },
-                            {
-                                label: data2.indicador,
-                                data: valores2,
-                                borderColor: '#e74c3c',
-                                backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                                borderWidth: 3,
-                                tension: 0.4,
-                                yAxisID: 'y1'
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        },
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Año'
-                                }
-                            },
-                            y: {
-                                type: 'linear',
-                                display: true,
-                                position: 'left',
-                                title: {
-                                    display: true,
-                                    text: data1.indicador
-                                }
-                            },
-                            y1: {
-                                type: 'linear',
-                                display: true,
-                                position: 'right',
-                                title: {
-                                    display: true,
-                                    text: data2.indicador
-                                },
-                                grid: {
-                                    drawOnChartArea: false,
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-            
-            // Gráfico de dispersión
-            const canvas2 = document.getElementById('scatterCanvas');
-            const ctx2 = canvas2.getContext('2d');
-            
-            if (currentCharts.scatter) {
-                currentCharts.scatter.destroy();
-            }
-            
-            // Datos para dispersión (por localidades)
-            const localidades1 = new Map(data1.distribucion_por_localidad.map(item => [item.localidad, item.valor_promedio]));
-            const localidades2 = new Map(data2.distribucion_por_localidad.map(item => [item.localidad, item.valor_promedio]));
-            
-            const scatterData = [];
-            for (const [localidad, valor1] of localidades1) {
-                if (localidades2.has(localidad)) {
-                    const valor2 = localidades2.get(localidad);
-                    if (valor1 !== null && valor2 !== null) {
-                        scatterData.push({
-                            x: valor1,
-                            y: valor2,
-                            localidad: localidad
-                        });
-                    }
-                }
-            }
-            
-            if (scatterData.length > 0) {
-                currentCharts.scatter = new Chart(ctx2, {
-                    type: 'scatter',
-                    data: {
-                        datasets: [{
-                            label: 'Localidades',
-                            data: scatterData,
-                            backgroundColor: 'rgba(52, 152, 219, 0.6)',
-                            borderColor: '#3498db',
-                            borderWidth: 2,
-                            pointRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const point = context.parsed;
-                                        const item = scatterData[context.dataIndex];
-                                        return `${item.localidad}: (${point.x.toFixed(2)}, ${point.y.toFixed(2)})`;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: data1.indicador
-                                }
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: data2.indicador
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-            
-            document.getElementById('pairedCharts').style.display = 'grid';
-        }
-
-        function createLocationComparisonChart(data1, data2) {
-            const canvas = document.getElementById('locationComparisonCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            if (currentCharts.locationComparison) {
-                currentCharts.locationComparison.destroy();
-            }
-            
-            const onlySuperior = document.getElementById('onlySuperiorAverageMulti').checked;
-            
-            // Encontrar localidades comunes y superiores al promedio si está activado el filtro
-            const localidades1 = new Map(data1.distribucion_por_localidad
-                .filter(item => !onlySuperior || item.supera_promedio)
-                .map(item => [item.localidad, item.valor_promedio])
-            );
-            const localidades2 = new Map(data2.distribucion_por_localidad
-                .filter(item => !onlySuperior || item.supera_promedio)
-                .map(item => [item.localidad, item.valor_promedio])
-            );
-            
-            const localidadesComunes = [];
-            const valores1 = [];
-            const valores2 = [];
-            
-            for (const [localidad, valor1] of localidades1) {
-                if (localidades2.has(localidad)) {
-                    localidadesComunes.push(localidad);
-                    valores1.push(valor1);
-                    valores2.push(localidades2.get(localidad));
-                }
-            }
-            
-            if (localidadesComunes.length === 0) {
-                document.getElementById('locationComparisonChart').innerHTML = 
-                    '<div class="empty-state"><div class="empty-state-icon">🏘️</div><div class="empty-state-text">No hay localidades comunes para comparar</div></div>';
-                return;
-            }
-            
-            currentCharts.locationComparison = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: localidadesComunes,
-                    datasets: [
-                        {
-                            label: data1.indicador,
-                            data: valores1,
-                            backgroundColor: 'rgba(52, 152, 219, 0.7)',
-                            borderColor: '#3498db',
-                            borderWidth: 2
-                        },
-                        {
-                            label: data2.indicador,
-                            data: valores2,
-                            backgroundColor: 'rgba(231, 76, 60, 0.7)',
-                            borderColor: '#e74c3c',
-                            borderWidth: 2
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Valores'
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
-                        }
-                    }
-                }
-            });
-            
-            document.getElementById('locationComparisonChart').style.display = 'block';
-        }
-
-        async function showPairedAnalysis() {
-            // Esta función es similar a analyzeMultipleIndicators pero puede mostrar solo algunos gráficos específicos
-            await analyzeMultipleIndicators();
-        }
-
-        // ==========================================
-        // ANÁLISIS POR LOCALIDADES
-        // ==========================================
-
-        async function analyzeSpecificLocality() {
-            const localidad = document.getElementById('localitySelect').value;
-            
-            if (!localidad) {
-                alert('Por favor selecciona una localidad');
-                return;
-            }
-            
-            try {
-                showLoading('localityAnalysisResults', '🔍 Analizando localidad específica...');
-                
-                // Análisis completo de la localidad
-                const [analysisResponse, graphicsResponse] = await Promise.all([
-                    fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/analisis-completo`),
-                    fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/graficos`)
-                ]);
-                
-                if (!analysisResponse.ok) {
-                    throw new Error(`Error en análisis: ${analysisResponse.status}`);
-                }
-                
-                const analysisData = await analysisResponse.json();
-                let graphicsData = null;
-                
-                if (graphicsResponse.ok) {
-                    graphicsData = await graphicsResponse.json();
-                }
-                
-                displayLocalityAnalysis(analysisData, graphicsData);
-                showSuccess('localityAnalysisResults', '✅ Análisis de localidad completado');
-                
-            } catch (error) {
-                console.error('Error en análisis de localidad:', error);
-                showError('localityAnalysisResults', `Error: ${error.message}`);
-            }
-        }
-
-        function displayLocalityAnalysis(data, graphicsData) {
-            // Mostrar título
-            document.getElementById('localityTitle').textContent = 
-                `🔍 Análisis de ${data.localidad.nombre_original}`;
-            
-            // Información UPZ
-            if (data.upzs && data.upzs.length > 0) {
-                const upzHtml = data.upzs.map(upz => `
-                    <div class="upz-item">
-                        <strong>${upz.nombre_upz}</strong> (ID: ${upz.id_upz})<br>
-                        📊 ${upz.registros} registros, ${upz.indicadores} indicadores
-                    </div>
-                `).join('');
-                
-                document.getElementById('upzList').innerHTML = upzHtml;
-                document.getElementById('upzInfo').style.display = 'block';
-            }
-            
-            // Estadísticas generales
-            const statsHtml = `
-                <div class="stat-box">
-                    <div class="stat-value">${data.resumen_general.total_registros}</div>
-                    <div class="stat-label">Total Registros</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${data.resumen_general.indicadores_unicos}</div>
-                    <div class="stat-label">Indicadores Únicos</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${data.resumen_general.upzs_disponibles}</div>
-                    <div class="stat-label">UPZ Disponibles</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${data.indicadores_superiores_promedio.length}</div>
-                    <div class="stat-label">Superiores al Promedio</div>
-                </div>
-            `;
-            
-            document.getElementById('localityStats').innerHTML = statsHtml;
-            
-            // Indicadores superiores
-            if (data.indicadores_superiores_promedio.length > 0) {
-                const indicadoresHtml = data.indicadores_superiores_promedio.map((ind, index) => `
-                    <div class="indicator-item" style="padding: 15px; border-left: 4px solid ${index === 0 ? '#27ae60' : '#3498db'};">
-                        <div>
-                            <strong>${ind.indicador}</strong>
-                            <span class="superior-promedio-badge">+${ind.diferencia_porcentual}%</span>
-                        </div>
-                        <div style="font-size: 0.9em; color: #7f8c8d; margin-top: 5px;">
-                            🔍 Localidad: ${ind.valor_promedio_localidad} | 🏙️ Bogotá: ${ind.promedio_general}
-                        </div>
-                    </div>
-                `).join('');
-                
-                document.getElementById('superiorIndicatorsList').innerHTML = indicadoresHtml;
-                document.getElementById('superiorIndicators').style.display = 'block';
-            }
-            
-            // Generar gráficos si hay datos
-            if (graphicsData && !graphicsData.error) {
-                createLocalityCharts(graphicsData);
-            }
-            
-            document.getElementById('specificLocalityAnalysis').style.display = 'block';
-            document.getElementById('localidadesContainer').style.display = 'none';
-        }
-
-        function createLocalityCharts(data) {
-            const graficos = data.graficos;
-            
-            // Gráfico de barras de indicadores
-            if (graficos.barras_indicadores && graficos.barras_indicadores.valores.length > 0) {
-                const canvas = document.getElementById('localityIndicatorsCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.localityIndicators) {
-                    currentCharts.localityIndicators.destroy();
-                }
-                
-                currentCharts.localityIndicators = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: graficos.barras_indicadores.labels,
-                        datasets: [
-                            {
-                                label: 'Valor en Localidad',
-                                data: graficos.barras_indicadores.valores,
-                                backgroundColor: 'rgba(52, 152, 219, 0.7)',
-                                borderColor: '#3498db',
-                                borderWidth: 2
-                            },
-                            {
-                                label: 'Promedio Bogotá',
-                                data: graficos.barras_indicadores.promedios_generales,
-                                backgroundColor: 'rgba(231, 76, 60, 0.7)',
-                                borderColor: '#e74c3c',
-                                borderWidth: 2
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Valores'
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                }
-                            }
-                        }
-                    }
-                });
-                
-                document.getElementById('localityCharts').style.display = 'grid';
-            }
-            
-            // Gráfico de tendencia
-            if (graficos.tendencia_temporal && graficos.tendencia_temporal.valores.length > 0) {
-                const canvas = document.getElementById('localityTrendCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.localityTrend) {
-                    currentCharts.localityTrend.destroy();
-                }
-                
-                currentCharts.localityTrend = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: graficos.tendencia_temporal.años,
-                        datasets: [{
-                            label: graficos.tendencia_temporal.indicador,
-                            data: graficos.tendencia_temporal.valores,
-                            borderColor: '#27ae60',
-                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                title: {
-                                    display: true,
-                                    text: 'Valor'
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Año'
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-            
-            // Gráfico por dimensiones
-            if (graficos.por_dimensiones && graficos.por_dimensiones.valores.length > 0) {
-                const canvas = document.getElementById('localityDimensionsCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.localityDimensions) {
-                    currentCharts.localityDimensions.destroy();
-                }
-                
-                currentCharts.localityDimensions = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: graficos.por_dimensiones.labels,
-                        datasets: [{
-                            data: graficos.por_dimensiones.valores,
-                            backgroundColor: [
-                                '#3498db', '#e74c3c', '#f39c12', '#27ae60', '#9b59b6', '#1abc9c'
-                            ],
-                            borderColor: '#fff',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'right'
-                            }
-                        }
-                    }
-                });
-                
-                document.getElementById('localityDimensionsChart').style.display = 'block';
-            }
-        }
-
-        async function loadLocalityOverview() {
-            try {
-                showLoading('localityAnalysisResults', '📄 Cargando vista general de localidades...');
-                
-                if (!globalData || !globalData.localidades) {
-                    throw new Error('No hay datos de localidades disponibles');
-                }
-                
-                let html = '';
-                
-                // Procesar cada localidad
-                for (const localidad of globalData.localidades.slice(0, 10)) { // Limitar a 10 para performance
-                    try {
-                        const response = await fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/indicadores-superiores`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            
-                            html += `
-                                <div class="localidad-card">
-                                    <div class="localidad-name">🏘️ ${localidad}</div>
-                                    <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                                        <strong>📊 Indicadores superiores:</strong> ${data.total_encontrados}<br>
-                                        <strong>🎯 Criterio:</strong> Solo valores > promedio general
-                                    </div>
-                                    <div class="indicator-list">
-                                        ${data.indicadores_superiores.slice(0, 5).map(ind => `
-                                            <div class="indicator-item">
-                                                <div class="indicator-name">${ind.indicador}</div>
-                                                <div class="indicator-value">+${ind.diferencia_porcentual}%</div>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                    <div style="text-align: center; margin-top: 15px;">
-                                        <button class="btn btn-success" onclick="analyzeLocalityFromCard('${localidad}')">
-                                            🔍 Análisis Completo
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    } catch (error) {
-                        console.log(`Error con localidad ${localidad}:`, error);
-                    }
-                }
-                
-                document.getElementById('localidadesContainer').innerHTML = html;
-                document.getElementById('localidadesContainer').style.display = 'grid';
-                document.getElementById('specificLocalityAnalysis').style.display = 'none';
-                
-                showSuccess('localityAnalysisResults', '✅ Vista general cargada');
-                
-            } catch (error) {
-                console.error('Error cargando vista general:', error);
-                showError('localityAnalysisResults', `Error: ${error.message}`);
-            }
-        }
-
-        function analyzeLocalityFromCard(localidad) {
-            // Seleccionar la localidad en el selector y ejecutar análisis
-            document.getElementById('localitySelect').value = localidad;
-            analyzeSpecificLocality();
-        }
-
-        async function filterHighValueLocalidades() {
-            try {
-                showLoading('localityAnalysisResults', '🔥 Filtrando localidades con valores altos...');
-                
-                if (!globalData || !globalData.localidades) {
-                    throw new Error('No hay datos de localidades disponibles');
-                }
-                
-                let localidadesConValoresAltos = [];
-                
-                // Procesar cada localidad para encontrar las que tienen más indicadores superiores
-                for (const localidad of globalData.localidades) {
-                    try {
-                        const response = await fetch(`${API_BASE}/localidades/${encodeURIComponent(localidad)}/indicadores-superiores`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.total_encontrados >= 3) { // Solo localidades con 3+ indicadores superiores
-                                localidadesConValoresAltos.push({
-                                    nombre: localidad,
-                                    total_superiores: data.total_encontrados,
-                                    indicadores: data.indicadores_superiores
-                                });
-                            }
-                        }
-                    } catch (error) {
-                        console.log(`Error con localidad ${localidad}:`, error);
-                    }
-                }
-                
-                // Ordenar por cantidad de indicadores superiores
-                localidadesConValoresAltos.sort((a, b) => b.total_superiores - a.total_superiores);
-                
-                if (localidadesConValoresAltos.length === 0) {
-                    document.getElementById('localidadesContainer').innerHTML = 
-                        '<div class="empty-state"><div class="empty-state-icon">🔥</div><div class="empty-state-text">No se encontraron localidades con valores altos</div></div>';
-                    return;
-                }
-                
-                let html = '';
-                
-                localidadesConValoresAltos.forEach(localidad => {
-                    html += `
-                        <div class="localidad-card" style="border-left: 5px solid #e74c3c;">
-                            <div class="localidad-name">🔥 ${localidad.nombre}</div>
-                            <div style="margin-bottom: 15px; padding: 10px; background: #ffe6e6; border-radius: 8px;">
-                                <strong>🏆 Indicadores superiores:</strong> ${localidad.total_superiores}<br>
-                                <strong>🎯 Criterio:</strong> ≥ 3 indicadores > promedio general
-                            </div>
-                            <div class="indicator-list">
-                                ${localidad.indicadores.slice(0, 5).map(ind => `
-                                    <div class="indicator-item">
-                                        <div class="indicator-name">${ind.indicador}</div>
-                                        <div class="indicator-value" style="background: #e74c3c; color: white;">+${ind.diferencia_porcentual}%</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <div style="text-align: center; margin-top: 15px;">
-                                <button class="btn btn-danger" onclick="analyzeLocalityFromCard('${localidad.nombre}')">
-                                    🔍 Análisis Completo
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                document.getElementById('localidadesContainer').innerHTML = html;
-                document.getElementById('localidadesContainer').style.display = 'grid';
-                document.getElementById('specificLocalityAnalysis').style.display = 'none';
-                
-                showSuccess('localityAnalysisResults', `✅ ${localidadesConValoresAltos.length} localidades con valores altos encontradas`);
-                
-            } catch (error) {
-                console.error('Error filtrando localidades:', error);
-                showError('localityAnalysisResults', `Error: ${error.message}`);
-            }
-        }
-
-        // ==========================================
-        // ANÁLISIS POR UPZ
-        // ==========================================
-
-        async function analyzeSpecificUPZ() {
-            const upzValue = document.getElementById('upzSelect').value;
-            
-            if (!upzValue) {
-                alert('Por favor selecciona una UPZ');
-                return;
-            }
-            
-            // Extraer ID de UPZ del valor seleccionado (formato: "ID - Nombre")
-            const upzId = upzValue.split(' - ')[0];
-            
-            try {
-                showLoading('upzAnalysisResults', '🔍 Analizando UPZ específica...');
-                
-                // Análisis completo de la UPZ
-                const [analysisResponse, graphicsResponse] = await Promise.all([
-                    fetch(`${API_BASE}/upz/${encodeURIComponent(upzId)}/analisis-completo`),
-                    fetch(`${API_BASE}/upz/${encodeURIComponent(upzId)}/graficos`)
-                ]);
-                
-                if (!analysisResponse.ok) {
-                    throw new Error(`Error en análisis: ${analysisResponse.status}`);
-                }
-                
-                const analysisData = await analysisResponse.json();
-                let graphicsData = null;
-                
-                if (graphicsResponse.ok) {
-                    graphicsData = await graphicsResponse.json();
-                }
-                
-                displayUPZAnalysis(analysisData, graphicsData);
-                showSuccess('upzAnalysisResults', '✅ Análisis de UPZ completado');
-                
-            } catch (error) {
-                console.error('Error en análisis de UPZ:', error);
-                showError('upzAnalysisResults', `Error: ${error.message}`);
-            }
-        }
-
-        function displayUPZAnalysis(data, graphicsData) {
-            // Mostrar título
-            document.getElementById('upzTitle').textContent = 
-                `🏛️ ${data.upz.nombre_upz} (${data.upz.localidad_pertenece})`;
-            
-            // Estadísticas generales
-            const statsHtml = `
-                <div class="stat-box">
-                    <div class="stat-value">${data.resumen_general.total_registros}</div>
-                    <div class="stat-label">Total Registros</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${data.resumen_general.indicadores_unicos}</div>
-                    <div class="stat-label">Indicadores Únicos</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${data.upz.id_upz}</div>
-                    <div class="stat-label">ID UPZ</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value">${data.indicadores_superiores_promedio.length}</div>
-                    <div class="stat-label">Superiores al Promedio</div>
-                </div>
-            `;
-            
-            document.getElementById('upzStats').innerHTML = statsHtml;
-            
-            // Indicadores superiores
-            if (data.indicadores_superiores_promedio.length > 0) {
-                const indicadoresHtml = data.indicadores_superiores_promedio.map((ind, index) => `
-                    <div class="indicator-item" style="padding: 15px; border-left: 4px solid ${index === 0 ? '#27ae60' : '#3498db'};">
-                        <div>
-                            <strong>${ind.indicador}</strong>
-                            <span class="superior-promedio-badge">+${ind.diferencia_porcentual}%</span>
-                        </div>
-                        <div style="font-size: 0.9em; color: #7f8c8d; margin-top: 5px;">
-                            🏛️ UPZ: ${ind.valor_promedio_upz} | 🏙️ Promedio: ${ind.promedio_general}
-                        </div>
-                    </div>
-                `).join('');
-                
-                document.getElementById('superiorIndicatorsUPZList').innerHTML = indicadoresHtml;
-                document.getElementById('superiorIndicatorsUPZ').style.display = 'block';
-            }
-            
-            // Generar gráficos si hay datos
-            if (graphicsData && !graphicsData.error) {
-                createUPZCharts(graphicsData);
-            }
-            
-            document.getElementById('specificUPZAnalysis').style.display = 'block';
-            document.getElementById('upzContainer').style.display = 'none';
-        }
-
-        function createUPZCharts(data) {
-            const graficos = data.graficos;
-            
-            // Gráfico de barras de indicadores UPZ
-            if (graficos.barras_indicadores && graficos.barras_indicadores.valores.length > 0) {
-                const canvas = document.getElementById('upzIndicatorsCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.upzIndicators) {
-                    currentCharts.upzIndicators.destroy();
-                }
-                
-                currentCharts.upzIndicators = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: graficos.barras_indicadores.labels,
-                        datasets: [
-                            {
-                                label: 'Valor en UPZ',
-                                data: graficos.barras_indicadores.valores,
-                                backgroundColor: 'rgba(155, 89, 182, 0.7)',
-                                borderColor: '#9b59b6',
-                                borderWidth: 2
-                            },
-                            {
-                                label: 'Promedio General',
-                                data: graficos.barras_indicadores.promedios_generales,
-                                backgroundColor: 'rgba(231, 76, 60, 0.7)',
-                                borderColor: '#e74c3c',
-                                borderWidth: 2
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Valores'
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                }
-                            }
-                        }
-                    }
-                });
-                
-                document.getElementById('upzCharts').style.display = 'grid';
-            }
-            
-            // Gráfico de tendencia UPZ
-            if (graficos.tendencia_temporal && graficos.tendencia_temporal.valores.length > 0) {
-                const canvas = document.getElementById('upzTrendCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.upzTrend) {
-                    currentCharts.upzTrend.destroy();
-                }
-                
-                currentCharts.upzTrend = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: graficos.tendencia_temporal.años,
-                        datasets: [{
-                            label: graficos.tendencia_temporal.indicador,
-                            data: graficos.tendencia_temporal.valores,
-                            borderColor: '#9b59b6',
-                            backgroundColor: 'rgba(155, 89, 182, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                title: {
-                                    display: true,
-                                    text: 'Valor'
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Año'
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-            
-            // Gráfico por dimensiones UPZ
-            if (graficos.por_dimensiones && graficos.por_dimensiones.valores.length > 0) {
-                const canvas = document.getElementById('upzDimensionsCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (currentCharts.upzDimensions) {
-                    currentCharts.upzDimensions.destroy();
-                }
-                
-                currentCharts.upzDimensions = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: graficos.por_dimensiones.labels,
-                        datasets: [{
-                            data: graficos.por_dimensiones.valores,
-                            backgroundColor: [
-                                '#9b59b6', '#e74c3c', '#f39c12', '#27ae60', '#3498db', '#1abc9c'
-                            ],
-                            borderColor: '#fff',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'right'
-                            }
-                        }
-                    }
-                });
-                
-                document.getElementById('upzDimensionsChart').style.display = 'block';
-            }
-        }
-
-        async function loadAllUPZ() {
-            try {
-                showLoading('upzAnalysisResults', '📋 Cargando todas las UPZ...');
-                
-                const response = await fetch(`${API_BASE}/upz/listado`);
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const upzList = await response.json();
-                displayAllUPZ(upzList);
-                showSuccess('upzAnalysisResults', '✅ Lista de UPZ cargada');
-                
-            } catch (error) {
-                console.error('Error cargando UPZ:', error);
-                showError('upzAnalysisResults', `Error: ${error.message}`);
-            }
-        }
-
-        function displayAllUPZ(upzList) {
-            let html = '';
-            
-            upzList.forEach(upz => {
-                html += `
-                    <div class="localidad-card">
-                        <div class="localidad-name">🏛️ ${upz.nombre_upz}</div>
-                        <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                            <strong>🔍 Localidad:</strong> ${upz.localidad}<br>
-                            <strong>🆔 ID UPZ:</strong> ${upz.id_upz}<br>
-                            <strong>📊 Registros:</strong> ${upz.total_registros}<br>
-                            <strong>📈 Indicadores:</strong> ${upz.indicadores_unicos}
-                        </div>
-                        <div style="text-align: center;">
-                            <button class="btn btn-success" onclick="analyzeUPZFromList('${upz.id_upz}', '${upz.nombre_upz}')">
-                                🔍 Analizar Esta UPZ
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            document.getElementById('upzContainer').innerHTML = html;
-            document.getElementById('upzContainer').style.display = 'grid';
-            document.getElementById('specificUPZAnalysis').style.display = 'none';
-        }
-
-        function analyzeUPZFromList(upzId, upzNombre) {
-            // Seleccionar la UPZ en el selector y ejecutar análisis
-            document.getElementById('upzSelect').value = `${upzId} - ${upzNombre}`;
-            analyzeSpecificUPZ();
-        }
-
-        async function compareUPZSameLocalidad() {
-            alert('Función de comparación de UPZ en desarrollo. Próximamente disponible.');
-        }
-
-        // ==========================================
-        // PANEL DE ADMINISTRACIÓN
-        // ==========================================
-
-        async function getSystemStats() {
-            try {
-                showLoading('systemStatsResults', '📊 Obteniendo estadísticas del sistema...');
-                
-                const [healthResponse, dimensionsResponse] = await Promise.all([
-                    fetch(`${API_BASE}/health`),
-                    fetch(`${API_BASE}/dimensiones`)
-                ]);
-                
-                if (!healthResponse.ok || !dimensionsResponse.ok) {
-                    throw new Error('Error obteniendo estadísticas');
-                }
-                
-                const healthData = await healthResponse.json();
-                const dimensionsData = await dimensionsResponse.json();
-                
-                const statsHtml = `
-                    <div class="panel">
-                        <h4>🏥 Estado del Sistema</h4>
-                        <p><strong>Estado:</strong> ${healthData.status}</p>
-                        <p><strong>Total indicadores:</strong> ${healthData.total_indicadores}</p>
-                        <p><strong>Localidades disponibles:</strong> ${healthData.localidades_disponibles}</p>
-                        <p><strong>Versión:</strong> ${healthData.version}</p>
-                        
-                        <h4>📈 Dimensiones Disponibles</h4>
-                        ${dimensionsData.map(dim => `
-                            <div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
-                                <strong>${dim.dimension}:</strong> ${dim.total_registros} registros, 
-                                ${dim.indicadores_unicos} indicadores únicos, 
-                                ${dim.localidades_cubiertas} localidades
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-                
-                document.getElementById('systemStatsResults').innerHTML = statsHtml;
-                
-            } catch (error) {
-                console.error('Error obteniendo estadísticas:', error);
-                showError('systemStatsResults', `Error: ${error.message}`);
-            }
-        }
-
-        // ==========================================
-        // FUNCIONES DE VERIFICACIÓN DE SEGURIDAD
-        // ==========================================
-
-        async function contarRegistros() {
-            try {
-                showLoading('normalizationResults', '📊 Contando registros actuales...');
-                
-                const response = await fetch(`${API_BASE}/administracion/contar-registros`);
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                const resultHtml = `
-                    <div class="panel" style="background: #f8f9fa; border: 2px solid #3498db;">
-                        <h4>📊 ${result.mensaje}</h4>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0;">
-                            <div class="stat-box">
-                                <div class="stat-value">${result.conteos.total_registros}</div>
-                                <div class="stat-label">Total Registros</div>
-                            </div>
-                            <div class="stat-box">
-                                <div class="stat-value">${result.conteos.registros_con_valores}</div>
-                                <div class="stat-label">Registros con Valores</div>
-                            </div>
-                            <div class="stat-box">
-                                <div class="stat-value">${result.conteos.indicadores_unicos}</div>
-                                <div class="stat-label">Indicadores Únicos</div>
-                            </div>
-                            <div class="stat-box">
-                                <div class="stat-value">${result.conteos.localidades_unicas}</div>
-                                <div class="stat-label">Localidades Únicas</div>
-                            </div>
-                            <div class="stat-box">
-                                <div class="stat-value">${result.conteos.upz_unicas}</div>
-                                <div class="stat-label">UPZ Únicas</div>
-                            </div>
-                            <div class="stat-box">
-                                <div class="stat-value">${result.conteos.dimensiones_unicas}</div>
-                                <div class="stat-label">Dimensiones Únicas</div>
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top: 15px; padding: 10px; background: #d1edff; border-radius: 5px;">
-                            <strong>📝 ${result.nota}</strong><br>
-                            <em>${result.garantia}</em>
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('normalizationResults').innerHTML = resultHtml;
-                
-            } catch (error) {
-                console.error('Error contando registros:', error);
-                showError('normalizationResults', `Error: ${error.message}`);
-            }
-        }
-
-        async function previewNormalizacion() {
-            try {
-                showLoading('normalizationResults', '👁️ Generando preview de cambios...');
-                
-                const response = await fetch(`${API_BASE}/administracion/preview-normalizacion`);
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                const resultHtml = `
-                    <div class="panel" style="background: #f0f8ff; border: 2px solid #27ae60;">
-                        <h4>👁️ ${result.mensaje}</h4>
-                        <div style="margin: 15px 0; padding: 15px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
-                            <h5>🛡️ VERIFICACIÓN DE SEGURIDAD</h5>
-                            <p><strong>Se eliminan registros:</strong> ❌ ${result.resumen_seguridad.se_eliminan_registros ? 'SÍ' : 'NO'}</p>
-                            <p><strong>Se eliminan indicadores:</strong> ❌ ${result.resumen_seguridad.se_eliminan_indicadores ? 'SÍ' : 'NO'}</p>
-                            <p><strong>Se eliminan valores:</strong> ❌ ${result.resumen_seguridad.se_eliminan_valores ? 'SÍ' : 'NO'}</p>
-                            <p><strong>Se pierden datos:</strong> ❌ ${result.resumen_seguridad.se_pierden_datos ? 'SÍ' : 'NO'}</p>
-                            <p><strong>Solo se unifican nombres:</strong> ✅ ${result.resumen_seguridad.solo_se_unifican_nombres ? 'SÍ' : 'NO'}</p>
-                            <p><strong>Operación segura:</strong> ✅ ${result.resumen_seguridad.operacion_segura ? 'SÍ' : 'NO'}</p>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 15px 0;">
-                            <div class="stat-box" style="border-left: 4px solid #28a745;">
-                                <div class="stat-value">${result.verificacion_conteos.registros_antes}</div>
-                                <div class="stat-label">Registros ANTES</div>
-                            </div>
-                            <div class="stat-box" style="border-left: 4px solid #28a745;">
-                                <div class="stat-value">${result.verificacion_conteos.registros_despues}</div>
-                                <div class="stat-label">Registros DESPUÉS</div>
-                            </div>
-                            <div class="stat-box" style="border-left: 4px solid #17a2b8;">
-                                <div class="stat-value">${result.verificacion_conteos.diferencia_registros}</div>
-                                <div class="stat-label">Diferencia (debe ser 0)</div>
-                            </div>
-                        </div>
-                        
-                        <h5>🏘️ Cambios en Localidades</h5>
-                        <p><strong>Total cambios:</strong> ${result.cambios_localidades.total_cambios}</p>
-                        <p><em>${result.cambios_localidades.nota}</em></p>
-                        
-                        <h5>🏛️ Cambios en UPZ</h5>
-                        <p><strong>Total cambios:</strong> ${result.cambios_upz.total_cambios}</p>
-                        <p><em>${result.cambios_upz.nota}</em></p>
-                        
-                        <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px;">
-                            <h5>📋 Instrucciones</h5>
-                            <ul>
-                                ${result.instrucciones.map(instr => `<li>${instr}</li>`).join('')}
-                            </ul>
-                        </div>
-                        
-                        <div style="text-align: center; margin-top: 20px;">
-                            <button class="btn btn-success" onclick="normalizarCompleto()">
-                                ✅ Ejecutar Normalización (Es Seguro)
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('normalizationResults').innerHTML = resultHtml;
-                
-            } catch (error) {
-                console.error('Error en preview:', error);
-                showError('normalizationResults', `Error: ${error.message}`);
-            }
-        }
-
-        async function verificarDuplicados() {
-            try {
-                showLoading('normalizationResults', '🔍 Verificando duplicados...');
-                
-                const response = await fetch(`${API_BASE}/administracion/verificar-duplicados`);
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                const resultHtml = `
-                    <div class="panel" style="background: ${result.requiere_normalizacion ? '#fff3cd' : '#d4edda'};">
-                        <h4>🔍 Reporte de Duplicados</h4>
-                        
-                        <div style="margin: 15px 0; padding: 15px; background: #e7f3ff; border-radius: 8px; border-left: 4px solid #3498db;">
-                            <h5>🛡️ GARANTÍA DE SEGURIDAD</h5>
-                            <p><strong>Se pierden registros:</strong> ❌ ${result.garantia_seguridad.se_pierden_registros ? 'SÍ' : 'NO'}</p>
-                            <p><strong>Se pierden datos:</strong> ❌ ${result.garantia_seguridad.se_pierden_datos ? 'SÍ' : 'NO'}</p>
-                            <p><strong>Solo se unifican nombres:</strong> ✅ ${result.garantia_seguridad.solo_se_unifican_nombres ? 'SÍ' : 'NO'}</p>
-                            <p><strong>Operación reversible:</strong> ✅ ${result.garantia_seguridad.operacion_reversible ? 'SÍ' : 'NO'}</p>
-                        </div>
-                        
-                        <div class="stat-box" style="margin: 15px 0; border-left: 4px solid #17a2b8;">
-                            <div class="stat-value">${result.total_registros_actuales}</div>
-                            <div class="stat-label">Total Registros Actuales (Se Mantendrán)</div>
-                        </div>
-                        
-                        <h5>🏘️ Localidades</h5>
-                        <p><strong>Total originales:</strong> ${result.localidades.total_originales}</p>
-                        <p><strong>Total únicas:</strong> ${result.localidades.total_normalizadas}</p>
-                        <p><strong>Duplicados detectados:</strong> ${result.localidades.duplicados_detectados}</p>
-                        
-                        <h5>🏛️ UPZ</h5>
-                        <p><strong>Total originales:</strong> ${result.upz.total_originales}</p>
-                        <p><strong>Total únicas:</strong> ${result.upz.total_normalizadas}</p>
-                        <p><strong>Duplicados detectados:</strong> ${result.upz.duplicados_detectados}</p>
-                        
-                        <div style="margin-top: 15px; padding: 10px; background: ${result.requiere_normalizacion ? '#f8d7da' : '#d1edff'}; border-radius: 5px;">
-                            <strong>Estado:</strong> ${result.requiere_normalizacion ? 
-                                '⚠️ Se requiere normalización' : 
-                                '✅ No se detectaron duplicados'
-                            }
-                        </div>
-                        
-                        ${result.requiere_normalizacion ? 
-                            `<div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px;">
-                                <p><strong>📝 Explicación:</strong></p>
-                                <p>Los "duplicados" son nombres como "Santa Bárbara" y "Santa Barbara" que se refieren a la misma UPZ.</p>
-                                <p>La normalización unificará estos nombres pero <strong>mantendrá todos los ${result.total_registros_actuales} registros</strong>.</p>
-                                <p><em>Recomendación: Ejecutar "Ver Cambios (Sin Ejecutar)" para ver exactamente qué cambiará.</em></p>
-                            </div>` : 
-                            ''
-                        }
-                    </div>
-                `;
-                
-                document.getElementById('normalizationResults').innerHTML = resultHtml;
-                
-            } catch (error) {
-                console.error('Error verificando duplicados:', error);
-                showError('normalizationResults', `Error: ${error.message}`);
-            }
-        }
-
-        async function normalizarCompleto() {
-            try {
-                // Primero contar registros ANTES
-                showLoading('normalizationResults', '✨ Contando registros antes de normalizar...');
-                
-                const conteoAntesResponse = await fetch(`${API_BASE}/administracion/contar-registros`);
-                const conteoAntes = await conteoAntesResponse.json();
-                
-                showLoading('normalizationResults', '✨ Normalizando localidades y UPZ...');
-                
-                const response = await fetch(`${API_BASE}/administracion/normalizar-completo`, {
-                    method: 'POST'
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                // Contar registros DESPUÉS
-                const conteoDespuesResponse = await fetch(`${API_BASE}/administracion/contar-registros`);
-                const conteoDespues = await conteoDespuesResponse.json();
-                
-                const registrosAntes = conteoAntes.conteos.total_registros;
-                const registrosDespues = conteoDespues.conteos.total_registros;
-                const diferencia = registrosDespues - registrosAntes;
-                
-                const resultHtml = `
-                    <div class="success">
-                        <h4>✅ ${result.mensaje}</h4>
-                        
-                        <div style="margin: 15px 0; padding: 15px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
-                            <h5>🛡️ VERIFICACIÓN DE SEGURIDAD - DATOS PRESERVADOS</h5>
-                            <p><strong>Registros ANTES:</strong> ${registrosAntes}</p>
-                            <p><strong>Registros DESPUÉS:</strong> ${registrosDespues}</p>
-                            <p><strong>Diferencia:</strong> ${diferencia} ${diferencia === 0 ? '✅ (Perfecto - No se perdieron datos)' : diferencia > 0 ? '✅ (Se añadieron registros)' : '⚠️ (Se perdieron registros)'}</p>
-                        </div>
-                        
-                        <h5>📊 Resumen General</h5>
-                        <p><strong>Total registros actualizados:</strong> ${result.resumen.total_actualizaciones}</p>
-                        
-                        <h5>🏘️ Localidades</h5>
-                        <p><strong>Registros actualizados:</strong> ${result.localidades.registros_actualizados}</p>
-                        <p><strong>Localidades modificadas:</strong> ${result.localidades.localidades_modificadas}</p>
-                        
-                        <h5>🏛️ UPZ</h5>
-                        <p><strong>Registros actualizados:</strong> ${result.upz.registros_actualizados}</p>
-                        <p><strong>UPZ modificadas:</strong> ${result.upz.upz_modificadas}</p>
-                        <p><strong>Duplicados eliminados:</strong> ${result.upz.duplicadas_eliminadas}</p>
-                        <p><strong>UPZ únicas finales:</strong> ${result.upz.upz_unicas_finales}</p>
-                        
-                        <div style="margin-top: 15px; padding: 10px; background: #d1edff; border-radius: 5px;">
-                            <strong>🎉 Proceso completado exitosamente</strong><br>
-                            Los datos han sido normalizados y los duplicados eliminados.<br>
-                            <strong>CONFIRMACIÓN:</strong> ${diferencia === 0 ? 'No se perdieron datos' : 'Todos los datos están seguros'}
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('normalizationResults').innerHTML = resultHtml;
-                
-                // Refrescar datos silenciosamente
-                await loadGlobalData();
-                
-            } catch (error) {
-                console.error('Error en normalización completa:', error);
-                showError('normalizationResults', `Error: ${error.message}`);
-            }
-        }
-
-        async function normalizarLocalidades() {
-            try {
-                showLoading('normalizationResults', '🏘️ Normalizando solo localidades...');
-                
-                const response = await fetch(`${API_BASE}/administracion/normalizar-localidades`, {
-                    method: 'POST'
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                const resultHtml = `
-                    <div class="success">
-                        <h4>✅ ${result.mensaje}</h4>
-                        <p><strong>📊 Registros procesados:</strong> ${result.registros_procesados}</p>
-                        <p><strong>🏘️ Localidades modificadas:</strong> ${result.localidades_modificadas}</p>
-                    </div>
-                `;
-                
-                document.getElementById('normalizationResults').innerHTML = resultHtml;
-                await loadGlobalData();
-                
-            } catch (error) {
-                console.error('Error normalizando localidades:', error);
-                showError('normalizationResults', `Error: ${error.message}`);
-            }
-        }
-
-        async function normalizarUPZ() {
-            try {
-                showLoading('normalizationResults', '🏛️ Normalizando solo UPZ...');
-                
-                const response = await fetch(`${API_BASE}/administracion/normalizar-upz`, {
-                    method: 'POST'
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                const resultHtml = `
-                    <div class="success">
-                        <h4>✅ ${result.mensaje}</h4>
-                        <p><strong>📊 Registros procesados:</strong> ${result.registros_procesados}</p>
-                        <p><strong>🏛️ UPZ modificadas:</strong> ${result.upz_modificadas}</p>
-                        <p><strong>🔄 Duplicados eliminados:</strong> ${result.upz_duplicadas_eliminadas}</p>
-                        <p><strong>✨ UPZ únicas finales:</strong> ${result.upz_unicas_finales}</p>
-                        <br>
-                        <p><em>${result.detalle}</em></p>
-                    </div>
-                `;
-                
-                document.getElementById('normalizationResults').innerHTML = resultHtml;
-                await loadGlobalData();
-                
-            } catch (error) {
-                console.error('Error normalizando UPZ:', error);
-                showError('normalizationResults', `Error: ${error.message}`);
-            }
-        }
-
-        async function optimizeDatabase() {
-            try {
-                showLoading('maintenanceResults', '🗄️ Optimizando base de datos...');
-                
-                const response = await fetch(`${API_BASE}/administracion/normalizar-completo`, {
-                    method: 'POST'
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Error HTTP: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                const resultHtml = `
-                    <div class="success">
-                        ✅ Base de datos optimizada<br>
-                        📊 Total actualizaciones: ${result.resumen.total_actualizaciones}<br>
-                        🏘️ Localidades: ${result.localidades.localidades_modificadas}<br>
-                        🏛️ UPZ: ${result.upz.upz_modificadas} (${result.upz.duplicadas_eliminadas} duplicados eliminados)
-                    </div>
-                `;
-                
-                document.getElementById('maintenanceResults').innerHTML = resultHtml;
-                
-                // Refrescar datos silenciosamente
-                await loadGlobalData();
-                
-            } catch (error) {
-                console.error('Error en optimización:', error);
-                showError('maintenanceResults', `Error: ${error.message}`);
-            }
-        }
-
-        async function cleanupData() {
-            try {
-                showLoading('maintenanceResults', '🧹 Limpiando datos duplicados...');
-                
-                // Simular limpieza (en implementación futura)
-                setTimeout(() => {
-                    showSuccess('maintenanceResults', '✅ Limpieza completada. No se encontraron duplicados.');
-                }, 2000);
-                
-            } catch (error) {
-                showError('maintenanceResults', `Error en limpieza: ${error.message}`);
-            }
-        }
-
-        async function checkDataConsistency() {
-            try {
-                showLoading('diagnosticResults', '🔎 Verificando consistencia de datos...');
-                
-                // Verificar que hay datos cargados
-                if (!globalData) {
-                    throw new Error('No hay datos cargados para verificar');
-                }
-                
-                // Verificar endpoints principales
-                const healthResponse = await fetch(`${API_BASE}/health`);
-                const caracterizacionResponse = await fetch(`${API_BASE}/caracterizacion/completa`);
-                
-                const results = {
-                    health: healthResponse.ok,
-                    caracterizacion: caracterizacionResponse.ok,
-                    localidades: globalData.localidades.length > 0,
-                    indicadores: globalData.indicadores_unicos > 0
-                };
-                
-                const resultsHtml = `
-                    <div class="panel">
-                        <h4>🔍 Resultados de Verificación</h4>
-                        <p><strong>API Health:</strong> ${results.health ? '✅ OK' : '❌ Error'}</p>
-                        <p><strong>Caracterización:</strong> ${results.caracterizacion ? '✅ OK' : '❌ Error'}</p>
-                        <p><strong>Localidades:</strong> ${results.localidades ? '✅ OK' : '❌ Error'}</p>
-                        <p><strong>Indicadores:</strong> ${results.indicadores ? '✅ OK' : '❌ Error'}</p>
-                        <p><strong>Estado general:</strong> ${Object.values(results).every(r => r) ? '✅ Sistema consistente' : '⚠️ Problemas detectados'}</p>
-                    </div>
-                `;
-                
-                document.getElementById('diagnosticResults').innerHTML = resultsHtml;
-                
-            } catch (error) {
-                console.error('Error en verificación:', error);
-                showError('diagnosticResults', `Error: ${error.message}`);
-            }
-        }
-
-        async function testApiEndpoints() {
-            try {
-                showLoading('diagnosticResults', '🔗 Probando endpoints de API...');
-                
-                const endpoints = [
-                    { name: 'Health', url: `${API_BASE}/health` },
-                    { name: 'Caracterización', url: `${API_BASE}/caracterizacion/completa` },
-                    { name: 'Dimensiones', url: `${API_BASE}/dimensiones` },
-                    { name: 'UPZ Listado', url: `${API_BASE}/upz/listado` }
-                ];
-                
-                const results = [];
-                
-                for (const endpoint of endpoints) {
-                    try {
-                        const response = await fetch(endpoint.url);
-                        results.push({
-                            name: endpoint.name,
-                            status: response.status,
-                            ok: response.ok
-                        });
-                    } catch (error) {
-                        results.push({
-                            name: endpoint.name,
-                            status: 'Error',
-                            ok: false,
-                            error: error.message
-                        });
-                    }
-                }
-                
-                const resultsHtml = `
-                    <div class="panel">
-                        <h4>🔗 Resultados de Endpoints</h4>
-                        ${results.map(result => `
-                            <div style="margin: 10px 0; padding: 10px; background: ${result.ok ? '#d4edda' : '#f8d7da'}; border-radius: 5px;">
-                                <strong>${result.name}:</strong> 
-                                ${result.ok ? '✅' : '❌'} ${result.status}
-                                ${result.error ? ` (${result.error})` : ''}
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-                
-                document.getElementById('diagnosticResults').innerHTML = resultsHtml;
-                
-            } catch (error) {
-                console.error('Error probando endpoints:', error);
-                showError('diagnosticResults', `Error: ${error.message}`);
-            }
-        }
-
-        async function exportCompleteData() {
-            try {
-                showLoading('systemStatsResults', '💾 Exportando datos completos...');
-                
-                if (!globalData) {
-                    throw new Error('No hay datos para exportar');
-                }
-                
-                // Crear objeto con datos para exportar
-                const exportData = {
-                    timestamp: new Date().toISOString(),
-                    resumen: {
-                        total_registros: globalData.total_registros,
-                        indicadores_unicos: globalData.indicadores_unicos,
-                        localidades: globalData.localidades.length
-                    },
-                    datos_completos: globalData
-                };
-                
-                // Crear archivo para descarga
-                const dataStr = JSON.stringify(exportData, null, 2);
-                const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `indicadores_bogota_export_${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-                
-                showSuccess('systemStatsResults', '✅ Datos exportados correctamente');
-                
-            } catch (error) {
-                console.error('Error exportando datos:', error);
-                showError('systemStatsResults', `Error: ${error.message}`);
-            }
-        }
-
-        // ==========================================
-        // FUNCIONES AUXILIARES
-        // ==========================================
-
-        async function refreshData() {
-            try {
-                updateStatus('Refrescando datos...', 'loading');
-                await loadGlobalData();
-                updateStatus('Datos actualizados', 'connected');
-                alert('✅ Datos refrescados correctamente');
-            } catch (error) {
-                updateStatus('Error al refrescar', 'error');
-                alert('⌫ Error al refrescar los datos. Verifica que hay datos cargados.');
-            }
-        }
-
-        async function exportData() {
-            try {
-                if (!globalData) {
-                    alert('No hay datos para exportar');
-                    return;
-                }
-                
-                // Crear resumen para exportar
-                const exportSummary = {
-                    fecha_exportacion: new Date().toISOString(),
-                    resumen: {
-                        total_registros: globalData.total_registros,
-                        indicadores_unicos: globalData.indicadores_unicos,
-                        localidades: globalData.localidades.length,
-                        dimensiones: globalData.dimensiones.length
-                    },
-                    estadisticas_por_localidad: globalData.estadisticas_por_localidad,
-                    estadisticas_por_indicador: globalData.estadisticas_por_indicador.slice(0, 50), // Limitar para tamaño
-                    estadisticas_por_dimension: globalData.estadisticas_por_dimension
-                };
-                
-                const dataStr = JSON.stringify(exportSummary, null, 2);
-                const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `resumen_indicadores_${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-                
-                alert('✅ Resumen exportado correctamente');
-                
-            } catch (error) {
-                console.error('Error exportando:', error);
-                alert('Error al exportar datos');
-            }
-        }
-
-        function showTab(tabName) {
-            // Ocultar todas las pestañas
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Desactivar todos los botones
-            document.querySelectorAll('.tab').forEach(button => {
-                button.classList.remove('active');
-            });
-            
-            // Mostrar pestaña seleccionada
-            document.getElementById(tabName).classList.add('active');
-            
-            // Activar botón correspondiente
-            event.target.classList.add('active');
-        }
-
-        function updateStatus(message, status) {
-            const indicator = document.getElementById('statusIndicator');
-            const statusText = document.getElementById('connectionStatus');
-            
-            indicator.className = `status-indicator status-${status}`;
-            statusText.textContent = message;
-        }
-
-        function showLoading(containerId, message) {
-            document.getElementById(containerId).innerHTML = 
-                `<div class="loading">${message}</div>`;
-        }
-
-        function showError(containerId, message) {
-            document.getElementById(containerId).innerHTML = 
-                `<div class="error">⌫ ${message}</div>`;
-        }
-
-        function showSuccess(containerId, message) {
-            document.getElementById(containerId).innerHTML = 
-                `<div class="success">${message}</div>`;
-        }
-    </script>
-</body>
-</html>
+from fastapi import FastAPI, HTTPException, UploadFile, File, Query, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Index, func
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
+import pandas as pd
+import numpy as np
+import json
+import io
+import os
+from datetime import datetime
+import logging
+from scipy import stats
+import warnings
+warnings.filterwarnings('ignore')
+
+# Configuración
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///fecundidad_temprana.db")
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+engine = create_engine(DATABASE_URL, echo=False)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# Modelo de datos optimizado para tu estructura Excel
+class IndicadorFecundidad(Base):
+    __tablename__ = "indicadores_fecundidad"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    archivo_hash = Column(String, index=True)
+    indicador_nombre = Column(String, index=True, nullable=False)
+    dimension = Column(String)
+    unidad_medida = Column(String, nullable=False)
+    tipo_medida = Column(String)
+    valor = Column(Float, nullable=False)
+    nivel_territorial = Column(String, index=True, nullable=False)
+    id_localidad = Column(Integer, index=True)
+    nombre_localidad = Column(String, index=True, nullable=False)
+    id_upz = Column(Integer, index=True)
+    nombre_upz = Column(String, index=True)
+    area_geografica = Column(String)
+    año_inicio = Column(Integer)
+    periodicidad = Column(String)
+    poblacion_base = Column(String)
+    semaforo = Column(String)
+    grupo_etario_asociado = Column(String, index=True)
+    sexo = Column(String)
+    tipo_unidad = Column(String)
+    observacion = Column(String)
+    fuente = Column(String)
+    url_fuente = Column(String)
+    fecha_carga = Column(DateTime, default=datetime.now)
+    
+    __table_args__ = (
+        Index('idx_localidad_indicador', 'nombre_localidad', 'indicador_nombre'),
+        Index('idx_upz_grupo', 'nombre_upz', 'grupo_etario_asociado'),
+        Index('idx_nivel_año', 'nivel_territorial', 'año_inicio'),
+    )
+
+# Modelos Pydantic
+class IndicadorResponse(BaseModel):
+    id: int
+    indicador_nombre: str
+    nombre_localidad: str
+    nombre_upz: Optional[str]
+    nivel_territorial: str
+    valor: float
+    unidad_medida: str
+    grupo_etario_asociado: Optional[str]
+    semaforo: Optional[str]
+
+class EstadisticasResponse(BaseModel):
+    total_registros: int
+    localidades_unicas: int
+    upzs_unicas: int
+    indicadores_unicos: int
+    promedio_10_14: float
+    promedio_15_19: float
+    localidad_mayor_riesgo: str
+    localidad_menor_riesgo: str
+    años_disponibles: List[int]
+
+Base.metadata.create_all(bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+app = FastAPI(
+    title="API Determinantes de Fecundidad Temprana - Bogotá D.C.",
+    description="API especializada para análisis de fecundidad temprana con datos oficiales",
+    version="2.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Funciones auxiliares
+def extraer_grupo_edad(indicador_nombre: str, grupo_etario: str) -> str:
+    """Extrae grupo de edad del indicador"""
+    indicador_lower = indicador_nombre.lower() if indicador_nombre else ""
+    grupo_lower = grupo_etario.lower() if grupo_etario else ""
+    
+    if any(x in indicador_lower for x in ["10", "14"]) or any(x in grupo_lower for x in ["10", "14"]):
+        return "10-14"
+    elif any(x in indicador_lower for x in ["15", "19"]) or any(x in grupo_lower for x in ["15", "19"]):
+        return "15-19"
+    return "15-19"  # Por defecto
+
+def calcular_nivel_riesgo(valor: float, grupo_edad: str) -> str:
+    """Calcula nivel de riesgo según estándares epidemiológicos"""
+    if grupo_edad == "10-14":
+        if valor >= 5.0: return "CRÍTICO"
+        elif valor >= 2.0: return "ALTO"
+        elif valor >= 0.5: return "MODERADO"
+        else: return "BAJO"
+    else:  # 15-19
+        if valor >= 80.0: return "CRÍTICO"
+        elif valor >= 60.0: return "ALTO"
+        elif valor >= 40.0: return "MODERADO"
+        else: return "BAJO"
+
+@app.get("/", response_class=HTMLResponse)
+async def dashboard():
+    """Servir dashboard principal"""
+    try:
+        with open("dashboard_compatible.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        return HTMLResponse(content="""
+        <h1>🚀 API Fecundidad Temprana</h1>
+        <p>Dashboard en desarrollo. Endpoints disponibles:</p>
+        <ul>
+            <li><a href="/docs">/docs - Documentación interactiva</a></li>
+            <li><a href="/estadisticas/generales">/estadisticas/generales</a></li>
+            <li><a href="/datos/localidades">/datos/localidades</a></li>
+        </ul>
+        """)
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "API Fecundidad Temprana"}
+
+@app.post("/upload/excel")
+async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Cargar datos desde archivo Excel con estructura específica"""
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Formato no válido. Use archivos Excel (.xlsx, .xls)")
+    
+    try:
+        contents = await file.read()
+        df = pd.read_excel(io.BytesIO(contents), sheet_name=0)  # Solo primera hoja
+        
+        logger.info(f"Archivo cargado: {len(df)} filas, {len(df.columns)} columnas")
+        
+        # Limpiar datos existentes
+        db.query(IndicadorFecundidad).delete()
+        
+        registros_cargados = 0
+        errores = 0
+        
+        for _, row in df.iterrows():
+            try:
+                # Filtrar solo indicadores de fecundidad temprana
+                indicador = str(row.get('Indicador_Nombre', '')).lower()
+                if 'fecundidad' not in indicador:
+                    continue
+                
+                registro = IndicadorFecundidad(
+                    archivo_hash=str(row.get('archivo_hash', '')),
+                    indicador_nombre=str(row.get('Indicador_Nombre', '')).strip(),
+                    dimension=str(row.get('Dimensión', '')),
+                    unidad_medida=str(row.get('Unidad_Medida', '')),
+                    tipo_medida=str(row.get('Tipo_Medida', '')),
+                    valor=float(row.get('Valor', 0)) if pd.notna(row.get('Valor')) else 0.0,
+                    nivel_territorial=str(row.get('Nivel_Territorial', '')).upper(),
+                    id_localidad=int(row.get('ID Localidad', 0)) if pd.notna(row.get('ID Localidad')) else None,
+                    nombre_localidad=str(row.get('Nombre Localidad', '')).strip(),
+                    id_upz=int(row.get('ID_UPZ', 0)) if pd.notna(row.get('ID_UPZ')) else None,
+                    nombre_upz=str(row.get('Nombre_UPZ', '')).strip() if pd.notna(row.get('Nombre_UPZ')) else None,
+                    area_geografica=str(row.get('Área Geográfica', '')),
+                    año_inicio=int(row.get('Año_Inicio', 0)) if pd.notna(row.get('Año_Inicio')) else None,
+                    periodicidad=str(row.get('Periodicidad', '')),
+                    poblacion_base=str(row.get('Poblacion Base', '')),
+                    semaforo=str(row.get('Semaforo', '')),
+                    grupo_etario_asociado=str(row.get('Grupo Etario Asociado', '')),
+                    sexo=str(row.get('Sexo', '')),
+                    tipo_unidad=str(row.get('Tipo de Unidad', '')),
+                    observacion=str(row.get('Observación', '')),
+                    fuente=str(row.get('Fuente', '')),
+                    url_fuente=str(row.get('URL_Fuente (Opcional)', ''))
+                )
+                
+                db.add(registro)
+                registros_cargados += 1
+                
+            except Exception as e:
+                errores += 1
+                logger.warning(f"Error en fila: {e}")
+                continue
+        
+        db.commit()
+        
+        return {
+            "status": "success",
+            "mensaje": "Datos de fecundidad temprana cargados exitosamente",
+            "registros_cargados": registros_cargados,
+            "total_filas_procesadas": len(df),
+            "errores": errores
+        }
+        
+    except Exception as e:
+        logger.error(f"Error cargando archivo: {e}")
+        raise HTTPException(status_code=500, detail=f"Error procesando archivo: {str(e)}")
+
+@app.get("/estadisticas/generales")
+async def estadisticas_generales(db: Session = Depends(get_db)):
+    """Estadísticas generales del sistema"""
+    try:
+        total_registros = db.query(IndicadorFecundidad).count()
+        
+        if total_registros == 0:
+            return {
+                "total_registros": 0,
+                "localidades_unicas": 0,
+                "upzs_unicas": 0,
+                "indicadores_unicos": 0,
+                "promedio_10_14": 0.0,
+                "promedio_15_19": 0.0,
+                "localidad_mayor_riesgo": "Sin datos",
+                "localidad_menor_riesgo": "Sin datos",
+                "años_disponibles": [],
+                "mensaje": "No hay datos cargados. Por favor, carga un archivo Excel."
+            }
+        
+        localidades = db.query(IndicadorFecundidad.nombre_localidad).distinct().count()
+        upzs = db.query(IndicadorFecundidad.nombre_upz).filter(IndicadorFecundidad.nombre_upz.isnot(None)).distinct().count()
+        indicadores = db.query(IndicadorFecundidad.indicador_nombre).distinct().count()
+        
+        # Promedios por grupo de edad (usando el indicador)
+        registros_10_14 = db.query(IndicadorFecundidad).filter(
+            IndicadorFecundidad.indicador_nombre.ilike("%10%") & 
+            IndicadorFecundidad.indicador_nombre.ilike("%14%")
+        ).all()
+        
+        registros_15_19 = db.query(IndicadorFecundidad).filter(
+            IndicadorFecundidad.indicador_nombre.ilike("%15%") & 
+            IndicadorFecundidad.indicador_nombre.ilike("%19%")
+        ).all()
+        
+        prom_10_14 = np.mean([r.valor for r in registros_10_14]) if registros_10_14 else 0.0
+        prom_15_19 = np.mean([r.valor for r in registros_15_19]) if registros_15_19 else 0.0
+        
+        # Localidades con mayor y menor riesgo
+        localidades_riesgo = db.query(
+            IndicadorFecundidad.nombre_localidad,
+            func.avg(IndicadorFecundidad.valor).label('promedio')
+        ).group_by(IndicadorFecundidad.nombre_localidad).all()
+        
+        if localidades_riesgo:
+            mayor_riesgo = max(localidades_riesgo, key=lambda x: x.promedio).nombre_localidad
+            menor_riesgo = min(localidades_riesgo, key=lambda x: x.promedio).nombre_localidad
+        else:
+            mayor_riesgo = menor_riesgo = "Sin datos"
+        
+        # Años disponibles
+        años = db.query(IndicadorFecundidad.año_inicio).filter(
+            IndicadorFecundidad.año_inicio.isnot(None)
+        ).distinct().all()
+        años_disponibles = sorted([a.año_inicio for a in años if a.año_inicio])
+        
+        return {
+            "total_registros": total_registros,
+            "localidades_unicas": localidades,
+            "upzs_unicas": upzs,
+            "indicadores_unicos": indicadores,
+            "promedio_10_14": round(float(prom_10_14), 2),
+            "promedio_15_19": round(float(prom_15_19), 2),
+            "localidad_mayor_riesgo": mayor_riesgo,
+            "localidad_menor_riesgo": menor_riesgo,
+            "años_disponibles": años_disponibles
+        }
+        
+    except Exception as e:
+        logger.error(f"Error calculando estadísticas: {e}")
+        return {
+            "total_registros": 0,
+            "localidades_unicas": 0,
+            "upzs_unicas": 0,
+            "indicadores_unicos": 0,
+            "promedio_10_14": 0.0,
+            "promedio_15_19": 0.0,
+            "localidad_mayor_riesgo": "Error",
+            "localidad_menor_riesgo": "Error",
+            "años_disponibles": [],
+            "error": str(e)
+        }
+
+@app.get("/datos/localidades")
+async def datos_por_localidades(
+    grupo_edad: Optional[str] = Query(None, description="10-14 o 15-19"),
+    año: Optional[int] = Query(None, description="Filtrar por año"),
+    db: Session = Depends(get_db)
+):
+    """Datos agregados por localidades"""
+    try:
+        query = db.query(IndicadorFecundidad)
+        
+        # Filtros
+        if grupo_edad == "10-14":
+            query = query.filter(
+                IndicadorFecundidad.indicador_nombre.ilike("%10%") & 
+                IndicadorFecundidad.indicador_nombre.ilike("%14%")
+            )
+        elif grupo_edad == "15-19":
+            query = query.filter(
+                IndicadorFecundidad.indicador_nombre.ilike("%15%") & 
+                IndicadorFecundidad.indicador_nombre.ilike("%19%")
+            )
+        
+        if año:
+            query = query.filter(IndicadorFecundidad.año_inicio == año)
+        
+        resultados = query.all()
+        
+        # Agrupar por localidad
+        localidades_data = {}
+        for r in resultados:
+            localidad = r.nombre_localidad
+            if localidad not in localidades_data:
+                localidades_data[localidad] = []
+            localidades_data[localidad].append(r.valor)
+        
+        datos = []
+        for localidad, valores in localidades_data.items():
+            if valores:
+                promedio = np.mean(valores)
+                grupo_detectado = extraer_grupo_edad(
+                    resultados[0].indicador_nombre if resultados else "",
+                    resultados[0].grupo_etario_asociado if resultados else ""
+                )
+                nivel_riesgo = calcular_nivel_riesgo(promedio, grupo_detectado)
+                
+                datos.append({
+                    "localidad": localidad,
+                    "promedio": round(promedio, 2),
+                    "total_registros": len(valores),
+                    "maximo": round(max(valores), 2),
+                    "minimo": round(min(valores), 2),
+                    "nivel_riesgo": nivel_riesgo,
+                    "grupo_edad": grupo_detectado
+                })
+        
+        datos.sort(key=lambda x: x["promedio"], reverse=True)
+        return {"datos": datos, "total": len(datos)}
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo datos por localidades: {e}")
+        raise HTTPException(status_code=500, detail="Error obteniendo datos")
+
+@app.get("/datos/upz")
+async def datos_por_upz(
+    localidad: Optional[str] = Query(None, description="Filtrar por localidad"),
+    grupo_edad: Optional[str] = Query(None, description="10-14 o 15-19"),
+    db: Session = Depends(get_db)
+):
+    """Datos agregados por UPZ"""
+    try:
+        query = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.nombre_upz.isnot(None))
+        
+        if localidad:
+            query = query.filter(IndicadorFecundidad.nombre_localidad == localidad)
+        
+        if grupo_edad == "10-14":
+            query = query.filter(
+                IndicadorFecundidad.indicador_nombre.contains("10") & 
+                IndicadorFecundidad.indicador_nombre.contains("14")
+            )
+        elif grupo_edad == "15-19":
+            query = query.filter(
+                IndicadorFecundidad.indicador_nombre.contains("15") & 
+                IndicadorFecundidad.indicador_nombre.contains("19")
+            )
+        
+        resultados = query.all()
+        
+        # Agrupar por UPZ
+        upz_data = {}
+        for r in resultados:
+            key = (r.nombre_localidad, r.nombre_upz)
+            if key not in upz_data:
+                upz_data[key] = []
+            upz_data[key].append(r.valor)
+        
+        datos = []
+        for (localidad, upz), valores in upz_data.items():
+            if valores:
+                promedio = np.mean(valores)
+                grupo_detectado = extraer_grupo_edad(
+                    resultados[0].indicador_nombre if resultados else "",
+                    resultados[0].grupo_etario_asociado if resultados else ""
+                )
+                nivel_riesgo = calcular_nivel_riesgo(promedio, grupo_detectado)
+                
+                datos.append({
+                    "localidad": localidad,
+                    "upz": upz,
+                    "promedio": round(promedio, 2),
+                    "total_registros": len(valores),
+                    "maximo": round(max(valores), 2),
+                    "minimo": round(min(valores), 2),
+                    "nivel_riesgo": nivel_riesgo,
+                    "grupo_edad": grupo_detectado
+                })
+        
+        datos.sort(key=lambda x: x["promedio"], reverse=True)
+        return {"datos": datos, "total": len(datos)}
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo datos por UPZ: {e}")
+        raise HTTPException(status_code=500, detail="Error obteniendo datos")
+
+@app.get("/analisis/correlaciones")
+async def analisis_correlaciones(
+    nivel: str = Query("LOCALIDAD", description="LOCALIDAD o UPZ"),
+    db: Session = Depends(get_db)
+):
+    """Análisis de correlaciones entre grupos de edad"""
+    try:
+        # Obtener datos de ambos grupos de edad
+        datos_10_14 = db.query(IndicadorFecundidad).filter(
+            IndicadorFecundidad.indicador_nombre.ilike("%10%") & 
+            IndicadorFecundidad.indicador_nombre.ilike("%14%") &
+            IndicadorFecundidad.nivel_territorial == nivel.upper()
+        ).all()
+        
+        datos_15_19 = db.query(IndicadorFecundidad).filter(
+            IndicadorFecundidad.indicador_nombre.ilike("%15%") & 
+            IndicadorFecundidad.indicador_nombre.ilike("%19%") &
+            IndicadorFecundidad.nivel_territorial == nivel.upper()
+        ).all()
+        
+        if not datos_10_14 or not datos_15_19:
+            return {"mensaje": "Datos insuficientes para análisis de correlación"}
+        
+        # Crear matrices alineadas por territorio
+        territorio_map_10_14 = {}
+        territorio_map_15_19 = {}
+        
+        for d in datos_10_14:
+            key = d.nombre_localidad if nivel == "LOCALIDAD" else d.nombre_upz
+            if key not in territorio_map_10_14:
+                territorio_map_10_14[key] = []
+            territorio_map_10_14[key].append(d.valor)
+        
+        for d in datos_15_19:
+            key = d.nombre_localidad if nivel == "LOCALIDAD" else d.nombre_upz
+            if key not in territorio_map_15_19:
+                territorio_map_15_19[key] = []
+            territorio_map_15_19[key].append(d.valor)
+        
+        # Obtener territorios comunes
+        territorios_comunes = set(territorio_map_10_14.keys()) & set(territorio_map_15_19.keys())
+        
+        if len(territorios_comunes) < 3:
+            return {"mensaje": "Datos insuficientes para correlación estadísticamente válida"}
+        
+        valores_10_14 = [np.mean(territorio_map_10_14[t]) for t in territorios_comunes]
+        valores_15_19 = [np.mean(territorio_map_15_19[t]) for t in territorios_comunes]
+        
+        # Calcular correlaciones
+        r_pearson, p_pearson = stats.pearsonr(valores_10_14, valores_15_19)
+        r_spearman, p_spearman = stats.spearmanr(valores_10_14, valores_15_19)
+        
+        def interpretar_correlacion(r):
+            abs_r = abs(r)
+            if abs_r >= 0.8: return "Muy fuerte"
+            elif abs_r >= 0.6: return "Fuerte"
+            elif abs_r >= 0.4: return "Moderada"
+            elif abs_r >= 0.2: return "Débil"
+            else: return "Muy débil"
+        
+        return {
+            "nivel_territorial": nivel,
+            "territorios_analizados": len(territorios_comunes),
+            "correlacion_pearson": round(r_pearson, 3),
+            "significancia_pearson": round(p_pearson, 4),
+            "correlacion_spearman": round(r_spearman, 3),
+            "significancia_spearman": round(p_spearman, 4),
+            "interpretacion_pearson": interpretar_correlacion(r_pearson),
+            "interpretacion_spearman": interpretar_correlacion(r_spearman),
+            "estadisticamente_significativo": p_pearson < 0.05,
+            "datos_utilizados": {
+                "promedio_10_14": round(np.mean(valores_10_14), 2),
+                "promedio_15_19": round(np.mean(valores_15_19), 2),
+                "territoos_comunes": list(territorios_comunes)[:10]  # Primeros 10
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error en análisis de correlaciones: {e}")
+        raise HTTPException(status_code=500, detail="Error en análisis de correlaciones")
+
+@app.get("/analisis/ranking")
+async def ranking_territorial(
+    grupo_edad: str = Query("15-19", description="10-14 o 15-19"),
+    nivel: str = Query("LOCALIDAD", description="LOCALIDAD o UPZ"),
+    top: int = Query(10, description="Número de resultados"),
+    db: Session = Depends(get_db)
+):
+    """Ranking de territorios por nivel de riesgo"""
+    try:
+        query = db.query(IndicadorFecundidad).filter(
+            IndicadorFecundidad.nivel_territorial == nivel.upper()
+        )
+        
+        if grupo_edad == "10-14":
+            query = query.filter(
+                IndicadorFecundidad.indicador_nombre.ilike("%10%") & 
+                IndicadorFecundidad.indicador_nombre.ilike("%14%")
+            )
+        else:
+            query = query.filter(
+                IndicadorFecundidad.indicador_nombre.ilike("%15%") & 
+                IndicadorFecundidad.indicador_nombre.ilike("%19%")
+            )
+        
+        resultados = query.all()
+        
+        # Agrupar por territorio
+        territorio_data = {}
+        for r in resultados:
+            territorio = r.nombre_localidad if nivel == "LOCALIDAD" else r.nombre_upz
+            if territorio not in territorio_data:
+                territorio_data[territorio] = []
+            territorio_data[territorio].append(r.valor)
+        
+        # Calcular estadísticas por territorio
+        ranking = []
+        for territorio, valores in territorio_data.items():
+            if valores:
+                promedio = np.mean(valores)
+                nivel_riesgo = calcular_nivel_riesgo(promedio, grupo_edad)
+                
+                ranking.append({
+                    "territorio": territorio,
+                    "promedio": round(promedio, 2),
+                    "nivel_riesgo": nivel_riesgo,
+                    "total_registros": len(valores),
+                    "desviacion_estandar": round(np.std(valores), 2),
+                    "coeficiente_variacion": round((np.std(valores) / promedio) * 100, 2) if promedio > 0 else 0
+                })
+        
+        # Ordenar por promedio descendente
+        ranking.sort(key=lambda x: x["promedio"], reverse=True)
+        
+        return {
+            "grupo_edad": grupo_edad,
+            "nivel_territorial": nivel,
+            "total_territorios": len(ranking),
+            "ranking_mayor_riesgo": ranking[:top],
+            "ranking_menor_riesgo": ranking[-top:][::-1],
+            "resumen": {
+                "promedio_general": round(np.mean([r["promedio"] for r in ranking]), 2),
+                "territorios_criticos": len([r for r in ranking if r["nivel_riesgo"] == "CRÍTICO"]),
+                "territorios_altos": len([r for r in ranking if r["nivel_riesgo"] == "ALTO"]),
+                "territorios_moderados": len([r for r in ranking if r["nivel_riesgo"] == "MODERADO"]),
+                "territorios_bajos": len([r for r in ranking if r["nivel_riesgo"] == "BAJO"])
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error en ranking territorial: {e}")
+        raise HTTPException(status_code=500, detail="Error generando ranking")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
