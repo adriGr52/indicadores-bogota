@@ -10,7 +10,7 @@ import io, os, logging, re
 from datetime import datetime
 from scipy import stats
 
-# Configurar logging detallado
+# Configurar logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -19,12 +19,12 @@ logger = logging.getLogger(__name__)
 
 # Configuración de base de datos
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///fecundidad_temprana.db")
-logger.info(f"Using database URL: {DATABASE_URL[:50]}...")
+logger.info(f"Using database: {DATABASE_URL[:50]}...")
 
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Configuración del engine con manejo de errores
+# Configuración del engine con fallback
 try:
     if "postgresql://" in DATABASE_URL:
         engine = create_engine(
@@ -87,16 +87,13 @@ def get_db():
     finally:
         db.close()
 
-# Crear aplicación FastAPI
+# Crear la aplicación FastAPI
 app = FastAPI(
     title="Exploración Determinantes Fecundidad Temprana - Bogotá D.C.",
     description="Análisis integral por territorio, periodo y cohortes para la exploración de determinantes de fecundidad temprana en Bogotá D.C.",
-    version="4.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    version="4.0.0"
 )
 
-# CORS más permisivo para debugging
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -105,7 +102,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Event handlers
+# Crear tablas al startup
 @app.on_event("startup")
 async def startup_event():
     try:
@@ -114,7 +111,7 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Could not create tables on startup: {e}")
 
-# Funciones auxiliares mejoradas
+# Funciones auxiliares
 def calcular_indice_theil(valores: List[float], poblaciones: Optional[List[float]] = None) -> float:
     """Calcula el índice de Theil para medir desigualdad territorial"""
     if not valores or len(valores) < 2:
@@ -173,45 +170,31 @@ def extraer_grupo_edad(indicador_nombre: Optional[str], grupo_etario: Optional[s
 def is_nan_like(x) -> bool:
     if x is None:
         return True
-    if pd.isna(x):
+    if isinstance(x, float) and (np.isnan(x) or np.isinf(x)):
         return True
-    if isinstance(x, str):
-        s = x.strip().lower()
-        return s in {"", "nan", "nd", "no_data", "none", "null", "n/a", "#n/a"}
-    if isinstance(x, (int, float)):
-        return pd.isna(x) or np.isinf(x)
-    return False
+    s = str(x).strip().lower()
+    return s in {"", "nan", "nd", "no_data", "none", "null"}
 
 def clean_str(x, default=None):
-    if is_nan_like(x):
-        return default
-    return str(x).strip() if str(x).strip() else default
+    return None if is_nan_like(x) else str(x).strip()
 
 def clean_int(x, default=None):
     if is_nan_like(x):
         return default
     try:
-        if isinstance(x, str):
-            x = x.strip()
-            if not x:
-                return default
         return int(float(x))
-    except (ValueError, TypeError):
+    except Exception:
         return default
 
 def clean_float(x, allow_none=True, default=None):
     if is_nan_like(x):
         return None if allow_none else (default if default is not None else 0.0)
     try:
-        if isinstance(x, str):
-            x = x.strip()
-            if not x:
-                return None if allow_none else (default if default is not None else 0.0)
         v = float(x)
-        if pd.isna(v) or np.isinf(v):
+        if np.isnan(v) or np.isinf(v):
             return None if allow_none else (default if default is not None else 0.0)
         return v
-    except (ValueError, TypeError):
+    except Exception:
         return None if allow_none else (default if default is not None else 0.0)
 
 def terr_key(rec, nivel: str) -> str:
@@ -229,90 +212,8 @@ def filtrar_por_cohorte(rows: List[IndicadorFecundidad], cohorte: Optional[str])
             out.append(r)
     return out
 
-# Funciones para normalizar columnas
-def normalize_column_names(df):
-    """Normaliza los nombres de columnas del DataFrame"""
-    # Mapeo de posibles nombres de columnas
-    column_mapping = {
-        # Variaciones de encoding
-        'AÃ±o_Inicio': 'Año_Inicio',
-        'aÃ±o_inicio': 'Año_Inicio',
-        'Año_inicio': 'Año_Inicio',
-        'año_inicio': 'Año_Inicio',
-        'YEAR': 'Año_Inicio',
-        'Year': 'Año_Inicio',
-        'year': 'Año_Inicio',
-        
-        # Variaciones de Dimensión
-        'DimensiÃ³n': 'Dimensión',
-        'dimension': 'Dimensión',
-        'DIMENSION': 'Dimensión',
-        
-        # Variaciones de Área Geográfica
-        'Ãrea GeogrÃ¡fica': 'Área Geográfica',
-        'Area Geografica': 'Área Geográfica',
-        'area_geografica': 'Área Geográfica',
-        
-        # Observaciones
-        'ObservaciÃ³n': 'Observación',
-        'observacion': 'Observación',
-        'Tipo de Unidad ObservaciÃ³n': 'Observación',
-        'Tipo de Unidad Observación': 'Observación',
-        
-        # Otros campos comunes
-        'INDICADOR_NOMBRE': 'Indicador_Nombre',
-        'Indicador_nombre': 'Indicador_Nombre',
-        'indicador_nombre': 'Indicador_Nombre',
-        'Indicador': 'Indicador_Nombre',
-        'INDICADOR': 'Indicador_Nombre',
-        
-        'VALOR': 'Valor',
-        'valor': 'Valor',
-        'Value': 'Valor',
-        'VALUE': 'Valor',
-        
-        'UNIDAD_MEDIDA': 'Unidad_Medida',
-        'Unidad_medida': 'Unidad_Medida',
-        'unidad_medida': 'Unidad_Medida',
-        'Unidad': 'Unidad_Medida',
-        'Unit': 'Unidad_Medida',
-    }
-    
-    # Aplicar mapeo
-    df_renamed = df.rename(columns=column_mapping)
-    
-    # Log de columnas encontradas
-    logger.info(f"Columnas originales: {list(df.columns)}")
-    logger.info(f"Columnas después de normalización: {list(df_renamed.columns)}")
-    
-    return df_renamed
+# ---------------- Rutas principales ----------------
 
-def detect_required_columns(df):
-    """Detecta y valida las columnas requeridas"""
-    required_mappings = {
-        'indicador': ['Indicador_Nombre', 'Indicador', 'INDICADOR', 'indicador_nombre', 'Nombre_Indicador'],
-        'valor': ['Valor', 'VALUE', 'valor', 'Value', 'Dato', 'Data'],
-        'localidad': ['Nombre Localidad', 'Nombre_Localidad', 'Localidad', 'LOCALIDAD', 'nombre_localidad'],
-    }
-    
-    found_columns = {}
-    
-    for field, possible_names in required_mappings.items():
-        found = None
-        for name in possible_names:
-            if name in df.columns:
-                found = name
-                break
-        
-        if found:
-            found_columns[field] = found
-            logger.info(f"Campo '{field}' detectado como '{found}'")
-        else:
-            logger.warning(f"Campo requerido '{field}' no encontrado. Columnas disponibles: {list(df.columns)}")
-    
-    return found_columns
-
-# Rutas principales
 @app.get("/health")
 async def health():
     """Health check optimizado para Railway"""
@@ -344,207 +245,185 @@ async def health():
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    """Página principal"""
-    return HTMLResponse("""
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exploración Determinantes Fecundidad Temprana - Bogotá</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            min-height: 100vh; color: #333; padding: 2rem;
-        }
-        .container { 
-            max-width: 900px; margin: 0 auto; background: white; padding: 3rem; 
-            border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
-        }
-        h1 { color: #1e3a8a; margin-bottom: 1rem; font-size: 2.5rem; text-align: center; }
-        .subtitle { text-align: center; color: #64748b; margin-bottom: 2rem; font-size: 1.2rem; }
-        .status { 
-            background: #dcfce7; border: 2px solid #16a34a; padding: 1rem; 
-            border-radius: 12px; margin: 2rem 0; text-align: center; 
-        }
-        .grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-            gap: 1rem; margin: 2rem 0; 
-        }
-        .card { 
-            background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; 
-            border-radius: 12px; text-align: center; 
-        }
-        .links { 
-            display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 2rem 0; 
-        }
-        .btn { 
-            display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; 
-            background: #2563eb; color: white; text-decoration: none; border-radius: 8px; 
-            transition: all 0.2s; font-weight: 500; 
-        }
-        .btn:hover { background: #1d4ed8; transform: translateY(-2px); }
-        .feature { margin: 1rem 0; padding: 1rem; background: #f1f5f9; border-radius: 8px; }
-        ul { text-align: left; margin: 1rem 0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🏛️ Exploración Determinantes Fecundidad Temprana</h1>
-        <p class="subtitle">Bogotá D.C. - Análisis Territorial Integral</p>
-        
-        <div class="status">
-            <strong>✅ API Funcionando</strong> - Sistema listo para análisis
-        </div>
+    """Página principal con dashboard integrado"""
+    try:
+        with open("dashboard_compatible.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        logger.info("Dashboard HTML not found, serving basic welcome page")
+        return HTMLResponse("""
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Exploración Determinantes Fecundidad Temprana - Bogotá</title>
+            <style>
+                body { 
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
+                    margin: 0; padding: 2rem; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    min-height: 100vh; color: #333; 
+                }
+                .container { 
+                    max-width: 900px; margin: 0 auto; background: white; padding: 3rem; 
+                    border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
+                }
+                h1 { 
+                    color: #1e3a8a; margin-bottom: 1rem; font-size: 2.5rem; text-align: center; 
+                }
+                .subtitle { 
+                    text-align: center; color: #64748b; margin-bottom: 2rem; font-size: 1.2rem; 
+                }
+                .status { 
+                    background: #dcfce7; border: 2px solid #16a34a; padding: 1rem; 
+                    border-radius: 12px; margin: 2rem 0; text-align: center; 
+                }
+                .grid { 
+                    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+                    gap: 1rem; margin: 2rem 0; 
+                }
+                .card { 
+                    background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; 
+                    border-radius: 12px; text-align: center; 
+                }
+                .links { 
+                    display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 2rem 0; 
+                }
+                .btn { 
+                    display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; 
+                    background: #2563eb; color: white; text-decoration: none; border-radius: 8px; 
+                    transition: all 0.2s; font-weight: 500; 
+                }
+                .btn:hover { 
+                    background: #1d4ed8; transform: translateY(-2px); 
+                }
+                .feature { 
+                    margin: 1rem 0; padding: 1rem; background: #f1f5f9; border-radius: 8px; 
+                }
+                ul { 
+                    text-align: left; margin: 1rem 0; 
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🏛️ Exploración Determinantes Fecundidad Temprana</h1>
+                <p class="subtitle">Bogotá D.C. - Análisis Territorial Integral</p>
+                
+                <div class="status">
+                    <strong>✅ API Funcionando</strong> - Sistema listo para análisis
+                </div>
 
-        <div class="grid">
-            <div class="card">
-                <h3>📊 Caracterización</h3>
-                <p>Análisis territorial por indicadores y cohortes</p>
-            </div>
-            <div class="card">
-                <h3>🔗 Asociación</h3>
-                <p>Correlaciones entre variables</p>
-            </div>
-            <div class="card">
-                <h3>📏 Desigualdad</h3>
-                <p>Índice de Theil territorial</p>
-            </div>
-            <div class="card">
-                <h3>📈 Tendencias</h3>
-                <p>Series temporales por territorio</p>
-            </div>
-        </div>
+                <div class="grid">
+                    <div class="card">
+                        <h3>📊 Caracterización</h3>
+                        <p>Análisis territorial por indicadores y cohortes</p>
+                    </div>
+                    <div class="card">
+                        <h3>🔗 Asociación</h3>
+                        <p>Correlaciones entre variables</p>
+                    </div>
+                    <div class="card">
+                        <h3>📏 Desigualdad</h3>
+                        <p>Índice de Theil territorial</p>
+                    </div>
+                    <div class="card">
+                        <h3>📈 Tendencias</h3>
+                        <p>Series temporales por territorio</p>
+                    </div>
+                </div>
 
-        <div class="links">
-            <a href="/docs" class="btn">📚 Documentación API</a>
-            <a href="/health" class="btn">💚 Estado Sistema</a>
-            <a href="/metadatos" class="btn">📋 Metadatos</a>
-        </div>
+                <div class="links">
+                    <a href="/docs" class="btn">📚 Documentación API</a>
+                    <a href="/health" class="btn">💚 Estado Sistema</a>
+                    <a href="/metadatos" class="btn">📋 Metadatos</a>
+                </div>
 
-        <div class="feature">
-            <h3>🎯 Funcionalidades Principales</h3>
-            <ul>
-                <li><strong>Carga de datos:</strong> Upload de archivos Excel con validación</li>
-                <li><strong>Análisis territorial:</strong> Localidades y UPZ con estadísticas descriptivas</li>
-                <li><strong>Cohortes específicas:</strong> Análisis para grupos 10-14 y 15-19 años</li>
-                <li><strong>Correlaciones:</strong> Asociación entre indicadores con tests estadísticos</li>
-                <li><strong>Desigualdad:</strong> Medición con índice de Theil</li>
-                <li><strong>Series temporales:</strong> Evolución de indicadores por territorio</li>
-            </ul>
-        </div>
-    </div>
-</body>
-</html>
-    """)
+                <div class="feature">
+                    <h3>🎯 Funcionalidades Principales</h3>
+                    <ul>
+                        <li><strong>Carga de datos:</strong> Upload de archivos Excel con validación</li>
+                        <li><strong>Análisis territorial:</strong> Localidades y UPZ con estadísticas descriptivas</li>
+                        <li><strong>Cohortes específicas:</strong> Análisis para grupos 10-14 y 15-19 años</li>
+                        <li><strong>Correlaciones:</strong> Asociación entre indicadores con tests estadísticos</li>
+                        <li><strong>Desigualdad:</strong> Medición con índice de Theil</li>
+                        <li><strong>Series temporales:</strong> Evolución de indicadores por territorio</li>
+                    </ul>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
+    except Exception as e:
+        logger.error(f"Error serving home page: {e}")
+        return HTMLResponse(f"""
+        <html>
+        <body style="font-family: Arial; padding: 2rem; text-align: center;">
+            <h1>⚠️ Error de Configuración</h1>
+            <p>Error: {str(e)}</p>
+            <p><a href="/docs" style="color: #2563eb;">📚 Ver Documentación API</a></p>
+        </body>
+        </html>
+        """, status_code=500)
 
 @app.post("/upload/excel")
 async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """Carga datos desde archivo Excel con manejo mejorado de errores"""
-    
-    # Validar tipo de archivo
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No se proporcionó un archivo")
-    
-    if not file.filename.lower().endswith(('.xlsx', '.xls')):
-        raise HTTPException(status_code=400, detail=f"Formato no válido: {file.filename}. Use archivos .xlsx o .xls")
+    """Carga datos desde archivo Excel con validación mejorada"""
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Formato no válido. Use archivos .xlsx o .xls")
     
     try:
-        # Leer archivo
         contents = await file.read()
-        logger.info(f"Archivo leído: {file.filename}, tamaño: {len(contents)} bytes")
+        df = pd.read_excel(io.BytesIO(contents), sheet_name=0)
         
-        # Intentar leer con pandas
-        try:
-            df = pd.read_excel(io.BytesIO(contents), sheet_name=0)
-            logger.info(f"Excel procesado: {len(df)} filas, {len(df.columns)} columnas")
-        except Exception as e:
-            logger.error(f"Error leyendo Excel: {e}")
-            raise HTTPException(status_code=400, detail=f"Error leyendo archivo Excel: {str(e)}")
+        logger.info(f"Archivo cargado: {file.filename}, filas: {len(df)}, columnas: {len(df.columns)}")
         
-        # Verificar que no esté vacío
-        if df.empty:
-            raise HTTPException(status_code=400, detail="El archivo Excel está vacío")
+        # Normalización de columnas
+        column_mapping = {
+            'Tipo de Unidad Observación': 'Observación',
+            'Año_Inicio': 'año_inicio',
+            'AÃ±o_Inicio': 'año_inicio'
+        }
         
-        # Normalizar nombres de columnas
-        df = normalize_column_names(df)
-        
-        # Detectar columnas requeridas
-        detected_columns = detect_required_columns(df)
-        
-        # Verificar columnas mínimas requeridas
-        if 'indicador' not in detected_columns:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"No se encontró columna de indicador. Columnas disponibles: {list(df.columns)}"
-            )
-        
-        if 'valor' not in detected_columns:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"No se encontró columna de valor. Columnas disponibles: {list(df.columns)}"
-            )
-        
-        # Mapear columnas detectadas
-        indicador_col = detected_columns['indicador']
-        valor_col = detected_columns['valor']
-        localidad_col = detected_columns.get('localidad', 'Nombre Localidad')
+        for old_col, new_col in column_mapping.items():
+            if old_col in df.columns and new_col not in df.columns:
+                df[new_col] = df[old_col]
         
         # Limpiar tabla existente
-        try:
-            deleted_count = db.query(IndicadorFecundidad).count()
-            db.query(IndicadorFecundidad).delete()
-            logger.info(f"Eliminados {deleted_count} registros anteriores")
-        except Exception as e:
-            logger.error(f"Error limpiando tabla: {e}")
-            # Continuar sin limpiar si hay error
-            deleted_count = 0
+        deleted_count = db.query(IndicadorFecundidad).count()
+        db.query(IndicadorFecundidad).delete()
         
-        registros = 0
-        errores = 0
-        omitidos_sin_valor = 0
-        omitidos_sin_indicador = 0
+        registros, errores, omitidos_sin_valor = 0, 0, 0
         
-        # Procesar cada fila
         for idx, row in df.iterrows():
             try:
-                # Extraer indicador (requerido)
-                indicador_nombre = clean_str(row.get(indicador_col))
+                indicador_nombre = clean_str(row.get('Indicador_Nombre'))
                 if not indicador_nombre:
-                    omitidos_sin_indicador += 1
                     continue
                 
-                # Extraer valor (requerido)
-                valor = clean_float(row.get(valor_col), allow_none=True)
+                valor = clean_float(row.get('Valor'), allow_none=True)
                 if valor is None:
                     omitidos_sin_valor += 1
                     continue
                 
-                # Extraer otros campos con valores por defecto
-                nombre_localidad = clean_str(row.get(localidad_col)) or 'SIN LOCALIDAD'
-                unidad_medida = clean_str(row.get('Unidad_Medida')) or 'N/A'
-                nivel_territorial = (clean_str(row.get('Nivel_Territorial')) or 'LOCALIDAD').upper()
-                
-                # Manejo especial de año
+                # Manejar diferentes formatos de año
                 año_inicio = None
-                for col_año in ['Año_Inicio', 'año_inicio', 'AÃ±o_Inicio', 'Year', 'YEAR']:
-                    if col_año in row:
-                        año_inicio = clean_int(row.get(col_año))
+                for col in ['año_inicio', 'Año_Inicio', 'AÃ±o_Inicio']:
+                    if col in row:
+                        año_inicio = clean_int(row.get(col))
                         break
                 
-                # Crear registro
                 rec = IndicadorFecundidad(
                     archivo_hash=clean_str(row.get('archivo_hash')),
                     indicador_nombre=indicador_nombre,
                     dimension=clean_str(row.get('Dimensión')),
-                    unidad_medida=unidad_medida,
+                    unidad_medida=clean_str(row.get('Unidad_Medida'), default='N/A') or 'N/A',
                     tipo_medida=clean_str(row.get('Tipo_Medida')),
                     valor=valor,
-                    nivel_territorial=nivel_territorial,
+                    nivel_territorial=(clean_str(row.get('Nivel_Territorial')) or 'LOCALIDAD').upper(),
                     id_localidad=clean_int(row.get('ID Localidad')),
-                    nombre_localidad=nombre_localidad,
+                    nombre_localidad=clean_str(row.get('Nombre Localidad')) or 'SIN LOCALIDAD',
                     id_upz=clean_int(row.get('ID_UPZ')),
                     nombre_upz=clean_str(row.get('Nombre_UPZ')),
                     area_geografica=clean_str(row.get('Área Geográfica')),
@@ -559,30 +438,16 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
                     fuente=clean_str(row.get('Fuente')),
                     url_fuente=clean_str(row.get('URL_Fuente (Opcional)'))
                 )
-                
                 db.add(rec)
                 registros += 1
                 
-                # Commit cada 1000 registros para evitar problemas de memoria
-                if registros % 1000 == 0:
-                    db.commit()
-                    logger.info(f"Procesados {registros} registros...")
-                
             except Exception as e:
                 errores += 1
-                logger.warning(f"Error en fila {idx + 1}: {e}")
-                continue
+                logger.warning(f"Error en fila {idx}: {e}")
         
-        # Commit final
-        try:
-            db.commit()
-            logger.info(f"Carga completada: {registros} registros insertados")
-        except Exception as e:
-            logger.error(f"Error en commit final: {e}")
-            db.rollback()
-            raise HTTPException(status_code=500, detail=f"Error guardando datos: {str(e)}")
+        db.commit()
+        logger.info(f"Carga completada: {registros} registros, {errores} errores, {omitidos_sin_valor} omitidos")
         
-        # Respuesta exitosa
         return {
             "status": "success",
             "mensaje": "Carga completada exitosamente",
@@ -590,47 +455,15 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
             "estadisticas": {
                 "registros_anteriores": deleted_count,
                 "registros_cargados": registros,
-                "filas_procesadas": len(df),
-                "omitidos_sin_indicador": omitidos_sin_indicador,
-                "omitidos_sin_valor": omitidos_sin_valor,
-                "errores": errores
-            },
-            "columnas_detectadas": detected_columns,
-            "columnas_disponibles": list(df.columns)
+                "filas_omitidas_sin_valor": omitidos_sin_valor,
+                "errores": errores,
+                "filas_procesadas": len(df)
+            }
         }
         
-    except HTTPException:
-        # Re-raise HTTP exceptions
-        raise
     except Exception as e:
-        logger.exception("Error inesperado procesando archivo")
-        raise HTTPException(status_code=500, detail=f"Error inesperado: {str(e)}")
-
-@app.get("/debug/columns")
-async def debug_columns():
-    """Endpoint para debug - muestra las columnas esperadas"""
-    return {
-        "columnas_requeridas": {
-            "indicador": ["Indicador_Nombre", "Indicador", "INDICADOR", "indicador_nombre"],
-            "valor": ["Valor", "VALUE", "valor", "Value", "Dato"],
-            "localidad": ["Nombre Localidad", "Nombre_Localidad", "Localidad", "LOCALIDAD"]
-        },
-        "columnas_opcionales": {
-            "año": ["Año_Inicio", "año_inicio", "AÃ±o_Inicio", "Year", "YEAR"],
-            "unidad": ["Unidad_Medida", "Unidad", "Unit"],
-            "dimension": ["Dimensión", "DimensiÃ³n", "dimension"],
-            "upz": ["Nombre_UPZ", "UPZ", "upz"],
-            "nivel": ["Nivel_Territorial", "Nivel", "nivel"]
-        },
-        "ejemplo_estructura": {
-            "Indicador_Nombre": "Tasa de Fecundidad",
-            "Valor": 15.5,
-            "Nombre Localidad": "Usaquén",
-            "Unidad_Medida": "Por mil mujeres",
-            "Año_Inicio": 2020,
-            "Grupo Etario Asociado": "15-19"
-        }
-    }
+        logger.exception("Error procesando archivo Excel")
+        raise HTTPException(status_code=500, detail=f"Error procesando archivo: {str(e)}")
 
 @app.get("/metadatos")
 async def metadatos(db: Session = Depends(get_db)):
@@ -652,6 +485,14 @@ async def metadatos(db: Session = Depends(get_db)):
     años = sorted([r[0] for r in db.query(IndicadorFecundidad.año_inicio).filter(
         IndicadorFecundidad.año_inicio.isnot(None)
     ).distinct().all()])
+    
+    # Unidades de medida
+    unidades_medida = {}
+    for indicador in todos_indicadores:
+        unidad = db.query(IndicadorFecundidad.unidad_medida).filter(
+            IndicadorFecundidad.indicador_nombre == indicador
+        ).first()
+        unidades_medida[indicador] = unidad[0] if unidad else "N/A"
     
     return {
         "resumen": {
@@ -675,7 +516,33 @@ async def metadatos(db: Session = Depends(get_db)):
         "temporal": {
             "años": años,
             "cohortes": sorted(list(COHORTES_VALIDAS))
-        }
+        },
+        "unidades_medida": unidades_medida
+    }
+
+@app.get("/estadisticas/generales")
+async def estadisticas_generales(año: Optional[int] = Query(None), db: Session = Depends(get_db)):
+    q = db.query(IndicadorFecundidad)
+    if año is not None:
+        q = q.filter(IndicadorFecundidad.año_inicio == año)
+    filas = q.all()
+    total = len(filas)
+    if total == 0:
+        return {"total_registros": 0}
+    
+    c10 = len([1 for f in filas if extraer_grupo_edad(f.indicador_nombre, f.grupo_etario_asociado) == "10-14"])
+    c15 = len([1 for f in filas if extraer_grupo_edad(f.indicador_nombre, f.grupo_etario_asociado) == "15-19"])
+    localidades = len({f.nombre_localidad for f in filas})
+    upz = len({f.nombre_upz for f in filas if f.nombre_upz})
+    ind = len({f.indicador_nombre for f in filas})
+    
+    return {
+        "total_registros": total,
+        "indicadores_unicos": ind,
+        "localidades_unicas": localidades,
+        "upzs_unicas": upz,
+        "conteo_10_14": c10,
+        "conteo_15_19": c15
     }
 
 @app.get("/caracterizacion")
