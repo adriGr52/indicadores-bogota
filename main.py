@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Index, func
+from fastapi.responses import HTMLResponse, JSONResponse
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Index, func, text
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from typing import Optional, Dict, List
 import pandas as pd
@@ -10,46 +10,43 @@ import io, os, logging, re
 from datetime import datetime
 from scipy import stats
 
-logging.basicConfig(level=logging.INFO)
+# Configurar logging primero
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
+# Configuración de base de datos simplificada
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///fecundidad_temprana.db")
+logger.info(f"Using database: {DATABASE_URL[:50]}...")
+
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Configuración más robusta para producción
-engine_kwargs = {
-    "echo": False, 
-    "future": True,
-    "pool_pre_ping": True,  # Verificar conexiones
-    "pool_recycle": 300,    # Reciclar conexiones cada 5 min
-}
-
-# Agregar configuraciones específicas para PostgreSQL
-if "postgresql://" in DATABASE_URL:
-    engine_kwargs.update({
-        "pool_size": 5,
-        "max_overflow": 10,
-        "connect_args": {
-            "connect_timeout": 10,
-            "application_name": "fecundidad_temprana_api"
-        }
-    })
-
+# Configuración básica del engine
 try:
-    engine = create_engine(DATABASE_URL, **engine_kwargs)
+    if "postgresql://" in DATABASE_URL:
+        engine = create_engine(
+            DATABASE_URL, 
+            echo=False,
+            pool_pre_ping=True,
+            pool_recycle=300,
+            connect_args={"connect_timeout": 10}
+        )
+    else:
+        engine = create_engine(DATABASE_URL, echo=False)
+    
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     logger.info("Database engine created successfully")
 except Exception as e:
-    logger.error(f"Failed to create database engine: {e}")
-    # Fallback a SQLite si PostgreSQL falla
-    engine = create_engine("sqlite:///fecundidad_temprana.db", echo=False, future=True)
+    logger.error(f"Database engine creation failed: {e}")
+    # Fallback a SQLite simple
+    engine = create_engine("sqlite:///fallback.db", echo=False)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    logger.warning("Falling back to SQLite database")
+    logger.warning("Using fallback SQLite database")
 
 Base = declarative_base()
-
-# Definir modelo antes de crear tablas
 
 class IndicadorFecundidad(Base):
     __tablename__ = "indicadores_fecundidad"
@@ -84,14 +81,6 @@ class IndicadorFecundidad(Base):
         Index('idx_nivel_año', 'nivel_territorial', 'año_inicio'),
     )
 
-# Crear tablas de forma robusta
-try:
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables created successfully")
-except Exception as e:
-    logger.warning(f"Could not create tables on startup: {e}")
-    # Las tablas se crearán cuando se necesiten
-
 def get_db():
     db = SessionLocal()
     try:
@@ -99,12 +88,10 @@ def get_db():
     finally:
         db.close()
 
+# Crear la aplicación FastAPI
 app = FastAPI(
     title="API Fecundidad Temprana - Bogotá D.C.",
-    description=(
-        "Análisis integral de fecundidad temprana por territorio, periodo y cohortes (10-14 y 15-19 años). "
-        "Incluye caracterización territorial, análisis de asociación, brechas entre cohortes y tendencias temporales."
-    ),
+    description="Análisis integral de fecundidad temprana por territorio, periodo y cohortes (10-14 y 15-19 años).",
     version="3.1.0"
 )
 
@@ -115,6 +102,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Crear tablas de forma segura al arrancar
+@app.on_event("startup")
+async def startup_event():
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created/verified successfully")
+    except Exception as e:
+        logger.warning(f"Could not create tables on startup: {e}")
+        # No fallar si hay problemas con las tablas
 
 # ---------------- Utilidades ----------------
 COHORTES_VALIDAS = {"10-14","15-19"}
@@ -172,23 +169,75 @@ def filtrar_por_cohorte(rows: List[IndicadorFecundidad], cohorte: Optional[str])
             out.append(r)
     return out
 
-# ---------------- Rutas ----------------
+# ---------------- Rutas básicas ----------------
+@app.get("/health")
+async def health():
+    """Endpoint de health check simplificado para Railway"""
+    try:
+        # Test básico de base de datos
+        db = SessionLocal()
+        try:
+            result = db.execute(text("SELECT 1")).scalar()
+            db_status = "connected" if result == 1 else "error"
+        except Exception:
+            db_status = "disconnected"
+        finally:
+            db.close()
+        
+        return {
+            "status": "healthy",
+            "version": "3.1.0",
+            "database": db_status
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    """Página principal del dashboard"""
+    """Página principal - dashboard o página de bienvenida"""
+    # Intentar cargar el dashboard, pero no fallar si no existe
     try:
-        with open("dashboard_compatible.html","r",encoding="utf-8") as f:
+        with open("dashboard_compatible.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
-        logger.warning("dashboard_compatible.html not found")
+        logger.info("Dashboard HTML not found, serving basic page")
         return HTMLResponse("""
+        <!DOCTYPE html>
         <html>
-        <head><title>API Fecundidad Temprana</title></head>
-        <body style="font-family: Arial, sans-serif; padding: 2rem; text-align: center;">
-            <h1>🚀 API Fecundidad Temprana - Bogotá D.C.</h1>
-            <p>La API está funcionando correctamente.</p>
-            <p><a href="/docs" style="color: #2563eb;">📚 Ver Documentación API</a></p>
-            <p><a href="/health" style="color: #16a34a;">💚 Verificar Estado</a></p>
+        <head>
+            <title>API Fecundidad Temprana - Bogotá D.C.</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; background: #f8fafc; }
+                .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                h1 { color: #1e3a8a; margin-bottom: 20px; }
+                .status { background: #dcfce7; border: 1px solid #16a34a; padding: 15px; border-radius: 8px; margin: 20px 0; }
+                .links { margin: 30px 0; }
+                .links a { display: inline-block; margin: 10px 15px 10px 0; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; }
+                .links a:hover { background: #1d4ed8; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🚀 API Fecundidad Temprana - Bogotá D.C.</h1>
+                <div class="status">
+                    <strong>✅ Estado:</strong> API funcionando correctamente
+                </div>
+                <p>Análisis integral de fecundidad temprana por territorio, periodo y cohortes (10-14 y 15-19 años).</p>
+                <div class="links">
+                    <a href="/docs">📚 Documentación API</a>
+                    <a href="/health">💚 Estado del Sistema</a>
+                    <a href="/metadatos">📊 Metadatos</a>
+                </div>
+                <p><strong>Funcionalidades disponibles:</strong></p>
+                <ul>
+                    <li>Carga de datos desde archivos Excel</li>
+                    <li>Caracterización territorial por indicadores</li>
+                    <li>Análisis de asociación entre variables</li>
+                    <li>Análisis de brechas entre cohortes</li>
+                    <li>Análisis de tendencias temporales</li>
+                </ul>
+            </div>
         </body>
         </html>
         """)
@@ -204,36 +253,6 @@ async def home():
         </body>
         </html>
         """)
-
-@app.get("/health")
-async def health():
-    """Endpoint de health check para Railway"""
-    try:
-        # Verificar conexión a base de datos
-        db = SessionLocal()
-        try:
-            # Consulta simple para verificar conectividad
-            db.execute("SELECT 1")
-            db_status = "connected"
-        except Exception as e:
-            logger.warning(f"Database connection issue: {e}")
-            db_status = "disconnected"
-        finally:
-            db.close()
-        
-        return {
-            "status": "healthy",
-            "version": "3.1.0",
-            "database": db_status,
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return {
-            "status": "unhealthy",
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
 
 @app.post("/upload/excel")
 async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -565,7 +584,7 @@ async def asociacion(
     for ind in otros:
         qx = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == ind)
         if año is not None:
-            qx = qx.filter(IndicadorFecundidad.aÃ±o_inicio == año)
+            qx = qx.filter(IndicadorFecundidad.año_inicio == año)
         x_rows = filtrar_por_cohorte(qx.all(), cohorte)
         if not x_rows: continue
         x_map: Dict[str, List[float]] = {}
@@ -861,11 +880,11 @@ async def analisis_tendencias(
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
-    logger.info(f"Starting server on port {port}")
+    logger.info(f"Starting server on 0.0.0.0:{port}")
     uvicorn.run(
-        app, 
+        "main:app",  # Usar string en lugar de objeto app directamente
         host="0.0.0.0", 
         port=port,
-        access_log=True,
-        log_level="info"
+        log_level="info",
+        access_log=True
     )
