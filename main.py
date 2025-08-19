@@ -41,7 +41,6 @@ try:
     logger.info("Database engine created successfully")
 except Exception as e:
     logger.error(f"Database engine creation failed: {e}")
-    # Fallback a SQLite
     engine = create_engine("sqlite:///fallback.db", echo=False)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     logger.warning("Using fallback SQLite database")
@@ -127,7 +126,6 @@ def calcular_indice_theil(valores: List[float], poblaciones: Optional[List[float
     if poblaciones is None:
         poblaciones = np.ones(len(valores))
     
-    # Remover valores no válidos
     mask = (valores > 0) & (poblaciones > 0) & np.isfinite(valores) & np.isfinite(poblaciones)
     if not mask.any():
         return 0.0
@@ -135,18 +133,14 @@ def calcular_indice_theil(valores: List[float], poblaciones: Optional[List[float
     valores = valores[mask]
     poblaciones = poblaciones[mask]
     
-    # Pesos relativos
     pesos = poblaciones / poblaciones.sum()
-    
-    # Media ponderada
     media = np.sum(pesos * valores)
     
     if media <= 0:
         return 0.0
     
-    # Índice de Theil
     ratios = valores / media
-    ratios = np.maximum(ratios, 1e-10)  # Evitar log(0)
+    ratios = np.maximum(ratios, 1e-10)
     theil = np.sum(pesos * ratios * np.log(ratios))
     
     return float(theil)
@@ -265,25 +259,51 @@ async def home():
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Exploración Determinantes Fecundidad Temprana - Bogotá</title>
             <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
-                       margin: 0; padding: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                       min-height: 100vh; color: #333; }
-                .container { max-width: 900px; margin: 0 auto; background: white; padding: 3rem; 
-                           border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-                h1 { color: #1e3a8a; margin-bottom: 1rem; font-size: 2.5rem; text-align: center; }
-                .subtitle { text-align: center; color: #64748b; margin-bottom: 2rem; font-size: 1.2rem; }
-                .status { background: #dcfce7; border: 2px solid #16a34a; padding: 1rem; 
-                         border-radius: 12px; margin: 2rem 0; text-align: center; }
-                .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-                       gap: 1rem; margin: 2rem 0; }
-                .card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; 
-                       border-radius: 12px; text-align: center; }
-                .links { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 2rem 0; }
-                .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; 
-                      background: #2563eb; color: white; text-decoration: none; border-radius: 8px; 
-                      transition: all 0.2s; font-weight: 500; }
-                .btn:hover { background: #1d4ed8; transform: translateY(-2px); }
-                .feature { margin: 1rem 0; padding: 1rem; background: #f1f5f9; border-radius: 8px; }
+                body { 
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
+                    margin: 0; padding: 2rem; 
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    min-height: 100vh; color: #333; 
+                }
+                .container { 
+                    max-width: 900px; margin: 0 auto; background: white; padding: 3rem; 
+                    border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
+                }
+                h1 { 
+                    color: #1e3a8a; margin-bottom: 1rem; font-size: 2.5rem; text-align: center; 
+                }
+                .subtitle { 
+                    text-align: center; color: #64748b; margin-bottom: 2rem; font-size: 1.2rem; 
+                }
+                .status { 
+                    background: #dcfce7; border: 2px solid #16a34a; padding: 1rem; 
+                    border-radius: 12px; margin: 2rem 0; text-align: center; 
+                }
+                .grid { 
+                    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+                    gap: 1rem; margin: 2rem 0; 
+                }
+                .card { 
+                    background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; 
+                    border-radius: 12px; text-align: center; 
+                }
+                .links { 
+                    display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 2rem 0; 
+                }
+                .btn { 
+                    display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; 
+                    background: #2563eb; color: white; text-decoration: none; border-radius: 8px; 
+                    transition: all 0.2s; font-weight: 500; 
+                }
+                .btn:hover { 
+                    background: #1d4ed8; transform: translateY(-2px); 
+                }
+                .feature { 
+                    margin: 1rem 0; padding: 1rem; background: #f1f5f9; border-radius: 8px; 
+                }
+                ul { 
+                    text-align: left; margin: 1rem 0; 
+                }
             </style>
         </head>
         <body>
@@ -322,7 +342,7 @@ async def home():
 
                 <div class="feature">
                     <h3>🎯 Funcionalidades Principales</h3>
-                    <ul style="text-align: left; margin: 1rem 0;">
+                    <ul>
                         <li><strong>Carga de datos:</strong> Upload de archivos Excel con validación</li>
                         <li><strong>Análisis territorial:</strong> Localidades y UPZ con estadísticas descriptivas</li>
                         <li><strong>Cohortes específicas:</strong> Análisis para grupos 10-14 y 15-19 años</li>
@@ -338,11 +358,13 @@ async def home():
     except Exception as e:
         logger.error(f"Error serving home page: {e}")
         return HTMLResponse(f"""
-        <html><body style="font-family: Arial; padding: 2rem; text-align: center;">
+        <html>
+        <body style="font-family: Arial; padding: 2rem; text-align: center;">
             <h1>⚠️ Error de Configuración</h1>
             <p>Error: {str(e)}</p>
             <p><a href="/docs" style="color: #2563eb;">📚 Ver Documentación API</a></p>
-        </body></html>
+        </body>
+        </html>
         """, status_code=500)
 
 @app.post("/upload/excel")
