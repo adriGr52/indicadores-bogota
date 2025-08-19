@@ -29,7 +29,7 @@ class IndicadorFecundidad(Base):
     dimension = Column(String)
     unidad_medida = Column(String, nullable=False)
     tipo_medida = Column(String)
-    valor = Column(Float, nullable=False)
+    valor = Column(Float, nullable=False)  # <- no nulls
     nivel_territorial = Column(String, index=True, nullable=False)
     id_localidad = Column(Integer, index=True, nullable=True)
     nombre_localidad = Column(String, index=True, nullable=False)
@@ -70,7 +70,7 @@ app = FastAPI(
         "Cohortes: 10-14 y 15-19 años. "
         "Incluye asociación, series y brechas por cohortes."
     ),
-    version="3.0.0"
+    version="3.0.1"
 )
 
 app.add_middleware(
@@ -92,11 +92,35 @@ def extraer_grupo_edad(indicador_nombre: Optional[str], grupo_etario: Optional[s
         return "15-19"
     return None
 
-def to_int_safe(x):
+def is_nan_like(x) -> bool:
+    if x is None:
+        return True
+    if isinstance(x, float) and np.isnan(x):
+        return True
+    s = str(x).strip().lower()
+    return s in {"", "nan", "nd", "no_data", "none"}
+
+def clean_str(x, default=None):
+    return None if is_nan_like(x) else str(x).strip()
+
+def clean_int(x, default=None):
+    if is_nan_like(x):
+        return default
     try:
-        return int(x)
+        return int(float(x))
     except Exception:
-        return None
+        return default
+
+def clean_float(x, allow_none=True, default=None):
+    if is_nan_like(x):
+        return None if allow_none else (default if default is not None else 0.0)
+    try:
+        v = float(x)
+        if np.isnan(v) or np.isinf(v):
+            return None if allow_none else (default if default is not None else 0.0)
+        return v
+    except Exception:
+        return None if allow_none else (default if default is not None else 0.0)
 
 def terr_key(rec, nivel: str) -> str:
     return rec.nombre_localidad if nivel.upper() == "LOCALIDAD" else (rec.nombre_upz or "SIN UPZ")
@@ -124,7 +148,7 @@ async def home():
 
 @app.get("/health")
 async def health():
-    return {"status":"healthy","version":"3.0.0"}
+    return {"status":"healthy","version":"3.0.1"}
 
 @app.post("/upload/excel")
 async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -134,51 +158,67 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
         contents = await file.read()
         df = pd.read_excel(io.BytesIO(contents), sheet_name=0)
 
-        # Normalización de columnas
+        # Normalización de columnas conocidas
         if 'Tipo de Unidad Observación' in df.columns and 'Observación' not in df.columns:
             df['Observación'] = df['Tipo de Unidad Observación']
 
-        # Limpiar e insertar
+        # Limpiar tabla antes de insertar
         db.query(IndicadorFecundidad).delete()
 
-        registros, errores = 0, 0
+        registros, errores, omitidos_sin_valor = 0, 0, 0
+
         for _, row in df.iterrows():
             try:
-                indicador_nombre = str(row.get('Indicador_Nombre','') or '').strip()
+                indicador_nombre = clean_str(row.get('Indicador_Nombre'))
                 if not indicador_nombre:
+                    continue  # no insertamos filas sin nombre de indicador
+
+                # --- valor: si no es numérico o es NaN -> OMITIR FILA (para respetar NOT NULL) ---
+                valor = clean_float(row.get('Valor'), allow_none=True)
+                if valor is None:
+                    omitidos_sin_valor += 1
                     continue
+
                 rec = IndicadorFecundidad(
-                    archivo_hash=str(row.get('archivo_hash','')),
-                    indicador_nombre=indicador_nombre,
-                    dimension=str(row.get('Dimensión','')),
-                    unidad_medida=str(row.get('Unidad_Medida','') or 'N/A'),
-                    tipo_medida=str(row.get('Tipo_Medida','')),
-                    valor=float(row.get('Valor',0) or 0.0),
-                    nivel_territorial=str(row.get('Nivel_Territorial','') or 'LOCALIDAD').upper(),
-                    id_localidad=to_int_safe(row.get('ID Localidad')),
-                    nombre_localidad=str(row.get('Nombre Localidad','') or 'SIN LOCALIDAD').strip(),
-                    id_upz=to_int_safe(row.get('ID_UPZ')),
-                    nombre_upz=str(row.get('Nombre_UPZ')) if pd.notna(row.get('Nombre_UPZ')) else None,
-                    area_geografica=str(row.get('Área Geográfica','')),
-                    año_inicio=to_int_safe(row.get('Año_Inicio')),
-                    periodicidad=str(row.get('Periodicidad','')),
-                    poblacion_base=str(row.get('Poblacion Base','')),
-                    semaforo=str(row.get('Semaforo','')),
-                    grupo_etario_asociado=str(row.get('Grupo Etario Asociado','')),
-                    sexo=str(row.get('Sexo','')),
-                    tipo_unidad=str(row.get('Tipo de Unidad')) if 'Tipo de Unidad' in df.columns else None,
-                    observacion=str(row.get('Observación')) if 'Observación' in df.columns else None,
-                    fuente=str(row.get('Fuente','')),
-                    url_fuente=str(row.get('URL_Fuente (Opcional)',''))
+                    archivo_hash = clean_str(row.get('archivo_hash')),
+                    indicador_nombre = indicador_nombre,
+                    dimension = clean_str(row.get('Dimensión')),
+                    unidad_medida = clean_str(row.get('Unidad_Medida'), default='N/A') or 'N/A',
+                    tipo_medida = clean_str(row.get('Tipo_Medida')),
+                    valor = valor,
+                    nivel_territorial = (clean_str(row.get('Nivel_Territorial')) or 'LOCALIDAD').upper(),
+                    id_localidad = clean_int(row.get('ID Localidad')),
+                    nombre_localidad = clean_str(row.get('Nombre Localidad')) or 'SIN LOCALIDAD',
+                    id_upz = clean_int(row.get('ID_UPZ')),
+                    nombre_upz = clean_str(row.get('Nombre_UPZ')),
+                    area_geografica = clean_str(row.get('Área Geográfica')),
+                    año_inicio = clean_int(row.get('Año_Inicio')),
+                    periodicidad = clean_str(row.get('Periodicidad')),
+                    poblacion_base = clean_str(row.get('Poblacion Base')),
+                    semaforo = clean_str(row.get('Semaforo')),
+                    grupo_etario_asociado = clean_str(row.get('Grupo Etario Asociado')),
+                    sexo = clean_str(row.get('Sexo')),
+                    tipo_unidad = clean_str(row.get('Tipo de Unidad')),
+                    observacion = clean_str(row.get('Observación')),
+                    fuente = clean_str(row.get('Fuente')),
+                    url_fuente = clean_str(row.get('URL_Fuente (Opcional)'))
                 )
                 db.add(rec)
                 registros += 1
+
             except Exception as e:
                 errores += 1
                 logger.warning(f"Fila con error: {e}")
+
         db.commit()
 
-        return {"status":"success","registros_cargados":registros,"errores":errores}
+        return {
+            "status": "success",
+            "mensaje": "Carga completada",
+            "registros_cargados": registros,
+            "filas_omitidas_sin_valor": omitidos_sin_valor,
+            "errores": errores
+        }
     except Exception as e:
         logger.exception("Error procesando archivo")
         raise HTTPException(status_code=500, detail=str(e))
@@ -201,7 +241,6 @@ async def estadisticas_generales(año: Optional[int] = Query(None), db: Session 
     total = len(filas)
     if total == 0:
         return {"total_registros":0}
-    # Conteos por cohortes
     c10 = len([1 for f in filas if extraer_grupo_edad(f.indicador_nombre, f.grupo_etario_asociado) == "10-14"])
     c15 = len([1 for f in filas if extraer_grupo_edad(f.indicador_nombre, f.grupo_etario_asociado) == "15-19"])
     localidades = len({f.nombre_localidad for f in filas})
