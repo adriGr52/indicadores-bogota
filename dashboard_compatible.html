@@ -5,20 +5,396 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Observatorio · Fecundidad Temprana</title>
 
-  <!-- TailwindCSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: { DEFAULT:'#1e3a8a', 50:'#eff6ff', 100:'#dbeafe', 200:'#bfdbfe', 300:'#93c5fd', 400:'#60a5fa', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 800:'#1e40af', 900:'#1e3a8a' },
-            accent: { DEFAULT:'#06b6d4' }
-          }
-        }
-      }
+  <!-- CSS Styles -->
+  <style>
+    :root {
+      --primary-50: #eff6ff;
+      --primary-100: #dbeafe;
+      --primary-200: #bfdbfe;
+      --primary-300: #93c5fd;
+      --primary-400: #60a5fa;
+      --primary-500: #3b82f6;
+      --primary-600: #2563eb;
+      --primary-700: #1d4ed8;
+      --primary-800: #1e40af;
+      --primary-900: #1e3a8a;
+      --accent: #06b6d4;
+      
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      
+      --green-50: #f0fdf4;
+      --green-100: #dcfce7;
+      --green-600: #16a34a;
+      --green-700: #15803d;
+      --green-800: #166534;
+      
+      --blue-50: #eff6ff;
+      --blue-100: #dbeafe;
+      --blue-700: #1d4ed8;
+      --blue-800: #1e40af;
+      
+      --red-50: #fef2f2;
+      --red-200: #fecaca;
+      --red-600: #dc2626;
+      --red-700: #b91c1c;
+      
+      --yellow-100: #fef3c7;
+      --yellow-800: #92400e;
+      
+      --purple-50: #faf5ff;
+      --purple-700: #7c3aed;
+      --purple-800: #6b21a8;
+      
+      --emerald-200: #a7f3d0;
+      --emerald-700: #047857;
+      --rose-200: #fecdd3;
+      --rose-700: #be185d;
     }
-  </script>
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--slate-50);
+      color: var(--slate-800);
+      line-height: 1.5;
+    }
+    
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    
+    .grid {
+      display: grid;
+      gap: 1rem;
+    }
+    
+    .grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
+    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-cols-5 { grid-template-columns: repeat(5, 1fr); }
+    .grid-cols-6 { grid-template-columns: repeat(6, 1fr); }
+    
+    @media (min-width: 768px) {
+      .md\\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+      .md\\:grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+      .md\\:grid-cols-5 { grid-template-columns: repeat(5, 1fr); }
+      .md\\:grid-cols-6 { grid-template-columns: repeat(6, 1fr); }
+      .md\\:flex-row { flex-direction: row; }
+      .md\\:items-center { align-items: center; }
+      .md\\:justify-between { justify-content: space-between; }
+    }
+    
+    @media (min-width: 1024px) {
+      .lg\\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+      .lg\\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+      .lg\\:col-span-2 { grid-column: span 2; }
+    }
+    
+    .flex {
+      display: flex;
+    }
+    
+    .flex-col { flex-direction: column; }
+    .flex-wrap { flex-wrap: wrap; }
+    .items-center { align-items: center; }
+    .items-end { align-items: flex-end; }
+    .justify-between { justify-content: space-between; }
+    .gap-1 { gap: 0.25rem; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-3 { gap: 0.75rem; }
+    .gap-4 { gap: 1rem; }
+    
+    .space-y-2 > * + * { margin-top: 0.5rem; }
+    .space-y-3 > * + * { margin-top: 0.75rem; }
+    .space-y-4 > * + * { margin-top: 1rem; }
+    .space-y-6 > * + * { margin-top: 1.5rem; }
+    .space-y-8 > * + * { margin-top: 2rem; }
+    
+    .p-2 { padding: 0.5rem; }
+    .p-3 { padding: 0.75rem; }
+    .p-4 { padding: 1rem; }
+    .p-5 { padding: 1.25rem; }
+    .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .px-4 { padding-left: 1rem; padding-right: 1rem; }
+    .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+    .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+    .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+    
+    .mt-1 { margin-top: 0.25rem; }
+    .mt-2 { margin-top: 0.5rem; }
+    .mt-3 { margin-top: 0.75rem; }
+    .mb-3 { margin-bottom: 0.75rem; }
+    .mb-4 { margin-bottom: 1rem; }
+    .mb-6 { margin-bottom: 1.5rem; }
+    
+    .w-full { width: 100%; }
+    .h-full { height: 100%; }
+    
+    .text-xs { font-size: 0.75rem; }
+    .text-sm { font-size: 0.875rem; }
+    .text-2xl { font-size: 1.5rem; }
+    .text-3xl { font-size: 1.875rem; }
+    
+    .font-medium { font-weight: 500; }
+    .font-semibold { font-weight: 600; }
+    .font-bold { font-weight: 700; }
+    
+    .text-center { text-align: center; }
+    .text-left { text-left: left; }
+    
+    .rounded { border-radius: 0.25rem; }
+    .rounded-lg { border-radius: 0.5rem; }
+    .rounded-xl { border-radius: 0.75rem; }
+    
+    .border { border: 1px solid var(--slate-300); }
+    .border-collapse { border-collapse: collapse; }
+    
+    .bg-white { background-color: white; }
+    .bg-gray-50 { background-color: var(--slate-100); }
+    
+    .text-white { color: white; }
+    
+    .hidden { display: none; }
+    .overflow-auto { overflow: auto; }
+    .overflow-y-auto { overflow-y: auto; }
+    
+    .cursor-pointer { cursor: pointer; }
+    
+    .fixed { position: fixed; }
+    .right-4 { right: 1rem; }
+    .bottom-4 { bottom: 1rem; }
+    
+    .max-h-32 { max-height: 8rem; }
+    
+    .card {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 10px 20px rgba(2, 6, 23, .04), 0 2px 6px rgba(2, 6, 23, .06);
+      border: 1px solid var(--slate-200);
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 0.75rem;
+      border: 1px solid var(--slate-300);
+      background: white;
+      transition: all 0.15s;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 0.875rem;
+    }
+    
+    .btn:hover {
+      background: var(--slate-50);
+      transform: translateY(-1px);
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-primary {
+      background: var(--primary-600);
+      border-color: var(--primary-600);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: var(--primary-700);
+    }
+    
+    .btn-secondary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #0891b2;
+    }
+    
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      border-radius: 999px;
+      padding: 0.125rem 0.5rem;
+      font-size: 0.75rem;
+      background: #e0f2fe;
+      color: #075985;
+    }
+    
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      border-radius: 999px;
+      padding: 0.125rem 0.5rem;
+      font-size: 0.75rem;
+      background: var(--primary-100);
+      color: var(--primary-900);
+    }
+    
+    .badge-green {
+      background: var(--green-100);
+      color: var(--green-800);
+    }
+    
+    .badge-yellow {
+      background: var(--yellow-100);
+      color: var(--yellow-800);
+    }
+    
+    .badge-red {
+      background: var(--red-50);
+      color: var(--red-700);
+    }
+    
+    .muted {
+      color: var(--slate-500);
+    }
+    
+    .kpi {
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+    
+    .grad {
+      background: linear-gradient(135deg, var(--primary-900) 0%, var(--primary-700) 40%, var(--accent) 100%);
+    }
+    
+    .shadow-soft {
+      box-shadow: 0 10px 20px rgba(2,6,23,.08), 0 3px 8px rgba(2,6,23,.1);
+    }
+    
+    .spinner {
+      border: 3px solid var(--slate-200);
+      border-top-color: var(--primary-600);
+      border-radius: 999px;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .tabs button[aria-selected="true"] {
+      background: var(--primary-800);
+      color: white;
+    }
+    
+    .tabs button {
+      background: var(--primary-50);
+      color: var(--primary-900);
+      border: 1px solid var(--primary-200);
+    }
+    
+    .table-hover tbody tr:hover {
+      background: var(--slate-50);
+    }
+    
+    .progress-bar {
+      background: var(--slate-200);
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      background: var(--primary-500);
+      height: 100%;
+      transition: width 0.3s;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--slate-300);
+      background: white;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    table {
+      width: 100%;
+      font-size: 0.875rem;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      padding: 0.5rem;
+      border: 1px solid var(--slate-300);
+    }
+    
+    th {
+      background: var(--primary-50);
+      color: var(--primary-900);
+      font-weight: 600;
+    }
+    
+    .text-red-600 { color: #dc2626; }
+    .text-green-600 { color: #16a34a; }
+    .text-blue-700 { color: var(--blue-700); }
+    .text-blue-800 { color: var(--blue-800); }
+    .text-green-700 { color: var(--green-700); }
+    .text-green-800 { color: var(--green-800); }
+    .text-purple-700 { color: var(--purple-700); }
+    .text-purple-800 { color: var(--purple-800); }
+    .text-primary-800 { color: var(--primary-800); }
+    .text-primary-900 { color: var(--primary-900); }
+    
+    .bg-blue-50 { background-color: var(--blue-50); }
+    .bg-green-50 { background-color: var(--green-50); }
+    .bg-purple-50 { background-color: var(--purple-50); }
+    .bg-primary-50 { background-color: var(--primary-50); }
+    
+    .border-emerald-200 { border-color: var(--emerald-200); }
+    .border-rose-200 { border-color: var(--rose-200); }
+    .text-emerald-700 { color: var(--emerald-700); }
+    .text-rose-700 { color: var(--rose-700); }
+    
+    /* Responsive utilities */
+    @media (max-width: 767px) {
+      .container { padding: 0 0.5rem; }
+      .text-3xl { font-size: 1.5rem; }
+      .text-2xl { font-size: 1.25rem; }
+      .py-8 { padding-top: 1rem; padding-bottom: 1rem; }
+    }
+  </style>
 
   <!-- Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
@@ -28,12 +404,18 @@
 
   <style>
     .card { background:#fff; border-radius:1rem; box-shadow:0 10px 20px rgba(2, 6, 23, .04), 0 2px 6px rgba(2, 6, 23, .06); border:1px solid #e2e8f0; }
-    .btn  { display:inline-flex; align-items:center; gap:.5rem; padding:.55rem .85rem; border-radius:.75rem; border:1px solid #cbd5e1; background:#fff; transition: all .15s; }
+    .btn  { display:inline-flex; align-items:center; gap:.5rem; padding:.55rem .85rem; border-radius:.75rem; border:1px solid #cbd5e1; background:#fff; transition: all .15s; cursor: pointer; }
     .btn:hover { background:#f8fafc; transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-primary { background:#2563eb; border-color:#2563eb; color:#fff; }
     .btn-primary:hover { background:#1d4ed8; }
+    .btn-secondary { background:#06b6d4; border-color:#06b6d4; color:#fff; }
+    .btn-secondary:hover { background:#0891b2; }
     .chip { display:inline-flex; align-items:center; gap:.25rem; border-radius:999px; padding:.125rem .5rem; font-size:.75rem; background:#e0f2fe; color:#075985; }
     .pill { display:inline-flex; align-items:center; gap:.375rem; border-radius:999px; padding:.125rem .5rem; font-size:.75rem; background:#eef2ff; color:#3730a3; }
+    .badge-green { background:#dcfce7; color:#166534; }
+    .badge-yellow { background:#fef3c7; color:#92400e; }
+    .badge-red { background:#fee2e2; color:#991b1b; }
     .muted { color:#64748b; }
     .kpi { font-size:1.75rem; font-weight:700; }
     .grad { background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 40%, #06b6d4 100%); }
@@ -42,24 +424,26 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .tabs button[aria-selected="true"]{ background:#1e40af; color:white; }
     .tabs button{ background:#eff6ff; color:#1e3a8a; border:1px solid #bfdbfe; }
+    .table-hover tbody tr:hover { background:#f8fafc; }
+    .progress-bar { background:#e5e7eb; border-radius:9999px; height:8px; overflow:hidden; }
+    .progress-fill { background:#3b82f6; height:100%; transition: width 0.3s; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
   <!-- Hero -->
   <header class="grad text-white">
-    <div class="max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="container py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
-        <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Observatorio de Fecundidad Temprana — Bogotá D.C.</h1>
-        <p class="mt-1 text-slate-100/90">Análisis por territorio, periodo y <b>cohortes (10–14, 15–19)</b>. Incluye caracterización, asociación, brechas y tendencias.</p>
+        <h1 class="text-2xl md:text-3xl font-bold">Observatorio de Fecundidad Temprana — Bogotá D.C.</h1>
+        <p class="mt-1" style="color: rgba(255,255,255,0.9)">Análisis integral por territorio, periodo y <b>cohortes (10–14, 15–19)</b>. Caracterización, asociación, brechas y tendencias.</p>
       </div>
       <div class="flex items-center gap-2">
-        <a class="btn btn-primary shadow-soft" href="/docs" target="_blank"><i class="ti ti-api"></i> OpenAPI</a>
         <button id="btnRefMeta" class="btn shadow-soft"><i class="ti ti-refresh"></i> Refrescar</button>
       </div>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 py-6 space-y-8">
+  <main class="container py-6 space-y-8">
     <!-- KPIs -->
     <section class="grid md:grid-cols-4 gap-4">
       <div class="card p-4">
@@ -93,66 +477,263 @@
       <div class="mt-3 grid md:grid-cols-2 gap-3">
         <div>
           <label class="text-sm">Archivo consolidado (.xlsx)</label>
-          <input id="file" type="file" accept=".xlsx,.xls" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
+          <input id="file" type="file" accept=".xlsx,.xls" class="mt-1 w-full px-3 py-2 rounded-lg border bg-white">
         </div>
         <div class="flex items-end gap-2">
           <button class="btn btn-primary" onclick="upload()"><i class="ti ti-cloud-upload"></i> Subir y procesar</button>
           <div id="uploadSpin" class="hidden spinner"></div>
         </div>
       </div>
-      <pre id="uploadOut" class="mt-3 text-xs whitespace-pre-wrap muted"></pre>
+      <pre id="uploadOut" class="mt-3 text-xs muted" style="white-space: pre-wrap;"></pre>
     </section>
 
     <!-- Tabs de objetivos -->
     <section class="space-y-4">
       <div class="tabs flex flex-wrap gap-2">
-        <button class="btn" data-tab="obj1" aria-selected="true">Objetivo 1 · Caracterización</button>
-        <button class="btn" data-tab="obj2">Objetivo 2 · Asociación</button>
-        <button class="btn" data-tab="obj3">Objetivo 3 · Brechas (cohortes)</button>
-        <button class="btn" data-tab="obj4">Objetivo 4 · Tendencias</button>
+        <button class="btn" data-tab="obj1" aria-selected="true">Objetivo 1 · Caracterización Territorial</button>
+        <button class="btn" data-tab="obj2">Objetivo 2 · Análisis de Asociación</button>
+        <button class="btn" data-tab="obj3">Objetivo 3 · Brechas entre Cohortes</button>
+        <button class="btn" data-tab="obj4">Objetivo 4 · Análisis de Tendencias</button>
       </div>
 
       <!-- OBJ 1: Caracterización -->
-      <div id="obj1" class="card p-5 space-y-4">
-        <div class="grid md:grid-cols-5 gap-3">
-          <div>
-            <label class="text-sm">Indicador</label>
-            <select id="selIndicador" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
+      <div id="obj1" class="space-y-4">
+        <div class="card p-5">
+          <h3 class="font-semibold text-primary-800 mb-4 flex items-center gap-2">
+            <i class="ti ti-map-2"></i> Caracterización Territorial por Indicador
+          </h3>
+          
+          <div class="grid md:grid-cols-6 gap-3">
+            <div>
+              <label class="text-sm font-medium">Indicador</label>
+              <select id="selIndicador" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
+            </div>
+            <div>
+              <label class="text-sm font-medium">Nivel</label>
+              <select id="selNivel" class="w-full px-3 py-2 rounded-lg border bg-white">
+                <option>LOCALIDAD</option><option>UPZ</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm font-medium">Localidad (filtro)</label>
+              <select id="selLocalidadFiltro" class="w-full px-3 py-2 rounded-lg border bg-white">
+                <option value="">Todas las localidades</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm font-medium">Cohorte</label>
+              <select id="selCohorte" class="w-full px-3 py-2 rounded-lg border bg-white">
+                <option value="">Ambas</option><option>10-14</option><option>15-19</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm font-medium">Año (opcional)</label>
+              <select id="selAnio" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
+            </div>
+            <div class="flex items-end gap-2">
+              <button class="btn btn-primary" onclick="runCaracterizacion()"><i class="ti ti-sparkles"></i> Caracterizar</button>
+              <button class="btn btn-secondary" onclick="runComparativa()" id="btnComparativa" disabled><i class="ti ti-chart-line"></i> Comparar</button>
+            </div>
           </div>
-          <div>
-            <label class="text-sm">Nivel</label>
-            <select id="selNivel" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
-              <option>LOCALIDAD</option><option>UPZ</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-sm">Cohorte</label>
-            <select id="selCohorte" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
-              <option value="">Ambas</option><option>10-14</option><option>15-19</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-sm">Año (opcional)</label>
-            <select id="selAnio" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
-          </div>
-          <div class="flex items-end">
-            <button class="btn btn-primary w-full" onclick="runCaracterizacion()"><i class="ti ti-sparkles"></i> Caracterizar</button>
+
+          <div id="unidadMedida" class="mt-3 p-3 bg-blue-50 rounded-lg hidden">
+            <span class="text-sm text-blue-800"><strong>Unidad de medida:</strong> <span id="txtUnidadMedida">—</span></span>
           </div>
         </div>
 
         <div class="grid lg:grid-cols-2 gap-4">
           <div class="card p-4">
-            <div class="flex items-center justify-between">
-              <h3 class="font-semibold">Top por promedio</h3>
-              <button class="btn" onclick="downloadCSV('carac')"><i class="ti ti-download"></i> CSV</button>
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-semibold">Ranking territorial</h4>
+              <div class="flex gap-2">
+                <button class="btn text-xs" onclick="downloadCSV('carac')"><i class="ti ti-download"></i> CSV</button>
+                <button class="btn text-xs" onclick="toggleChartType('carac')"><i class="ti ti-chart-bar"></i> Cambiar vista</button>
+              </div>
             </div>
-            <canvas id="chartCarac" height="220"></canvas>
+            <canvas id="chartCarac" style="height: 280px;"></canvas>
           </div>
+          
           <div class="card p-4 overflow-auto">
-            <h3 class="font-semibold">Resumen estadístico por territorio</h3>
-            <table class="w-full text-sm border-collapse" id="tblCarac">
+            <h4 class="font-semibold mb-3">Estadísticas descriptivas</h4>
+            <div id="resumenLocalidad" class="mb-3 p-3 bg-green-50 rounded-lg hidden">
+              <h5 class="font-medium text-green-800">Resumen de la localidad seleccionada</h5>
+              <div id="datosLocalidad" class="text-sm text-green-700 mt-1"></div>
+            </div>
+            <table class="w-full text-sm border-collapse table-hover" id="tblCarac">
               <thead class="bg-primary-50 text-primary-900">
-                <tr><th class="p-2 border">Territorio</th><th class="p-2 border">n</th><th class="p-2 border">Prom.</th><th class="p-2 border">Mediana</th><th class="p-2 border">Q1</th><th class="p-2 border">Q3</th><th class="p-2 border">Mín</th><th class="p-2 border">Máx</th><th class="p-2 border">DE</th><th class="p-2 border">CV%</th></tr>
+                <tr>
+                  <th class="p-2 border text-left">Territorio</th>
+                  <th class="p-2 border">n</th>
+                  <th class="p-2 border">Promedio</th>
+                  <th class="p-2 border">Mediana</th>
+                  <th class="p-2 border">Q1</th>
+                  <th class="p-2 border">Q3</th>
+                  <th class="p-2 border">Mín</th>
+                  <th class="p-2 border">Máx</th>
+                  <th class="p-2 border">DE</th>
+                  <th class="p-2 border">CV%</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Panel de comparación localidad vs UPZ -->
+        <div id="panelComparativa" class="card p-5 hidden">
+          <h4 class="font-semibold text-primary-800 mb-4 flex items-center gap-2">
+            <i class="ti ti-git-compare"></i> Comparativa: Localidad vs Bogotá vs UPZ
+          </h4>
+          <div class="grid lg:grid-cols-2 gap-4">
+            <div class="card p-4">
+              <h5 class="font-semibold mb-3">Comparación de promedios</h5>
+              <canvas id="chartComparativa" style="height: 220px;"></canvas>
+            </div>
+            <div class="card p-4">
+              <h5 class="font-semibold mb-3">Datos comparativos</h5>
+              <div id="datosComparativos" class="space-y-3"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OBJ 2: Asociación -->
+      <div id="obj2" class="space-y-4 hidden">
+        <div class="card p-5">
+          <h3 class="font-semibold text-primary-800 mb-4 flex items-center gap-2">
+            <i class="ti ti-chart-dots"></i> Análisis de Asociación entre Indicadores
+          </h3>
+          
+          <div class="grid md:grid-cols-5 gap-3">
+            <div>
+              <label class="text-sm font-medium">Indicador objetivo (fecundidad)</label>
+              <select id="selIndObj" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
+            </div>
+            <div>
+              <label class="text-sm font-medium">Nivel territorial</label>
+              <select id="selNivelAsoc" class="w-full px-3 py-2 rounded-lg border bg-white">
+                <option>LOCALIDAD</option><option>UPZ</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm font-medium">Cohorte</label>
+              <select id="selCohorteAsoc" class="w-full px-3 py-2 rounded-lg border bg-white">
+                <option value="">Ambas</option><option>10-14</option><option>15-19</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm font-medium">Año (opcional)</label>
+              <select id="selAnioAsoc" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
+            </div>
+            <div>
+              <label class="text-sm font-medium">Top correlaciones</label>
+              <input id="inpTop" type="number" min="3" max="50" value="15" class="w-full px-3 py-2 rounded-lg border bg-white">
+            </div>
+          </div>
+          
+          <div class="mt-3 flex gap-2">
+            <button class="btn btn-primary" onclick="runAsociacion()"><i class="ti ti-calculator"></i> Calcular asociaciones</button>
+          </div>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2">
+            <div class="card p-4 overflow-auto">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-semibold">Correlaciones encontradas</h4>
+                <button class="btn text-xs" onclick="downloadCSV('asoc')"><i class="ti ti-download"></i> CSV</button>
+              </div>
+              <table class="w-full text-sm border-collapse table-hover" id="tblAsoc">
+                <thead class="bg-primary-50 text-primary-900">
+                  <tr>
+                    <th class="p-2 border text-left">Indicador comparado</th>
+                    <th class="p-2 border">Territorios</th>
+                    <th class="p-2 border">Pearson r</th>
+                    <th class="p-2 border">p-valor</th>
+                    <th class="p-2 border">Categoría</th>
+                    <th class="p-2 border">Significativa</th>
+                    <th class="p-2 border">Acción</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="card p-4">
+            <h4 class="font-semibold mb-3">Dispersión territorial</h4>
+            <canvas id="chartDisp" style="height: 280px;"></canvas>
+            <div id="dispMeta" class="text-xs muted mt-2">Seleccione una correlación para visualizar.</div>
+            <div id="dispStats" class="hidden mt-3 p-3 bg-gray-50 rounded text-xs"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OBJ 3: Brechas -->
+      <div id="obj3" class="space-y-4 hidden">
+        <div class="card p-5">
+          <h3 class="font-semibold text-primary-800 mb-4 flex items-center gap-2">
+            <i class="ti ti-arrows-diff"></i> Análisis de Brechas entre Cohortes (15-19 vs 10-14)
+          </h3>
+          
+          <div class="grid md:grid-cols-4 gap-3">
+            <div>
+              <label class="text-sm font-medium">Indicador</label>
+              <select id="selIndicadorBrecha" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
+            </div>
+            <div>
+              <label class="text-sm font-medium">Nivel territorial</label>
+              <select id="selNivelBrecha" class="w-full px-3 py-2 rounded-lg border bg-white">
+                <option>LOCALIDAD</option><option>UPZ</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm font-medium">Año (opcional)</label>
+              <select id="selAnioBrecha" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
+            </div>
+            <div class="flex items-end">
+              <button class="btn btn-primary w-full" onclick="runBrechas()"><i class="ti ti-arrows-diff"></i> Calcular brechas</button>
+            </div>
+          </div>
+          
+          <div id="unidadMedidaBrecha" class="mt-3 p-3 bg-blue-50 rounded-lg hidden">
+            <span class="text-sm text-blue-800"><strong>Unidad de medida:</strong> <span id="txtUnidadMedidaBrecha">—</span></span>
+          </div>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-4">
+          <div class="card p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-semibold">Brecha absoluta por territorio</h4>
+              <button class="btn text-xs" onclick="toggleChartType('brecha')"><i class="ti ti-chart-bar"></i> Cambiar vista</button>
+            </div>
+            <canvas id="chartBrecha" style="height: 280px;"></canvas>
+            <div id="resumenBrechas" class="mt-3 p-3 bg-gray-50 rounded text-sm hidden">
+              <div class="grid grid-cols-2 gap-4">
+                <div><strong>Brecha promedio:</strong> <span id="brechaPromedio">—</span></div>
+                <div><strong>Territorios:</strong> <span id="totalTerritorios">—</span></div>
+                <div><strong>Mayor brecha:</strong> <span id="mayorBrecha">—</span></div>
+                <div><strong>Menor brecha:</strong> <span id="menorBrecha">—</span></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card p-4 overflow-auto">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-semibold">Detalle de brechas</h4>
+              <button class="btn text-xs" onclick="downloadCSV('brecha')"><i class="ti ti-download"></i> CSV</button>
+            </div>
+            <table class="w-full text-sm border-collapse table-hover" id="tblBrecha">
+              <thead class="bg-primary-50 text-primary-900">
+                <tr>
+                  <th class="p-2 border text-left">Territorio</th>
+                  <th class="p-2 border">10–14</th>
+                  <th class="p-2 border">15–19</th>
+                  <th class="p-2 border">Brecha abs</th>
+                  <th class="p-2 border">Cambio %</th>
+                  <th class="p-2 border">n (10-14)</th>
+                  <th class="p-2 border">n (15-19)</th>
+                </tr>
               </thead>
               <tbody></tbody>
             </table>
@@ -160,114 +741,101 @@
         </div>
       </div>
 
-      <!-- OBJ 2: Asociación -->
-      <div id="obj2" class="card p-5 space-y-4 hidden">
-        <div class="grid md:grid-cols-5 gap-3">
-          <div>
-            <label class="text-sm">Indicador objetivo (fecundidad)</label>
-            <select id="selIndObj" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
-          </div>
-          <div>
-            <label class="text-sm">Nivel</label>
-            <select id="selNivelAsoc" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
-              <option>LOCALIDAD</option><option>UPZ</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-sm">Cohorte</label>
-            <select id="selCohorteAsoc" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
-              <option value="">Ambas</option><option>10-14</option><option>15-19</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-sm">Año (opcional)</label>
-            <select id="selAnioAsoc" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
-          </div>
-          <div>
-            <label class="text-sm">Top</label>
-            <input id="inpTop" type="number" min="3" max="50" value="10" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
-          </div>
-        </div>
-
-        <div class="grid lg:grid-cols-2 gap-4">
-          <div class="card p-4 overflow-auto">
-            <div class="flex items-center justify-between">
-              <h3 class="font-semibold">Ranking por |r (Pearson)|</h3>
-              <button class="btn" onclick="downloadCSV('asoc')"><i class="ti ti-download"></i> CSV</button>
-            </div>
-            <table class="w-full text-sm border-collapse" id="tblAsoc">
-              <thead class="bg-primary-50 text-primary-900"><tr><th class="p-2 border">Indicador comparado</th><th class="p-2 border">Territorios</th><th class="p-2 border">Pearson r (p)</th><th class="p-2 border">Spearman ρ (p)</th><th class="p-2 border">Dispersión</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          <div class="card p-4">
-            <h3 class="font-semibold">Dispersión territorial</h3>
-            <canvas id="chartDisp" height="220"></canvas>
-            <p class="text-xs muted mt-1" id="dispMeta">Seleccione una fila para visualizar.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- OBJ 3: Brechas -->
-      <div id="obj3" class="card p-5 space-y-4 hidden">
-        <div class="grid md:grid-cols-4 gap-3">
-          <div>
-            <label class="text-sm">Indicador</label>
-            <select id="selIndicadorBrecha" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
-          </div>
-          <div>
-            <label class="text-sm">Nivel</label>
-            <select id="selNivelBrecha" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
-              <option>LOCALIDAD</option><option>UPZ</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-sm">Año (opcional)</label>
-            <select id="selAnioBrecha" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
-          </div>
-          <div class="flex items-end">
-            <button class="btn btn-primary w-full" onclick="runBrechas()"><i class="ti ti-arrows-diff"></i> Calcular brechas</button>
-          </div>
-        </div>
-        <div class="grid lg:grid-cols-2 gap-4">
-          <div class="card p-4">
-            <h3 class="font-semibold">Brecha (15–19 – 10–14)</h3>
-            <canvas id="chartBrecha" height="220"></canvas>
-          </div>
-          <div class="card p-4 overflow-auto">
-            <h3 class="font-semibold">Detalle</h3>
-            <table class="w-full text-sm border-collapse" id="tblBrecha">
-              <thead class="bg-primary-50 text-primary-900"><tr><th class="p-2 border">Territorio</th><th class="p-2 border">Prom 10–14</th><th class="p-2 border">Prom 15–19</th><th class="p-2 border">Brecha abs</th><th class="p-2 border">Brecha rel</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
       <!-- OBJ 4: Tendencias -->
-      <div id="obj4" class="card p-5 space-y-4 hidden">
-        <div class="grid md:grid-cols-4 gap-3">
-          <div>
-            <label class="text-sm">Indicador</label>
-            <select id="selIndSerie" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
+      <div id="obj4" class="space-y-4 hidden">
+        <div class="card p-5">
+          <h3 class="font-semibold text-primary-800 mb-4 flex items-center gap-2">
+            <i class="ti ti-trending-up"></i> Análisis de Tendencias Temporales
+          </h3>
+          
+          <!-- Panel de series individuales -->
+          <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+            <h4 class="font-medium mb-3">Series temporales por territorio</h4>
+            <div class="grid md:grid-cols-4 gap-3">
+              <div>
+                <label class="text-sm font-medium">Indicador</label>
+                <select id="selIndSerie" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
+              </div>
+              <div>
+                <label class="text-sm font-medium">Nivel territorial</label>
+                <select id="selNivelSerie" class="w-full px-3 py-2 rounded-lg border bg-white">
+                  <option>LOCALIDAD</option><option>UPZ</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-sm font-medium">Territorio</label>
+                <select id="selTerrSerie" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
+              </div>
+              <div class="flex items-end">
+                <button class="btn btn-primary w-full" onclick="runSerie()"><i class="ti ti-trending-up"></i> Ver serie</button>
+              </div>
+            </div>
           </div>
-          <div>
-            <label class="text-sm">Nivel</label>
-            <select id="selNivelSerie" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
-              <option>LOCALIDAD</option><option>UPZ</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-sm">Territorio</label>
-            <select id="selTerrSerie" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white"></select>
-          </div>
-          <div class="flex items-end">
-            <button class="btn btn-primary w-full" onclick="runSerie()"><i class="ti ti-trending-up"></i> Ver serie</button>
+
+          <!-- Panel de análisis de tendencias agregadas -->
+          <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+            <h4 class="font-medium mb-3">Análisis de tendencias agregadas</h4>
+            <div class="grid md:grid-cols-4 gap-3">
+              <div>
+                <label class="text-sm font-medium">Indicador</label>
+                <select id="selIndTendencia" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
+              </div>
+              <div>
+                <label class="text-sm font-medium">Nivel territorial</label>
+                <select id="selNivelTendencia" class="w-full px-3 py-2 rounded-lg border bg-white">
+                  <option>LOCALIDAD</option><option>UPZ</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-sm font-medium">Cohorte</label>
+                <select id="selCohorteTendencia" class="w-full px-3 py-2 rounded-lg border bg-white">
+                  <option value="">Ambas</option><option>10-14</option><option>15-19</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button class="btn btn-secondary w-full" onclick="runTendencias()"><i class="ti ti-chart-line"></i> Analizar tendencias</button>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="card p-4">
-          <h3 class="font-semibold">Serie temporal por cohortes</h3>
-          <canvas id="chartSerie" height="220"></canvas>
+
+        <!-- Resultados de series temporales -->
+        <div id="panelSeries" class="card p-4 hidden">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-semibold">Serie temporal por cohortes</h4>
+            <div id="unidadMedidaSerie" class="text-sm text-blue-800"></div>
+          </div>
+          <canvas id="chartSerie" style="height: 280px;"></canvas>
+        </div>
+
+        <!-- Resultados de análisis de tendencias -->
+        <div id="panelTendencias" class="grid lg:grid-cols-2 gap-4 hidden">
+          <div class="card p-4">
+            <h4 class="font-semibold mb-3">Clasificación de tendencias</h4>
+            <canvas id="chartTendencias" style="height: 280px;"></canvas>
+          </div>
+          
+          <div class="card p-4 overflow-auto">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-semibold">Análisis detallado</h4>
+              <button class="btn text-xs" onclick="downloadCSV('tendencias')"><i class="ti ti-download"></i> CSV</button>
+            </div>
+            <table class="w-full text-sm border-collapse table-hover" id="tblTendencias">
+              <thead class="bg-primary-50 text-primary-900">
+                <tr>
+                  <th class="p-2 border text-left">Territorio</th>
+                  <th class="p-2 border">Período</th>
+                  <th class="p-2 border">Inicial</th>
+                  <th class="p-2 border">Final</th>
+                  <th class="p-2 border">Cambio %</th>
+                  <th class="p-2 border">Pendiente</th>
+                  <th class="p-2 border">R²</th>
+                  <th class="p-2 border">Clasificación</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
@@ -284,12 +852,35 @@ function toast(msg, ok=true){
   div.className='px-3 py-2 rounded-xl shadow-soft bg-white border '+(ok?'border-emerald-200 text-emerald-700':'border-rose-200 text-rose-700');
   div.textContent=msg; $('#toasts').appendChild(div); setTimeout(()=>div.remove(),4000);
 }
-function setSpin(id,on){ const el=$('#'+id); if(el) el.classList.toggle('hidden',!on); }
-function fillSelect(sel, arr, ph='Selecciona...'){ const el=typeof sel==='string' ? $('#'+sel) : sel; if(!el) return; const keep=el.value; el.innerHTML=''; const o=document.createElement('option'); o.value=''; o.textContent=ph; el.appendChild(o); (arr||[]).forEach(v=>{ const opt=document.createElement('option'); opt.value=v; opt.textContent=v; el.appendChild(opt); }); el.value=keep; }
-function toCSV(rows, headers){ const esc=s=>('"'+String(s??'').replace(/"/g,'""')+'"'); const head=headers.map(esc).join(','); const body=(rows||[]).map(r=>headers.map(h=>esc(r[h])).join(',')).join('\n'); return head+'\n'+body; }
 
-let META={indicadores:[],localidades:[],upz:[],años:[], cohortes:['10-14','15-19']};
-let charts={}; let CARAC=[], ASOC=[], BRECHA=[];
+function setSpin(id,on){ const el=$('#'+id); if(el) el.classList.toggle('hidden',!on); }
+
+function fillSelect(sel, arr, ph='Selecciona...', keepValue=true){ 
+  const el=typeof sel==='string' ? $('#'+sel) : sel; 
+  if(!el) return; 
+  const keep = keepValue ? el.value : '';
+  el.innerHTML=''; 
+  const o=document.createElement('option'); 
+  o.value=''; o.textContent=ph; 
+  el.appendChild(o); 
+  (arr||[]).forEach(v=>{ 
+    const opt=document.createElement('option'); 
+    opt.value=v; opt.textContent=v; 
+    el.appendChild(opt); 
+  }); 
+  if(keepValue) el.value=keep; 
+}
+
+function toCSV(rows, headers){ 
+  const esc=s=>('"'+String(s??'').replace(/"/g,'""')+'"'); 
+  const head=headers.map(esc).join(','); 
+  const body=(rows||[]).map(r=>headers.map(h=>esc(r[h])).join(',')).join('\n'); 
+  return head+'\n'+body; 
+}
+
+let META={indicadores:[],localidades:[],upz:[],años:[], cohortes:['10-14','15-19'], unidades_medida:{}};
+let charts={}; 
+let CARAC=[], ASOC=[], BRECHA=[], TENDENCIAS=[];
 
 // Tabs
 $$('.tabs button').forEach(b=>b.addEventListener('click', e=>{
@@ -302,22 +893,42 @@ $$('.tabs button').forEach(b=>b.addEventListener('click', e=>{
 async function apiGet(path, params){
   const url=new URL(path, location.origin);
   if(params){ for(const[k,v] of Object.entries(params)){ if(v!=='' && v!=null) url.searchParams.append(k, v); } }
-  const res=await fetch(url); if(!res.ok) throw new Error((await res.text())||res.statusText); return res.json();
+  const res=await fetch(url); 
+  if(!res.ok) throw new Error((await res.text())||res.statusText); 
+  return res.json();
 }
-async function apiPostFile(path, file){ const fd=new FormData(); fd.append('file', file); const res=await fetch(path,{method:'POST', body:fd}); if(!res.ok) throw new Error((await res.text())||res.statusText); return res.json(); }
+
+async function apiPostFile(path, file){ 
+  const fd=new FormData(); 
+  fd.append('file', file); 
+  const res=await fetch(path,{method:'POST', body:fd}); 
+  if(!res.ok) throw new Error((await res.text())||res.statusText); 
+  return res.json(); 
+}
 
 // Load meta & KPIs
 async function loadMeta(){
-  const meta=await apiGet('/metadatos'); META=meta;
-  fillSelect('selIndicador', meta.indicadores, 'Indicador...');
-  fillSelect('selIndObj', (meta.indicadores||[]).filter(i=>/fecund/i.test(i)).length ? (meta.indicadores||[]).filter(i=>/fecund/i.test(i)) : meta.indicadores, 'Fecundidad (o elegir)...');
-  fillSelect('selIndSerie', meta.indicadores, 'Indicador...');
-  fillSelect('selIndicadorBrecha', meta.indicadores, 'Indicador...');
-  fillSelect('selAnio', meta.años, '(opcional)');
-  fillSelect('selAnioAsoc', meta.años, '(opcional)');
-  fillSelect('selAnioBrecha', meta.años, '(opcional)');
+  const meta=await apiGet('/metadatos'); 
+  META=meta;
+  
+  // Llenar selects
+  fillSelect('selIndicador', meta.indicadores, 'Seleccionar indicador...');
+  fillSelect('selIndObj', (meta.indicadores||[]).filter(i=>/fecund/i.test(i)).length ? 
+    (meta.indicadores||[]).filter(i=>/fecund/i.test(i)) : meta.indicadores, 'Indicador de fecundidad...');
+  fillSelect('selIndSerie', meta.indicadores, 'Seleccionar indicador...');
+  fillSelect('selIndTendencia', meta.indicadores, 'Seleccionar indicador...');
+  fillSelect('selIndicadorBrecha', meta.indicadores, 'Seleccionar indicador...');
+  fillSelect('selLocalidadFiltro', meta.localidades, 'Todas las localidades');
+  
+  // Años
+  const años = [''].concat(meta.años || []);
+  fillSelect('selAnio', años, '(opcional)');
+  fillSelect('selAnioAsoc', años, '(opcional)');
+  fillSelect('selAnioBrecha', años, '(opcional)');
+  
   updateTerritoriosSerie();
 }
+
 async function loadKPI(){
   try{
     const s=await apiGet('/estadisticas/generales');
@@ -325,112 +936,625 @@ async function loadKPI(){
     $('#kIndicadores').textContent=s.indicadores_unicos ?? '—';
     $('#kLocs').textContent=s.localidades_unicas ?? '—';
     $('#kUpz').textContent=s.upzs_unicas ?? '—';
-  }catch{}
+  }catch(e){
+    console.error('Error loading KPIs:', e);
+  }
 }
+
 function updateTerritoriosSerie(){
   const nivel=$('#selNivelSerie').value || 'LOCALIDAD';
-  fillSelect('selTerrSerie', nivel==='LOCALIDAD' ? META.localidades : META.upz, nivel==='LOCALIDAD' ? 'Localidad...' : 'UPZ...');
+  fillSelect('selTerrSerie', nivel==='LOCALIDAD' ? META.localidades : META.upz, 
+    nivel==='LOCALIDAD' ? 'Seleccionar localidad...' : 'Seleccionar UPZ...');
 }
 
 // Upload
 async function upload(){
-  const f=$('#file').files[0]; if(!f){ toast('Selecciona un archivo .xlsx', false); return; }
+  const f=$('#file').files[0]; 
+  if(!f){ toast('Selecciona un archivo .xlsx', false); return; }
   setSpin('uploadSpin', true);
-  try{ const out=await apiPostFile('/upload/excel', f); $('#uploadOut').textContent=JSON.stringify(out, null, 2); toast('Archivo cargado correctamente.'); await loadMeta(); await loadKPI(); }
-  catch(e){ toast('Error subiendo archivo: '+e.message, false); }
+  try{ 
+    const out=await apiPostFile('/upload/excel', f); 
+    $('#uploadOut').textContent=JSON.stringify(out, null, 2); 
+    toast('Archivo cargado correctamente.'); 
+    await loadMeta(); 
+    await loadKPI(); 
+  }
+  catch(e){ 
+    toast('Error subiendo archivo: '+e.message, false); 
+    $('#uploadOut').textContent = 'Error: ' + e.message;
+  }
   finally{ setSpin('uploadSpin', false); }
 }
 
-// OBJ 1
-async function runCaracterizacion(){
-  const indicador=$('#selIndicador').value, nivel=$('#selNivel').value||'LOCALIDAD', año=$('#selAnio').value||'', cohorte=$('#selCohorte').value||'';
-  if(!indicador){ toast('Selecciona un indicador', false); return; }
-  const js=await apiGet('/caracterizacion', {indicador, nivel, 'año':año, cohorte});
-  const rows=js.datos||[]; CARAC=rows;
-  // tabla
-  const tb=$('#tblCarac tbody'); tb.innerHTML=rows.map(o=>`<tr><td class="p-2 border">${o.territorio}</td><td class="p-2 border">${o.n}</td><td class="p-2 border">${o.promedio}</td><td class="p-2 border">${o.mediana}</td><td class="p-2 border">${o.q1}</td><td class="p-2 border">${o.q3}</td><td class="p-2 border">${o.min}</td><td class="p-2 border">${o.max}</td><td class="p-2 border">${o.desv_estandar}</td><td class="p-2 border">${o.cv_pct}</td></tr>`).join('');
-  // chart
-  const top=rows.slice(0,15);
-  const data={labels: top.map(r=>r.territorio), datasets: [{label:`Promedio — ${indicador} (${nivel}${año? ' · '+año:''}${cohorte? ' · '+cohorte:''})`, data: top.map(r=>r.promedio), borderWidth:1, backgroundColor:'#3b82f6'}]};
-  if(charts.carac) charts.carac.destroy();
-  charts.carac=new Chart($('#chartCarac'), {type:'bar', data, options:{responsive:true, plugins:{legend:{display:false}}, scales:{x:{ticks:{autoSkip:false}}}}});
+// Función para cambiar tipo de gráfico
+function toggleChartType(chartId) {
+  if(!charts[chartId]) return;
+  
+  const chart = charts[chartId];
+  const currentType = chart.config.type;
+  const newType = currentType === 'bar' ? 'line' : 'bar';
+  
+  // Destruir y recrear con nuevo tipo
+  chart.destroy();
+  const canvas = $(`#chart${chartId.charAt(0).toUpperCase() + chartId.slice(1)}`);
+  charts[chartId] = new Chart(canvas, {
+    type: newType,
+    data: chart.data,
+    options: chart.options
+  });
 }
 
-// OBJ 2
+// OBJ 1: Caracterización
+async function runCaracterizacion(){
+  const indicador=$('#selIndicador').value;
+  const nivel=$('#selNivel').value||'LOCALIDAD';
+  const año=$('#selAnio').value||'';
+  const cohorte=$('#selCohorte').value||'';
+  const localidad=$('#selLocalidadFiltro').value||'';
+  
+  if(!indicador){ toast('Selecciona un indicador', false); return; }
+  
+  try {
+    const js=await apiGet('/caracterizacion', {indicador, nivel, año, cohorte, localidad});
+    const rows=js.datos||[]; 
+    CARAC=rows;
+    
+    // Mostrar unidad de medida
+    if(js.unidad_medida) {
+      $('#txtUnidadMedida').textContent = js.unidad_medida;
+      $('#unidadMedida').classList.remove('hidden');
+    }
+    
+    // Mostrar resumen de localidad si existe
+    if(js.resumen_localidad) {
+      const rl = js.resumen_localidad;
+      $('#datosLocalidad').innerHTML = `
+        <strong>${rl.territorio}:</strong> Promedio: ${rl.promedio}, 
+        Mediana: ${rl.mediana}, Min: ${rl.min}, Max: ${rl.max}, n=${rl.n}
+      `;
+      $('#resumenLocalidad').classList.remove('hidden');
+    } else {
+      $('#resumenLocalidad').classList.add('hidden');
+    }
+    
+    // Habilitar botón de comparativa si hay filtro de localidad
+    $('#btnComparativa').disabled = !localidad;
+    
+    // Tabla
+    const tb=$('#tblCarac tbody'); 
+    tb.innerHTML=rows.map(o=>`
+      <tr>
+        <td class="p-2 border font-medium">${o.territorio}</td>
+        <td class="p-2 border text-center">${o.n}</td>
+        <td class="p-2 border text-center">${o.promedio}</td>
+        <td class="p-2 border text-center">${o.mediana}</td>
+        <td class="p-2 border text-center">${o.q1}</td>
+        <td class="p-2 border text-center">${o.q3}</td>
+        <td class="p-2 border text-center">${o.min}</td>
+        <td class="p-2 border text-center">${o.max}</td>
+        <td class="p-2 border text-center">${o.desv_estandar}</td>
+        <td class="p-2 border text-center">${o.cv_pct}%</td>
+      </tr>
+    `).join('');
+    
+    // Gráfico
+    const top=rows.slice(0,20);
+    const data={
+      labels: top.map(r=>r.territorio), 
+      datasets: [{
+        label:`Promedio — ${indicador} (${nivel}${año? ' · '+año:''}${cohorte? ' · '+cohorte:''}${localidad? ' · '+localidad:''})`, 
+        data: top.map(r=>r.promedio), 
+        borderWidth:2, 
+        backgroundColor:'#3b82f6',
+        borderColor: '#1d4ed8'
+      }]
+    };
+    
+    if(charts.carac) charts.carac.destroy();
+    charts.carac=new Chart($('#chartCarac'), {
+      type:'bar', 
+      data, 
+      options:{
+        responsive:true, 
+        plugins:{legend:{display:false}}, 
+        scales:{
+          x:{ticks:{autoSkip:false, maxRotation: 45}},
+          y:{beginAtZero:false}
+        }
+      }
+    });
+    
+    toast('Caracterización completada');
+  } catch(e) {
+    toast('Error en caracterización: ' + e.message, false);
+  }
+}
+
+async function runComparativa(){
+  const indicador=$('#selIndicador').value;
+  const localidad=$('#selLocalidadFiltro').value;
+  const año=$('#selAnio').value||'';
+  const cohorte=$('#selCohorte').value||'';
+  
+  if(!indicador || !localidad){ 
+    toast('Selecciona indicador y localidad', false); 
+    return; 
+  }
+  
+  try {
+    const js=await apiGet('/caracterizacion/comparativa', {indicador, localidad, año, cohorte});
+    
+    // Mostrar datos comparativos
+    $('#datosComparativos').innerHTML = `
+      <div class="p-3 bg-blue-50 rounded">
+        <h6 class="font-medium text-blue-800">${localidad}</h6>
+        <p class="text-sm text-blue-700">Promedio: ${js.localidad_stats.promedio} | n=${js.localidad_stats.n}</p>
+      </div>
+      <div class="p-3 bg-green-50 rounded">
+        <h6 class="font-medium text-green-800">Bogotá D.C.</h6>
+        <p class="text-sm text-green-700">Promedio: ${js.bogota_stats.promedio} | n=${js.bogota_stats.n}</p>
+      </div>
+      ${js.upz_stats ? `
+        <div class="p-3 bg-purple-50 rounded">
+          <h6 class="font-medium text-purple-800">UPZ de ${localidad}</h6>
+          <div class="text-xs text-purple-700 max-h-32 overflow-y-auto">
+            ${js.upz_stats.map(u => `<div>${u.upz}: ${u.promedio} (n=${u.n})</div>`).join('')}
+          </div>
+        </div>
+      ` : ''}
+    `;
+    
+    // Gráfico comparativo
+    const labels = ['Localidad', 'Bogotá'];
+    const data_vals = [js.localidad_stats.promedio, js.bogota_stats.promedio];
+    const colors = ['#3b82f6', '#10b981'];
+    
+    if(js.upz_stats && js.upz_stats.length > 0) {
+      js.upz_stats.slice(0,5).forEach(upz => {
+        labels.push(upz.upz);
+        data_vals.push(upz.promedio);
+        colors.push('#8b5cf6');
+      });
+    }
+    
+    const compData = {
+      labels: labels,
+      datasets: [{
+        label: indicador,
+        data: data_vals,
+        backgroundColor: colors,
+        borderWidth: 1
+      }]
+    };
+    
+    if(charts.comparativa) charts.comparativa.destroy();
+    charts.comparativa = new Chart($('#chartComparativa'), {
+      type: 'bar',
+      data: compData,
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { maxRotation: 45 } },
+          y: { beginAtZero: false }
+        }
+      }
+    });
+    
+    $('#panelComparativa').classList.remove('hidden');
+    toast('Comparativa generada');
+  } catch(e) {
+    toast('Error en comparativa: ' + e.message, false);
+  }
+}
+
+// OBJ 2: Asociación
 async function runAsociacion(){
-  const ind=$('#selIndObj').value, nivel=$('#selNivelAsoc').value||'LOCALIDAD', año=$('#selAnioAsoc').value||'', top=$('#inpTop').value||10, cohorte=$('#selCohorteAsoc').value||'';
+  const ind=$('#selIndObj').value;
+  const nivel=$('#selNivelAsoc').value||'LOCALIDAD';
+  const año=$('#selAnioAsoc').value||'';
+  const top=$('#inpTop').value||15;
+  const cohorte=$('#selCohorteAsoc').value||'';
+  
   if(!ind){ toast('Selecciona el indicador objetivo', false); return; }
-  const js=await apiGet('/analisis/asociacion', {indicador_objetivo:ind, nivel, 'año':año, top, cohorte});
-  const rows=js.comparaciones||[]; ASOC=rows;
-  const tb=$('#tblAsoc tbody');
-  tb.innerHTML=rows.map(o=>`<tr>
-    <td class="p-2 border">${o.indicador_comparado}</td>
-    <td class="p-2 border">${o.territorios}</td>
-    <td class="p-2 border">${o.pearson_r} (${o.pearson_p})</td>
-    <td class="p-2 border">${o.spearman_rho} (${o.spearman_p})</td>
-    <td class="p-2 border"><button class="btn text-xs" onclick="verDispersion('${ind}','${nivel}','${año}','${o.indicador_comparado}','${cohorte}')"><i class="ti ti-chart-dots"></i> Ver</button></td>
-  </tr>`).join('');
-  if(charts.disp) charts.disp.destroy(); $('#dispMeta').textContent='Seleccione una fila para visualizar.';
+  
+  try {
+    const js=await apiGet('/analisis/asociacion', {indicador_objetivo:ind, nivel, año, top, cohorte});
+    const rows=js.comparaciones||[]; 
+    ASOC=rows;
+    
+    const tb=$('#tblAsoc tbody');
+    tb.innerHTML=rows.map(o=>`
+      <tr class="cursor-pointer hover:bg-blue-50" onclick="verDispersion('${ind}','${nivel}','${año}','${o.indicador_comparado}','${cohorte}')">
+        <td class="p-2 border">${o.indicador_comparado}</td>
+        <td class="p-2 border text-center">${o.territorios}</td>
+        <td class="p-2 border text-center font-mono">${o.pearson_r}</td>
+        <td class="p-2 border text-center text-xs">${o.pearson_p}</td>
+        <td class="p-2 border text-center">
+          <span class="chip ${o.categoria_correlacion === 'Fuerte' ? 'badge-green' : 
+                              o.categoria_correlacion === 'Moderada' ? 'badge-yellow' : 'badge-red'}">
+            ${o.categoria_correlacion}
+          </span>
+        </td>
+        <td class="p-2 border text-center">
+          ${o.significativa ? '<span class="chip badge-green">Sí</span>' : '<span class="chip">No</span>'}
+        </td>
+        <td class="p-2 border text-center">
+          <button class="btn text-xs"><i class="ti ti-chart-dots"></i></button>
+        </td>
+      </tr>
+    `).join('');
+    
+    if(charts.disp) charts.disp.destroy(); 
+    $('#dispMeta').textContent='Haz clic en una correlación para visualizar la dispersión.';
+    $('#dispStats').classList.add('hidden');
+    
+    toast('Análisis de asociación completado');
+  } catch(e) {
+    toast('Error en análisis de asociación: ' + e.message, false);
+  }
 }
 
 async function verDispersion(indObj, nivel, año, indX, cohorte){
-  const y=await apiGet('/caracterizacion', {indicador:indObj, nivel, 'año':año, cohorte});
-  const x=await apiGet('/caracterizacion', {indicador:indX, nivel, 'año':año, cohorte});
-  const mapY=new Map((y.datos||[]).map(r=>[r.territorio, r.promedio]));
-  const pares=(x.datos||[]).filter(r=>mapY.has(r.territorio)).map(r=>({x:r.promedio, y:mapY.get(r.territorio)}));
-  if(!pares.length){ toast('Sin territorios comunes', false); return; }
-  if(charts.disp) charts.disp.destroy();
-  charts.disp=new Chart($('#chartDisp'), {type:'scatter', data:{datasets:[{label:`${indX} vs ${indObj}`, data:pares}]}, options:{plugins:{legend:{display:false}}, scales:{x:{title:{display:true,text:indX}}, y:{title:{display:true,text:indObj}}}}});
-  $('#dispMeta').textContent=`Puntos: ${pares.length}`;
+  try {
+    const js = await apiGet('/analisis/asociacion/detalle', {
+      indicador_objetivo: indObj,
+      indicador_comparado: indX,
+      nivel, año, cohorte
+    });
+    
+    const pares = js.datos || [];
+    if(!pares.length){ 
+      toast('Sin territorios comunes', false); 
+      return; 
+    }
+    
+    // Calcular estadísticas de correlación
+    const xs = pares.map(p => p.x);
+    const ys = pares.map(p => p.y);
+    
+    if(charts.disp) charts.disp.destroy();
+    charts.disp=new Chart($('#chartDisp'), {
+      type:'scatter', 
+      data:{
+        datasets:[{
+          label:`${indX} vs ${indObj}`, 
+          data:pares.map(p => ({x: p.x, y: p.y})),
+          backgroundColor: '#3b82f6',
+          pointRadius: 4,
+          pointHoverRadius: 6
+        }]
+      }, 
+      options:{
+        responsive: true,
+        plugins:{
+          legend:{display:false},
+          tooltip: {
+            callbacks: {
+              title: function(context) {
+                const punto = pares[context[0].dataIndex];
+                return punto.territorio;
+              },
+              label: function(context) {
+                return `${indX}: ${context.parsed.x}, ${indObj}: ${context.parsed.y}`;
+              }
+            }
+          }
+        }, 
+        scales:{
+          x:{title:{display:true,text:indX}}, 
+          y:{title:{display:true,text:indObj}}
+        }
+      }
+    });
+    
+    $('#dispMeta').textContent=`${js.territorios_comunes} territorios comunes`;
+    $('#dispStats').innerHTML = `
+      <div><strong>Territorios:</strong> ${js.territorios_comunes}</div>
+      <div><strong>Nivel:</strong> ${js.nivel}</div>
+      ${js.año ? `<div><strong>Año:</strong> ${js.año}</div>` : ''}
+      ${js.cohorte ? `<div><strong>Cohorte:</strong> ${js.cohorte}</div>` : ''}
+    `;
+    $('#dispStats').classList.remove('hidden');
+  } catch(e) {
+    toast('Error al cargar dispersión: ' + e.message, false);
+  }
 }
 
-// OBJ 3
+// OBJ 3: Brechas
 async function runBrechas(){
-  const indicador=$('#selIndicadorBrecha').value, nivel=$('#selNivelBrecha').value||'LOCALIDAD', año=$('#selAnioBrecha').value||'';
+  const indicador=$('#selIndicadorBrecha').value;
+  const nivel=$('#selNivelBrecha').value||'LOCALIDAD';
+  const año=$('#selAnioBrecha').value||'';
+  
   if(!indicador){ toast('Selecciona un indicador', false); return; }
-  const js=await apiGet('/brechas/cohortes', {indicador, nivel, 'año':año});
-  const rows=js.datos||[]; BRECHA=rows;
-  const tb=$('#tblBrecha tbody');
-  tb.innerHTML=rows.map(o=>`<tr><td class="p-2 border">${o.territorio}</td><td class="p-2 border">${o.prom_10_14}</td><td class="p-2 border">${o.prom_15_19}</td><td class="p-2 border">${o.brecha_abs}</td><td class="p-2 border">${o.brecha_rel??''}</td></tr>`).join('');
-  // chart
-  const top=rows.slice(0,15);
-  const data={labels: top.map(r=>r.territorio), datasets:[{label:'Brecha (15–19 - 10–14)', data: top.map(r=>r.brecha_abs), backgroundColor:'#60a5fa'}]};
-  if(charts.brecha) charts.brecha.destroy();
-  charts.brecha=new Chart($('#chartBrecha'), {type:'bar', data, options:{responsive:true, plugins:{legend:{display:false}}, scales:{x:{ticks:{autoSkip:false}}}}});
+  
+  try {
+    const js=await apiGet('/brechas/cohortes', {indicador, nivel, año});
+    const rows=js.datos||[]; 
+    BRECHA=rows;
+    
+    // Mostrar unidad de medida
+    if(js.unidad_medida) {
+      $('#txtUnidadMedidaBrecha').textContent = js.unidad_medida;
+      $('#unidadMedidaBrecha').classList.remove('hidden');
+    }
+    
+    // Mostrar resumen
+    if(js.resumen) {
+      $('#brechaPromedio').textContent = js.resumen.brecha_promedio + ' ' + (js.unidad_medida || '');
+      $('#totalTerritorios').textContent = js.total_territorios;
+      $('#mayorBrecha').textContent = js.resumen.mayor_brecha || '—';
+      $('#menorBrecha').textContent = js.resumen.menor_brecha || '—';
+      $('#resumenBrechas').classList.remove('hidden');
+    }
+    
+    // Tabla
+    const tb=$('#tblBrecha tbody');
+    tb.innerHTML=rows.map(o=>`
+      <tr>
+        <td class="p-2 border font-medium">${o.territorio}</td>
+        <td class="p-2 border text-center">${o.prom_10_14}</td>
+        <td class="p-2 border text-center">${o.prom_15_19}</td>
+        <td class="p-2 border text-center font-mono ${o.brecha_abs > 0 ? 'text-red-600' : 'text-green-600'}">${o.brecha_abs}</td>
+        <td class="p-2 border text-center">${o.cambio_porcentual ? o.cambio_porcentual + '%' : '—'}</td>
+        <td class="p-2 border text-center text-xs">${o.n_10_14}</td>
+        <td class="p-2 border text-center text-xs">${o.n_15_19}</td>
+      </tr>
+    `).join('');
+    
+    // Gráfico
+    const top=rows.slice(0,15);
+    const data={
+      labels: top.map(r=>r.territorio), 
+      datasets:[{
+        label:'Brecha (15–19 - 10–14)', 
+        data: top.map(r=>r.brecha_abs), 
+        backgroundColor: top.map(r => r.brecha_abs > 0 ? '#ef4444' : '#10b981'),
+        borderWidth: 1
+      }]
+    };
+    
+    if(charts.brecha) charts.brecha.destroy();
+    charts.brecha=new Chart($('#chartBrecha'), {
+      type:'bar', 
+      data, 
+      options:{
+        responsive:true, 
+        plugins:{legend:{display:false}}, 
+        scales:{
+          x:{ticks:{autoSkip:false, maxRotation: 45}},
+          y:{
+            title: {
+              display: true,
+              text: 'Brecha (' + (js.unidad_medida || '') + ')'
+            }
+          }
+        }
+      }
+    });
+    
+    toast('Análisis de brechas completado');
+  } catch(e) {
+    toast('Error en análisis de brechas: ' + e.message, false);
+  }
 }
 
-// OBJ 4
+// OBJ 4: Series temporales
 async function runSerie(){
-  const indicador=$('#selIndSerie').value, nivel=$('#selNivelSerie').value||'LOCALIDAD', terr=$('#selTerrSerie').value;
-  if(!indicador||!terr){ toast('Selecciona indicador y territorio', false); return; }
-  const j10=await apiGet('/datos/series', {indicador, territorio:terr, nivel, cohorte:'10-14'});
-  const j15=await apiGet('/datos/series', {indicador, territorio:terr, nivel, cohorte:'15-19'});
-  const s10=(j10.serie||[]), s15=(j15.serie||[]);
-  const years=Array.from(new Set([...s10.map(x=>x.año), ...s15.map(x=>x.año)])).sort((a,b)=>a-b);
-  const d10=years.map(y=>{ const p=s10.find(x=>x.año===y); return p? p.valor : null; });
-  const d15=years.map(y=>{ const p=s15.find(x=>x.año===y); return p? p.valor : null; });
-  if(charts.serie) charts.serie.destroy();
-  charts.serie=new Chart($('#chartSerie'), {type:'line', data:{labels:years, datasets:[
-    {label:'10–14', data:d10, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.3)', tension:.2},
-    {label:'15–19', data:d15, borderColor:'#06b6d4', backgroundColor:'rgba(6,182,212,.3)', tension:.2}
-  ]}, options:{plugins:{legend:{display:true}}, scales:{y:{beginAtZero:false}}}});
+  const indicador=$('#selIndSerie').value;
+  const nivel=$('#selNivelSerie').value||'LOCALIDAD';
+  const territorio=$('#selTerrSerie').value;
+  
+  if(!indicador||!territorio){ 
+    toast('Selecciona indicador y territorio', false); 
+    return; 
+  }
+  
+  try {
+    const j10=await apiGet('/datos/series', {indicador, territorio, nivel, cohorte:'10-14'});
+    const j15=await apiGet('/datos/series', {indicador, territorio, nivel, cohorte:'15-19'});
+    
+    const s10=(j10.serie||[]), s15=(j15.serie||[]);
+    const years=Array.from(new Set([...s10.map(x=>x.año), ...s15.map(x=>x.año)])).sort((a,b)=>a-b);
+    const d10=years.map(y=>{ const p=s10.find(x=>x.año===y); return p? p.valor : null; });
+    const d15=years.map(y=>{ const p=s15.find(x=>x.año===y); return p? p.valor : null; });
+    
+    if(charts.serie) charts.serie.destroy();
+    charts.serie=new Chart($('#chartSerie'), {
+      type:'line', 
+      data:{
+        labels:years, 
+        datasets:[
+          {
+            label:'10–14', 
+            data:d10, 
+            borderColor:'#3b82f6', 
+            backgroundColor:'rgba(59,130,246,.2)', 
+            tension:.3,
+            pointRadius: 4
+          },
+          {
+            label:'15–19', 
+            data:d15, 
+            borderColor:'#06b6d4', 
+            backgroundColor:'rgba(6,182,212,.2)', 
+            tension:.3,
+            pointRadius: 4
+          }
+        ]
+      }, 
+      options:{
+        responsive: true,
+        plugins:{legend:{display:true}}, 
+        scales:{
+          y:{
+            beginAtZero:false,
+            title: {
+              display: true,
+              text: (j10.unidad_medida || j15.unidad_medida || '')
+            }
+          },
+          x:{
+            title: {
+              display: true,
+              text: 'Año'
+            }
+          }
+        }
+      }
+    });
+    
+    // Mostrar unidad de medida
+    const unidad = j10.unidad_medida || j15.unidad_medida || '';
+    $('#unidadMedidaSerie').textContent = unidad ? `Unidad: ${unidad}` : '';
+    
+    $('#panelSeries').classList.remove('hidden');
+    toast('Serie temporal generada');
+  } catch(e) {
+    toast('Error en serie temporal: ' + e.message, false);
+  }
 }
 
-// Export
+// OBJ 4: Análisis de tendencias
+async function runTendencias(){
+  const indicador=$('#selIndTendencia').value;
+  const nivel=$('#selNivelTendencia').value||'LOCALIDAD';
+  const cohorte=$('#selCohorteTendencia').value||'';
+  
+  if(!indicador){ 
+    toast('Selecciona un indicador', false); 
+    return; 
+  }
+  
+  try {
+    const js=await apiGet('/analisis/tendencias', {indicador, nivel, cohorte});
+    const rows=js.tendencias||[]; 
+    TENDENCIAS=rows;
+    
+    // Tabla
+    const tb=$('#tblTendencias tbody');
+    tb.innerHTML=rows.map(o=>`
+      <tr>
+        <td class="p-2 border font-medium">${o.territorio}</td>
+        <td class="p-2 border text-center text-xs">${o.periodo}</td>
+        <td class="p-2 border text-center">${o.valor_inicial}</td>
+        <td class="p-2 border text-center">${o.valor_final}</td>
+        <td class="p-2 border text-center ${(o.cambio_porcentual || 0) > 0 ? 'text-red-600' : 'text-green-600'}">${o.cambio_porcentual ? o.cambio_porcentual + '%' : '—'}</td>
+        <td class="p-2 border text-center font-mono text-xs">${o.pendiente}</td>
+        <td class="p-2 border text-center text-xs">${o.r_cuadrado}</td>
+        <td class="p-2 border text-center">
+          <span class="chip ${
+            o.clasificacion.includes('Creciente') ? 'badge-red' : 
+            o.clasificacion.includes('Decreciente') ? 'badge-green' : 
+            'badge-yellow'
+          }">${o.clasificacion}</span>
+        </td>
+      </tr>
+    `).join('');
+    
+    // Gráfico de clasificaciones
+    const clasificaciones = {};
+    rows.forEach(r => {
+      clasificaciones[r.clasificacion] = (clasificaciones[r.clasificacion] || 0) + 1;
+    });
+    
+    const clasData = {
+      labels: Object.keys(clasificaciones),
+      datasets: [{
+        data: Object.values(clasificaciones),
+        backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
+      }]
+    };
+    
+    if(charts.tendencias) charts.tendencias.destroy();
+    charts.tendencias = new Chart($('#chartTendencias'), {
+      type: 'doughnut',
+      data: clasData,
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true, position: 'bottom' }
+        }
+      }
+    });
+    
+    $('#panelTendencias').classList.remove('hidden');
+    toast('Análisis de tendencias completado');
+  } catch(e) {
+    toast('Error en análisis de tendencias: ' + e.message, false);
+  }
+}
+
+// Export functions
 function downloadCSV(kind){
   let rows=[], headers=[];
-  if(kind==='carac'){ rows=CARAC; headers=['territorio','n','promedio','mediana','q1','q3','min','max','desv_estandar','cv_pct']; }
-  else if(kind==='asoc'){ rows=ASOC; headers=['indicador_comparado','territorios','pearson_r','pearson_p','spearman_rho','spearman_p']; }
-  else if(kind==='brecha'){ rows=BRECHA; headers=['territorio','prom_10_14','prom_15_19','brecha_abs','brecha_rel']; }
-  else { toast('Nada para exportar', false); return; }
-  if(!rows.length){ toast('No hay datos para exportar', false); return; }
-  const csv=toCSV(rows, headers); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=kind+'.csv'; a.click(); URL.revokeObjectURL(a.href);
+  let filename = kind;
+  
+  if(kind==='carac'){ 
+    rows=CARAC; 
+    headers=['territorio','n','promedio','mediana','q1','q3','min','max','desv_estandar','cv_pct']; 
+    filename = 'caracterizacion';
+  }
+  else if(kind==='asoc'){ 
+    rows=ASOC; 
+    headers=['indicador_comparado','territorios','pearson_r','pearson_p','spearman_rho','spearman_p','categoria_correlacion','significativa']; 
+    filename = 'asociaciones';
+  }
+  else if(kind==='brecha'){ 
+    rows=BRECHA; 
+    headers=['territorio','prom_10_14','prom_15_19','brecha_abs','cambio_porcentual','n_10_14','n_15_19']; 
+    filename = 'brechas';
+  }
+  else if(kind==='tendencias'){ 
+    rows=TENDENCIAS; 
+    headers=['territorio','periodo','valor_inicial','valor_final','cambio_porcentual','pendiente','r_cuadrado','clasificacion']; 
+    filename = 'tendencias';
+  }
+  else { 
+    toast('Nada para exportar', false); 
+    return; 
+  }
+  
+  if(!rows.length){ 
+    toast('No hay datos para exportar', false); 
+    return; 
+  }
+  
+  const csv=toCSV(rows, headers); 
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); 
+  const a=document.createElement('a'); 
+  a.href=URL.createObjectURL(blob); 
+  a.download=filename + '_' + new Date().toISOString().split('T')[0] + '.csv'; 
+  a.click(); 
+  URL.revokeObjectURL(a.href);
+  
+  toast(`Archivo ${filename}.csv descargado`);
 }
 
-// Init
-$('#btnRefMeta').addEventListener('click', async()=>{ await loadMeta(); await loadKPI(); toast('Metadatos actualizados'); });
+// Event listeners
+$('#btnRefMeta').addEventListener('click', async()=>{ 
+  try {
+    await loadMeta(); 
+    await loadKPI(); 
+    toast('Metadatos actualizados'); 
+  } catch(e) {
+    toast('Error actualizando metadatos: ' + e.message, false);
+  }
+});
+
 $('#selNivelSerie').addEventListener('change', updateTerritoriosSerie);
-window.addEventListener('load', async()=>{ await loadMeta(); await loadKPI(); });
+
+// Initialize
+window.addEventListener('load', async()=>{ 
+  try {
+    await loadMeta(); 
+    await loadKPI(); 
+    toast('Aplicación iniciada correctamente');
+  } catch(e) {
+    toast('Error inicializando aplicación: ' + e.message, false);
+  }
+});
 </script>
 </body>
 </html>
