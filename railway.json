@@ -2,18 +2,19 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pip install -r requirements.txt"
+    "buildCommand": "pip install --upgrade pip && pip install -r requirements.txt"
   },
   "deploy": {
-    "startCommand": "uvicorn main:app --host 0.0.0.0 --port $PORT",
-    "healthcheckPath": "/docs",
+    "startCommand": "uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1",
+    "healthcheckPath": "/health",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   },
   "environment": {
     "PYTHONPATH": "/app",
-    "PYTHONUNBUFFERED": "1"
+    "PYTHONUNBUFFERED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1"
   },
   "regions": ["us-west1"],
   "plugins": ["postgresql"]
