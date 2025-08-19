@@ -3,243 +3,273 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>API Fecundidad Temprana - Dashboard</title>
+  <title>Fecundidad · Panel Analítico (Objetivo 1)</title>
+
+  <!-- TailwindCSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { primary: {DEFAULT:'#2563eb'} } } }
+    }
+  </script>
+
+  <!-- Chart.js for visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
   <style>
-    body{font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin:20px; line-height:1.35}
-    header{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap}
-    h1{font-size:22px; margin:0}
-    section{margin-top:18px; padding:14px; border:1px solid #e5e7eb; border-radius:12px}
-    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
-    label{font-size:12px; color:#374151; display:block; margin-bottom:4px}
-    input, select, button{padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; font-size:14px}
-    button{cursor:pointer}
-    table{border-collapse:collapse; width:100%; margin-top:10px; font-size:13px}
-    th, td{border:1px solid #e5e7eb; padding:6px 8px; text-align:left}
-    th{background:#f9fafb}
-    .muted{color:#6b7280}
-    .tag{display:inline-block; padding:2px 6px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:12px}
-    .ok{color:#047857}
-    .err{color:#b91c1c}
-    .small{font-size:12px}
-    .grid{display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:10px}
-    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
-    #log{white-space:pre-wrap; font-size:12px; color:#374151; background:#f9fafb; padding:8px; border-radius:8px}
+    .card { background:#fff; border-radius:1rem; box-shadow:0 1px 2px rgba(0,0,0,.04); border:1px solid #e2e8f0; }
+    .btn  { display:inline-flex; align-items:center; gap:.5rem; padding:.5rem .75rem; border-radius:.5rem; border:1px solid #cbd5e1; background:#fff; }
+    .btn:hover { background:#f8fafc }
+    .btn-primary { background:#2563eb; border-color:#2563eb; color:#fff; }
+    .btn-primary:hover { background:#1d4ed8 }
+    .tag { display:inline-flex; align-items:center; padding:.125rem .5rem; border-radius:999px; font-size:.75rem; background:#f1f5f9; color:#334155; }
+    .muted { color:#64748b; }
+    .input, .select { width:100%; padding:.5rem .75rem; border:1px solid #cbd5e1; border-radius:.5rem; background:#fff; }
+    .table { width:100%; border-collapse:collapse; font-size:.875rem; }
+    .table th, .table td { border:1px solid #e2e8f0; padding:.5rem .75rem; text-align:left; }
+    .table th { background:#f8fafc; }
+    .kpi { font-size:1.5rem; font-weight:600; }
+    .toast { position: fixed; right: 1rem; bottom: 1rem; z-index: 9999; }
+    .spinner { border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 9999px; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
-<body>
-<header>
-  <h1>API Fecundidad Temprana · <span class="muted small">Objetivo 1: caracterización</span></h1>
-  <div><a href="/docs" target="_blank">/docs</a></div>
-</header>
+<body class="bg-slate-50 text-slate-800">
+  <header class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-primary"></div>
+        <div>
+          <h1 class="text-lg font-semibold">Panel Analítico — Fecundidad Temprana</h1>
+          <p class="text-xs muted">Objetivo 1: Caracterizar indicadores por territorio y periodo; comparar fecundidad vs determinantes</p>
+        </div>
+      </div>
+      <nav class="flex items-center gap-2">
+        <a class="btn" href="/docs" target="_blank">OpenAPI /docs</a>
+        <button id="btnRefMeta" class="btn" title="Refrescar metadatos">↻</button>
+      </nav>
+    </div>
+  </header>
 
-<section>
-  <h3>Cargar archivo consolidado (.xlsx)</h3>
-  <div class="row">
-    <input type="file" id="file" accept=".xlsx,.xls"/>
-    <button onclick="upload()">Subir</button>
-  </div>
-  <div id="uploadResult" class="small muted"></div>
-</section>
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <!-- Carga -->
+    <section class="card p-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold">Carga de datos</h2>
+        <div class="text-xs muted">POST <span class="tag">/upload/excel</span></div>
+      </div>
+      <div class="mt-3 grid sm:grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm">Archivo consolidado (.xlsx)</label>
+          <input id="file" type="file" accept=".xlsx,.xls" class="mt-1 input"/>
+        </div>
+        <div class="flex items-end gap-2">
+          <button class="btn btn-primary" onclick="upload()">Subir y procesar</button>
+          <div id="uploadSpin" class="hidden spinner"></div>
+        </div>
+      </div>
+      <pre id="uploadOut" class="mt-3 text-xs whitespace-pre-wrap muted"></pre>
+    </section>
 
-<section>
-  <h3>Metadatos &amp; Indicadores</h3>
-  <div class="row">
-    <button onclick="loadMeta()">Refrescar metadatos</button>
-    <input id="buscarInd" placeholder="Buscar indicador..."/>
-    <button onclick="listIndicadores()">Listar</button>
-  </div>
-  <div id="meta" class="small"></div>
-  <div id="indicadores"></div>
-</section>
+    <!-- KPIs -->
+    <section class="card p-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold">Estado de datos</h2>
+        <div class="text-xs muted">GET <span class="tag">/metadatos</span> · GET <span class="tag">/estadisticas/generales</span></div>
+      </div>
+      <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="p-3 rounded-xl bg-slate-100"><div class="muted text-xs">Registros</div><div id="kTotal" class="kpi">—</div></div>
+        <div class="p-3 rounded-xl bg-slate-100"><div class="muted text-xs">Indicadores</div><div id="kIndicadores" class="kpi">—</div></div>
+        <div class="p-3 rounded-xl bg-slate-100"><div class="muted text-xs">Localidades</div><div id="kLocs" class="kpi">—</div></div>
+        <div class="p-3 rounded-xl bg-slate-100"><div class="muted text-xs">UPZ</div><div id="kUpz" class="kpi">—</div></div>
+      </div>
+      <div class="mt-3 grid sm:grid-cols-3 gap-3">
+        <div><label class="text-sm">Indicador</label><select id="selIndicador" class="select"></select></div>
+        <div><label class="text-sm">Nivel territorial</label><select id="selNivel" class="select"><option>LOCALIDAD</option><option>UPZ</option></select></div>
+        <div><label class="text-sm">Año (opcional)</label><select id="selAnio" class="select"></select></div>
+      </div>
+      <div class="mt-3 flex items-center gap-2">
+        <button class="btn btn-primary" onclick="runCaracterizacion()">Caracterizar</button>
+        <button class="btn" onclick="downloadCSV('carac')">Descargar CSV</button>
+        <div id="caracSpin" class="hidden spinner"></div>
+      </div>
+      <div class="mt-4 grid lg:grid-cols-2 gap-4">
+        <div class="card p-3">
+          <h3 class="font-medium">Distribución por territorio</h3>
+          <canvas id="chartCarac" height="200"></canvas>
+        </div>
+        <div class="card p-3 overflow-auto">
+          <h3 class="font-medium">Resumen estadístico</h3>
+          <table class="table mt-2" id="tblCarac">
+            <thead><tr><th>Territorio</th><th>n</th><th>Prom.</th><th>Mediana</th><th>Q1</th><th>Q3</th><th>Mín</th><th>Máx</th><th>DE</th><th>CV%</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
-<section>
-  <h3>Caracterización por territorio</h3>
-  <div class="grid">
-    <div>
-      <label>Indicador</label>
-      <input id="indCar" placeholder="Nombre exacto del indicador"/>
-    </div>
-    <div>
-      <label>Nivel</label>
-      <select id="nivelCar">
-        <option>LOCALIDAD</option>
-        <option>UPZ</option>
-      </select>
-    </div>
-    <div>
-      <label>Año (opcional)</label>
-      <input id="anioCar" type="number" placeholder="ej. 2020"/>
-    </div>
-  </div>
-  <div class="row" style="margin-top:8px">
-    <button onclick="runCaracterizacion()">Calcular</button>
-  </div>
-  <div id="caracterizacion"></div>
-</section>
+    <!-- Asociación -->
+    <section class="card p-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold">Asociación (correlaciones) — Fecundidad vs determinantes</h2>
+        <div class="text-xs muted">GET <span class="tag">/analisis/asociacion</span></div>
+      </div>
+      <div class="mt-3 grid sm:grid-cols-4 gap-3">
+        <div><label class="text-sm">Indicador objetivo (fecundidad)</label><select id="selIndObj" class="select"></select></div>
+        <div><label class="text-sm">Nivel territorial</label><select id="selNivelAsoc" class="select"><option>LOCALIDAD</option><option>UPZ</option></select></div>
+        <div><label class="text-sm">Año (opcional)</label><select id="selAnioAsoc" class="select"></select></div>
+        <div><label class="text-sm">Top</label><input id="inpTop" type="number" min="3" max="50" value="10" class="input"></div>
+      </div>
+      <div class="mt-3 flex items-center gap-2">
+        <button class="btn btn-primary" onclick="runAsociacion()">Analizar</button>
+        <button class="btn" onclick="downloadCSV('asoc')">Descargar CSV</button>
+        <div id="asocSpin" class="hidden spinner"></div>
+      </div>
+      <div class="mt-4 grid lg:grid-cols-2 gap-4">
+        <div class="card p-3 overflow-auto">
+          <h3 class="font-medium">Ranking por |r (Pearson)|</h3>
+          <table class="table mt-2" id="tblAsoc">
+            <thead><tr><th>Indicador comparado</th><th>Territorios</th><th>Pearson r (p)</th><th>Spearman ρ (p)</th><th>Ver dispersión</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="card p-3">
+          <h3 class="font-medium">Dispersión (territorial)</h3>
+          <canvas id="chartDisp" height="200"></canvas>
+          <p class="text-xs muted mt-1" id="dispMeta">Seleccione una fila del ranking para ver la dispersión.</p>
+        </div>
+      </div>
+    </section>
 
-<section>
-  <h3>Asociación con otros determinantes (correlaciones)</h3>
-  <div class="grid">
-    <div>
-      <label>Indicador objetivo (fecundidad)</label>
-      <input id="indTarget" placeholder="Nombre exacto del indicador de fecundidad"/>
-    </div>
-    <div>
-      <label>Nivel</label>
-      <select id="nivelAsoc">
-        <option>LOCALIDAD</option>
-        <option>UPZ</option>
-      </select>
-    </div>
-    <div>
-      <label>Año (opcional)</label>
-      <input id="anioAsoc" type="number" placeholder="ej. 2020"/>
-    </div>
-    <div>
-      <label>Top</label>
-      <input id="topAsoc" type="number" value="10" min="3" max="50"/>
-    </div>
-  </div>
-  <div class="row" style="margin-top:8px">
-    <button onclick="runAsociacion()">Analizar</button>
-  </div>
-  <div id="asociacion"></div>
-</section>
+    <!-- Serie temporal -->
+    <section class="card p-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-semibold">Serie temporal</h2>
+        <div class="text-xs muted">GET <span class="tag">/datos/series</span></div>
+      </div>
+      <div class="mt-3 grid sm:grid-cols-4 gap-3">
+        <div><label class="text-sm">Indicador</label><select id="selIndSerie" class="select"></select></div>
+        <div><label class="text-sm">Nivel territorial</label><select id="selNivelSerie" class="select"><option>LOCALIDAD</option><option>UPZ</option></select></div>
+        <div><label class="text-sm">Territorio</label><select id="selTerrSerie" class="select"></select></div>
+        <div class="flex items-end"><button class="btn btn-primary w-full" onclick="runSerie()">Obtener</button></div>
+      </div>
+      <div class="mt-3 card p-3"><canvas id="chartSerie" height="160"></canvas></div>
+    </section>
+  </main>
 
-<section>
-  <h3>Serie temporal</h3>
-  <div class="grid">
-    <div>
-      <label>Indicador</label>
-      <input id="indSerie"/>
-    </div>
-    <div>
-      <label>Nivel</label>
-      <select id="nivelSerie">
-        <option>LOCALIDAD</option>
-        <option>UPZ</option>
-      </select>
-    </div>
-    <div>
-      <label>Territorio</label>
-      <input id="terrSerie" placeholder="Nombre exacto"/>
-    </div>
-  </div>
-  <div class="row" style="margin-top:8px">
-    <button onclick="runSerie()">Obtener</button>
-  </div>
-  <div id="serie" class="mono small"></div>
-</section>
-
-<section>
-  <details>
-    <summary>Log</summary>
-    <div id="log"></div>
-  </details>
-</section>
+  <div class="toast"></div>
 
 <script>
-const log = (msg) => {
-  const el = document.getElementById('log');
-  el.textContent += `\n${new Date().toLocaleTimeString()} · ${msg}`;
+const $ = (q) => document.querySelector(q);
+function toast(msg, ok=true){
+  const t=document.createElement('div');
+  t.className='mt-2 px-3 py-2 rounded-xl shadow bg-white border '+(ok?'border-green-200 text-green-700':'border-rose-200 text-rose-700');
+  t.textContent=msg; document.querySelector('.toast').appendChild(t); setTimeout(()=>t.remove(),4000);
 }
+function setSpin(id,on){ const el=document.getElementById(id); if(el) el.classList.toggle('hidden',!on); }
+function fillSelect(id,arr,ph){ const el=$(id.startsWith('#')?id:'#'+id); if(!el) return; const keep=el.value; el.innerHTML=''; const o=document.createElement('option'); o.value=''; o.textContent=ph||'Selecciona...'; el.appendChild(o); (arr||[]).forEach(v=>{ const opt=document.createElement('option'); opt.value=v; opt.textContent=v; el.appendChild(opt); }); el.value=keep; }
+function toCSV(rows, headers){ const esc=s=>('"'+String(s??'').replace(/"/g,'""')+'"'); const head=headers.map(esc).join(','); const body=(rows||[]).map(r=>headers.map(h=>esc(r[h])).join(',')).join('\n'); return head+'\n'+body; }
+
+let META={indicadores:[],localidades:[],upz:[],años:[]}, CARAC=[], ASOC=[], charts={};
+
+async function apiGet(path, params){
+  const url=new URL(path, location.origin); if(params){ for(const[k,v] of Object.entries(params)){ if(v!==''&&v!=null) url.searchParams.append(k,v); } }
+  const res=await fetch(url); if(!res.ok) throw new Error((await res.text())||res.statusText); return res.json();
+}
+async function apiPostFile(path, file){ const fd=new FormData(); fd.append('file',file); const res=await fetch(path,{method:'POST',body:fd}); if(!res.ok) throw new Error((await res.text())||res.statusText); return res.json(); }
 
 async function upload(){
-  const f = document.getElementById('file').files[0];
-  if(!f){ alert('Selecciona un archivo'); return; }
-  const fd = new FormData();
-  fd.append('file', f);
-  const res = await fetch('/upload/excel', { method: 'POST', body: fd });
-  const js = await res.json();
-  document.getElementById('uploadResult').textContent = JSON.stringify(js, null, 2);
-  log('Upload -> ' + res.status);
+  const f=document.getElementById('file').files[0]; if(!f){ toast('Selecciona un archivo .xlsx',false); return; }
+  setSpin('uploadSpin',true);
+  try{ const out=await apiPostFile('/upload/excel',f); document.getElementById('uploadOut').textContent=JSON.stringify(out,null,2); toast('Archivo cargado correctamente.'); await loadMeta(); await loadStats(); }
+  catch(e){ console.error(e); toast('Error subiendo archivo: '+e.message,false); }
+  finally{ setSpin('uploadSpin',false); }
 }
 
 async function loadMeta(){
-  const r = await fetch('/metadatos');
-  const js = await r.json();
-  document.getElementById('meta').textContent = JSON.stringify(js, null, 2);
-  log('Metadatos -> ' + r.status);
+  try{
+    const meta=await apiGet('/metadatos'); META=meta;
+    fillSelect('selIndicador', meta.indicadores, 'Indicador...');
+    fillSelect('selIndSerie', meta.indicadores, 'Indicador...');
+    const fec=(meta.indicadores||[]).filter(x=>/fecund/i.test(x));
+    fillSelect('selIndObj', fec.length?fec:meta.indicadores, 'Fecundidad (o elegir otro)...');
+    fillSelect('selAnio', meta.años, '(opcional)');
+    fillSelect('selAnioAsoc', meta.años, '(opcional)');
+    updateTerritoriosSerie();
+  }catch{ toast('No fue posible obtener metadatos',false); }
 }
-
-async function listIndicadores(){
-  const q = document.getElementById('buscarInd').value || '';
-  const r = await fetch('/indicadores' + (q?`?buscar=${encodeURIComponent(q)}`:''));
-  const js = await r.json();
-  const rows = Array.isArray(js) ? js : [];
-  const html = ['<table><thead><tr><th>Indicador</th><th>Unidad</th><th>Registros</th></tr></thead><tbody>',
-    ...rows.map(o => `<tr><td>${o.indicador}</td><td>${o.unidad||''}</td><td>${o.registros}</td></tr>`),
-    '</tbody></table>'
-  ].join('');
-  document.getElementById('indicadores').innerHTML = html;
-  log('Indicadores -> ' + r.status + ' (' + rows.length + ' filas)');
+async function loadStats(){
+  try{
+    const s=await apiGet('/estadisticas/generales');
+    document.getElementById('kTotal').textContent=s.total_registros??'—';
+    document.getElementById('kIndicadores').textContent=s.indicadores_unicos??'—';
+    document.getElementById('kLocs').textContent=s.localidades_unicas??'—';
+    document.getElementById('kUpz').textContent=s.upzs_unicas??'—';
+  }catch{}
 }
+function updateTerritoriosSerie(){ const nivel=document.getElementById('selNivelSerie').value||'LOCALIDAD'; fillSelect('selTerrSerie', nivel==='LOCALIDAD'?(META.localidades||[]):(META.upz||[]), nivel==='LOCALIDAD'?'Localidad...':'UPZ...'); }
 
 async function runCaracterizacion(){
-  const ind = document.getElementById('indCar').value.trim();
-  const nivel = document.getElementById('nivelCar').value;
-  const anio = document.getElementById('anioCar').value.trim();
-  if(!ind){ alert('Ingresa el nombre exacto del indicador.'); return; }
-  const url = new URL(location.origin + '/caracterizacion');
-  url.searchParams.set('indicador', ind);
-  url.searchParams.set('nivel', nivel);
-  if(anio) url.searchParams.set('año', anio);
-  const r = await fetch(url);
-  const js = await r.json();
-  if(js.datos){
-    const rows = js.datos;
-    const html = ['<div class="small muted">Promedio general: '+ js.resumen.promedio_general +'</div>',
-      '<table><thead><tr><th>Territorio</th><th>n</th><th>Promedio</th><th>Mediana</th><th>Q1</th><th>Q3</th><th>Mín</th><th>Máx</th><th>DE</th><th>CV%</th></tr></thead><tbody>',
-      ...rows.map(o => `<tr><td>${o.territorio}</td><td>${o.n}</td><td>${o.promedio}</td><td>${o.mediana}</td><td>${o.q1}</td><td>${o.q3}</td><td>${o.min}</td><td>${o.max}</td><td>${o.desv_estandar}</td><td>${o.cv_pct}</td></tr>`),
-      '</tbody></table>'
-    ].join('');
-    document.getElementById('caracterizacion').innerHTML = html;
-  }else{
-    document.getElementById('caracterizacion').textContent = JSON.stringify(js, null, 2);
-  }
-  log('Caracterización -> ' + r.status);
+  const indicador=document.getElementById('selIndicador').value, nivel=document.getElementById('selNivel').value||'LOCALIDAD', año=document.getElementById('selAnio').value||'';
+  if(!indicador){ toast('Selecciona un indicador',false); return; } setSpin('caracSpin',true);
+  try{
+    const js=await apiGet('/caracterizacion',{indicador,nivel,'año':año}); const rows=js.datos||[]; CARAC=rows;
+    const tb=document.querySelector('#tblCarac tbody'); tb.innerHTML=rows.map(o=>`<tr><td>${o.territorio}</td><td>${o.n}</td><td>${o.promedio}</td><td>${o.mediana}</td><td>${o.q1}</td><td>${o.q3}</td><td>${o.min}</td><td>${o.max}</td><td>${o.desv_estandar}</td><td>${o.cv_pct}</td></tr>`).join('');
+    const top=rows.slice(0,15); const data={labels:top.map(r=>r.territorio), datasets:[{label:`Promedio — ${indicador} (${nivel}${año? ' · '+año:''})`, data:top.map(r=>r.promedio)}]};
+    if(charts.carac) charts.carac.destroy(); charts.carac=new Chart(document.getElementById('chartCarac'),{type:'bar',data,options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:false}}}}});
+    toast('Caracterización calculada.');
+  }catch(e){ toast('Error en caracterización: '+e.message,false); }
+  finally{ setSpin('caracSpin',false); }
 }
 
 async function runAsociacion(){
-  const ind = document.getElementById('indTarget').value.trim();
-  const nivel = document.getElementById('nivelAsoc').value;
-  const anio = document.getElementById('anioAsoc').value.trim();
-  const top = document.getElementById('topAsoc').value || 10;
-  if(!ind){ alert('Ingresa el indicador objetivo'); return; }
-  const url = new URL(location.origin + '/analisis/asociacion');
-  url.searchParams.set('indicador_objetivo', ind);
-  url.searchParams.set('nivel', nivel);
-  url.searchParams.set('top', top);
-  if(anio) url.searchParams.set('año', anio);
-  const r = await fetch(url);
-  const js = await r.json();
-  if(js.comparaciones){
-    const rows = js.comparaciones;
-    const html = ['<table><thead><tr><th>Indicador comparado</th><th>Territorios</th><th>Pearson r (p)</th><th>Spearman ρ (p)</th></tr></thead><tbody>',
-      ...rows.map(o => `<tr><td>${o.indicador_comparado}</td><td>${o.territorios}</td><td>${o.pearson_r} (${o.pearson_p})</td><td>${o.spearman_rho} (${o.spearman_p})</td></tr>`),
-      '</tbody></table>'
-    ].join('');
-    document.getElementById('asociacion').innerHTML = html;
-  }else{
-    document.getElementById('asociacion').textContent = JSON.stringify(js, null, 2);
-  }
-  log('Asociación -> ' + r.status);
+  const indicador_objetivo=document.getElementById('selIndObj').value, nivel=document.getElementById('selNivelAsoc').value||'LOCALIDAD', año=document.getElementById('selAnioAsoc').value||'', top=document.getElementById('inpTop').value||10;
+  if(!indicador_objetivo){ toast('Selecciona el indicador objetivo',false); return; } setSpin('asocSpin',true);
+  try{
+    const js=await apiGet('/analisis/asociacion',{indicador_objetivo,nivel,'año':año,top}); const rows=js.comparaciones||[]; ASOC=rows;
+    const tb=document.querySelector('#tblAsoc tbody'); tb.innerHTML=rows.map(o=>`<tr>
+      <td>${o.indicador_comparado}</td><td>${o.territorios}</td><td>${o.pearson_r} (${o.pearson_p})</td><td>${o.spearman_rho} (${o.spearman_p})</td>
+      <td><button class="btn text-xs" onclick="verDispersion('${indicador_objetivo}','${nivel}','${año}','${o.indicador_comparado}')">Ver</button></td></tr>`).join('');
+    if(charts.disp) charts.disp.destroy(); document.getElementById('dispMeta').textContent='Seleccione una fila del ranking para ver la dispersión.'; toast('Análisis de asociación listo.');
+  }catch(e){ toast('Error en asociación: '+e.message,false); }
+  finally{ setSpin('asocSpin',false); }
+}
+
+async function verDispersion(indObj, nivel, año, indX){
+  try{
+    const y=await apiGet('/caracterizacion',{indicador:indObj,nivel,'año':año});
+    const x=await apiGet('/caracterizacion',{indicador:indX,nivel,'año':año});
+    const mapY=new Map((y.datos||[]).map(r=>[r.territorio,r.promedio]));
+    const pares=(x.datos||[]).filter(r=>mapY.has(r.territorio)).map(r=>({terr:r.territorio,x:r.promedio,y:mapY.get(r.territorio)}));
+    if(!pares.length){ toast('No hay territorios comunes para graficar',false); return; }
+    if(charts.disp) charts.disp.destroy();
+    charts.disp=new Chart(document.getElementById('chartDisp'),{type:'scatter',data:{datasets:[{label:`${indX} vs ${indObj}`,data:pares.map(p=>({x:p.x,y:p.y}))}]},options:{plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:indX}},y:{title:{display:true,text:indObj}}}}});
+    document.getElementById('dispMeta').textContent=`Territorios comunes: ${pares.length}`;
+  }catch{ toast('No fue posible construir la dispersión',false); }
 }
 
 async function runSerie(){
-  const ind = document.getElementById('indSerie').value.trim();
-  const nivel = document.getElementById('nivelSerie').value;
-  const terr = document.getElementById('terrSerie').value.trim();
-  if(!ind || !terr){ alert('Completa indicador y territorio'); return; }
-  const url = new URL(location.origin + '/datos/series');
-  url.searchParams.set('indicador', ind);
-  url.searchParams.set('nivel', nivel);
-  url.searchParams.set('territorio', terr);
-  const r = await fetch(url);
-  const js = await r.json();
-  document.getElementById('serie').textContent = JSON.stringify(js, null, 2);
-  log('Serie -> ' + r.status);
+  const indicador=document.getElementById('selIndSerie').value, territorio=document.getElementById('selTerrSerie').value, nivel=document.getElementById('selNivelSerie').value||'LOCALIDAD';
+  if(!indicador||!territorio){ toast('Selecciona indicador y territorio',false); return; }
+  try{
+    const js=await apiGet('/datos/series',{indicador,territorio,nivel}); const serie=js.serie||[]; if(!serie.length){ toast('Sin datos para esa combinación',false); return; }
+    if(charts.serie) charts.serie.destroy();
+    charts.serie=new Chart(document.getElementById('chartSerie'),{type:'line',data:{labels:serie.map(p=>p.año),datasets:[{label:`${indicador} · ${territorio}`,data:serie.map(p=>p.valor)}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:false}}}});
+  }catch(e){ toast('Error obteniendo la serie',false); }
 }
+
+function downloadCSV(kind){
+  let rows=[], headers=[];
+  if(kind==='carac'){ rows=CARAC; headers=['territorio','n','promedio','mediana','q1','q3','min','max','desv_estandar','cv_pct']; }
+  else if(kind==='asoc'){ rows=ASOC; headers=['indicador_comparado','territorios','pearson_r','pearson_p','spearman_rho','spearman_p']; }
+  else { toast('Nada para exportar',false); return; }
+  if(!rows.length){ toast('No hay datos para exportar',false); return; }
+  const csv=toCSV(rows,headers); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=(kind==='carac'?'caracterizacion':'asociacion')+'.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+document.getElementById('btnRefMeta').addEventListener('click', async()=>{ await loadMeta(); await loadStats(); toast('Metadatos actualizados'); });
+document.getElementById('selNivelSerie').addEventListener('change', updateTerritoriosSerie);
+window.addEventListener('load', async()=>{ await loadMeta(); await loadStats(); });
 </script>
 </body>
 </html>
