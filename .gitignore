@@ -32,59 +32,41 @@ ENV/
 env.bak/
 venv.bak/
 
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
-.DS_Store
-Thumbs.db
+*~
 
-# Database
+# Databases
 *.db
+*.sqlite
 *.sqlite3
-fecundidad_temprana.db
 fallback.db
+fecundidad_temprana.db
 
 # Logs
 *.log
 logs/
 
-# Uploaded files
-uploads/
-*.xlsx
-*.xls
-*.csv
-
-# Local config
-.env.local
-.env.production
-config.local.py
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
-.tox/
-
-# Jupyter
-.ipynb_checkpoints
 
 # Temporary files
 *.tmp
-*.bak
-*.backup
-temp/
-tmp/
+*.temp
 
 # Railway specific
 .railway/
-
-# Data files (exclude from repo but document structure)
-data/
-datasets/
-shapefiles/
-
-# Documentation builds
-docs/_build/
-site/
