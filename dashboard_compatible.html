@@ -3,61 +3,33 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Observatorio · Fecundidad Temprana</title>
+  <title>Exploración Determinantes Fecundidad Temprana - Bogotá</title>
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <!-- CSS Styles -->
   <style>
     :root {
-      --primary-50: #eff6ff;
-      --primary-100: #dbeafe;
-      --primary-200: #bfdbfe;
-      --primary-300: #93c5fd;
-      --primary-400: #60a5fa;
-      --primary-500: #3b82f6;
-      --primary-600: #2563eb;
-      --primary-700: #1d4ed8;
-      --primary-800: #1e40af;
-      --primary-900: #1e3a8a;
+      --primary: #1e3a8a;
+      --primary-light: #3b82f6;
+      --primary-dark: #1e40af;
       --accent: #06b6d4;
-      
-      --slate-50: #f8fafc;
-      --slate-100: #f1f5f9;
-      --slate-200: #e2e8f0;
-      --slate-300: #cbd5e1;
-      --slate-400: #94a3b8;
-      --slate-500: #64748b;
-      --slate-600: #475569;
-      --slate-700: #334155;
-      --slate-800: #1e293b;
-      --slate-900: #0f172a;
-      
-      --green-50: #f0fdf4;
-      --green-100: #dcfce7;
-      --green-600: #16a34a;
-      --green-700: #15803d;
-      --green-800: #166534;
-      
-      --blue-50: #eff6ff;
-      --blue-100: #dbeafe;
-      --blue-700: #1d4ed8;
-      --blue-800: #1e40af;
-      
-      --red-50: #fef2f2;
-      --red-200: #fecaca;
-      --red-600: #dc2626;
-      --red-700: #b91c1c;
-      
-      --yellow-100: #fef3c7;
-      --yellow-800: #92400e;
-      
-      --purple-50: #faf5ff;
-      --purple-700: #7c3aed;
-      --purple-800: #6b21a8;
-      
-      --emerald-200: #a7f3d0;
-      --emerald-700: #047857;
-      --rose-200: #fecdd3;
-      --rose-700: #be185d;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
     }
     
     * {
@@ -68,165 +40,226 @@
     
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: var(--slate-50);
-      color: var(--slate-800);
-      line-height: 1.5;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      line-height: 1.6;
     }
     
     .container {
-      max-width: 1280px;
+      max-width: 1400px;
       margin: 0 auto;
       padding: 0 1rem;
     }
     
-    .grid {
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, var(--accent) 100%);
+      color: white;
+      padding: 2rem 0;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.025em;
+    }
+    
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.95;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    /* KPIs Horizontales */
+    .kpis {
+      background: white;
+      margin: -1.5rem auto 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--gray-200);
+      max-width: 1200px;
+      padding: 1.5rem;
+    }
+    
+    .kpis-grid {
       display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .kpi-item {
+      text-align: center;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+    }
+    
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.25rem;
+    }
+    
+    .kpi-label {
+      font-size: 0.875rem;
+      color: var(--gray-600);
+      font-weight: 500;
+    }
+    
+    /* Objetivos Navigation */
+    .objetivos-nav {
+      background: white;
+      border-radius: 1rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--gray-200);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .objetivos-nav h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: var(--primary);
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    
+    .objetivos-tabs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 1rem;
     }
     
-    .grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
-    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-    .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
-    .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
-    .grid-cols-5 { grid-template-columns: repeat(5, 1fr); }
-    .grid-cols-6 { grid-template-columns: repeat(6, 1fr); }
-    
-    @media (min-width: 768px) {
-      .md\\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-      .md\\:grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
-      .md\\:grid-cols-5 { grid-template-columns: repeat(5, 1fr); }
-      .md\\:grid-cols-6 { grid-template-columns: repeat(6, 1fr); }
-      .md\\:flex-row { flex-direction: row; }
-      .md\\:items-center { align-items: center; }
-      .md\\:justify-between { justify-content: space-between; }
+    .objetivo-tab {
+      background: var(--gray-100);
+      border: 2px solid var(--gray-200);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
     }
     
-    @media (min-width: 1024px) {
-      .lg\\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-      .lg\\:grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
-      .lg\\:col-span-2 { grid-column: span 2; }
+    .objetivo-tab:hover {
+      background: var(--gray-50);
+      border-color: var(--primary-light);
+      transform: translateY(-2px);
     }
     
-    .flex {
-      display: flex;
+    .objetivo-tab.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
     }
     
-    .flex-col { flex-direction: column; }
-    .flex-wrap { flex-wrap: wrap; }
-    .items-center { align-items: center; }
-    .items-end { align-items: flex-end; }
-    .justify-between { justify-content: space-between; }
-    .gap-1 { gap: 0.25rem; }
-    .gap-2 { gap: 0.5rem; }
-    .gap-3 { gap: 0.75rem; }
-    .gap-4 { gap: 1rem; }
+    .objetivo-tab .tab-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
     
-    .space-y-2 > * + * { margin-top: 0.5rem; }
-    .space-y-3 > * + * { margin-top: 0.75rem; }
-    .space-y-4 > * + * { margin-top: 1rem; }
-    .space-y-6 > * + * { margin-top: 1.5rem; }
-    .space-y-8 > * + * { margin-top: 2rem; }
+    .objetivo-tab .tab-desc {
+      font-size: 0.875rem;
+      opacity: 0.8;
+    }
     
-    .p-2 { padding: 0.5rem; }
-    .p-3 { padding: 0.75rem; }
-    .p-4 { padding: 1rem; }
-    .p-5 { padding: 1.25rem; }
-    .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
-    .px-4 { padding-left: 1rem; padding-right: 1rem; }
-    .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-    .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
-    .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
-    
-    .mt-1 { margin-top: 0.25rem; }
-    .mt-2 { margin-top: 0.5rem; }
-    .mt-3 { margin-top: 0.75rem; }
-    .mb-3 { margin-bottom: 0.75rem; }
-    .mb-4 { margin-bottom: 1rem; }
-    .mb-6 { margin-bottom: 1.5rem; }
-    
-    .w-full { width: 100%; }
-    .h-full { height: 100%; }
-    
-    .text-xs { font-size: 0.75rem; }
-    .text-sm { font-size: 0.875rem; }
-    .text-2xl { font-size: 1.5rem; }
-    .text-3xl { font-size: 1.875rem; }
-    
-    .font-medium { font-weight: 500; }
-    .font-semibold { font-weight: 600; }
-    .font-bold { font-weight: 700; }
-    
-    .text-center { text-align: center; }
-    .text-left { text-left: left; }
-    
-    .rounded { border-radius: 0.25rem; }
-    .rounded-lg { border-radius: 0.5rem; }
-    .rounded-xl { border-radius: 0.75rem; }
-    
-    .border { border: 1px solid var(--slate-300); }
-    .border-collapse { border-collapse: collapse; }
-    
-    .bg-white { background-color: white; }
-    .bg-gray-50 { background-color: var(--slate-100); }
-    
-    .text-white { color: white; }
-    
-    .hidden { display: none; }
-    .overflow-auto { overflow: auto; }
-    .overflow-y-auto { overflow-y: auto; }
-    
-    .cursor-pointer { cursor: pointer; }
-    
-    .fixed { position: fixed; }
-    .right-4 { right: 1rem; }
-    .bottom-4 { bottom: 1rem; }
-    
-    .max-h-32 { max-height: 8rem; }
-    
+    /* Cards */
     .card {
       background: white;
       border-radius: 1rem;
-      box-shadow: 0 10px 20px rgba(2, 6, 23, .04), 0 2px 6px rgba(2, 6, 23, .06);
-      border: 1px solid var(--slate-200);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--gray-200);
+      overflow: hidden;
     }
     
+    .card-header {
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+      padding: 1.25rem 1.5rem;
+    }
+    
+    .card-header h3 {
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .card-body {
+      padding: 1.5rem;
+    }
+    
+    /* Forms */
+    .form-grid {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-grid-2 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+    .form-grid-3 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .form-grid-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .form-label {
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+    
+    .form-input, .form-select {
+      padding: 0.75rem;
+      border: 1px solid var(--gray-300);
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      transition: border-color 0.2s;
+    }
+    
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    /* Buttons */
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.55rem 0.85rem;
-      border-radius: 0.75rem;
-      border: 1px solid var(--slate-300);
-      background: white;
-      transition: all 0.15s;
-      cursor: pointer;
-      text-decoration: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
       font-size: 0.875rem;
-    }
-    
-    .btn:hover {
-      background: var(--slate-50);
-      transform: translateY(-1px);
-    }
-    
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      text-decoration: none;
     }
     
     .btn-primary {
-      background: var(--primary-600);
-      border-color: var(--primary-600);
+      background: var(--primary-light);
       color: white;
     }
     
     .btn-primary:hover {
-      background: var(--primary-700);
+      background: var(--primary-dark);
+      transform: translateY(-1px);
     }
     
     .btn-secondary {
       background: var(--accent);
-      border-color: var(--accent);
       color: white;
     }
     
@@ -234,64 +267,111 @@
       background: #0891b2;
     }
     
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      border-radius: 999px;
-      padding: 0.125rem 0.5rem;
-      font-size: 0.75rem;
-      background: #e0f2fe;
-      color: #075985;
+    .btn-outline {
+      background: white;
+      color: var(--primary);
+      border: 1px solid var(--primary);
     }
     
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.375rem;
-      border-radius: 999px;
-      padding: 0.125rem 0.5rem;
-      font-size: 0.75rem;
-      background: var(--primary-100);
-      color: var(--primary-900);
+    .btn-outline:hover {
+      background: var(--primary);
+      color: white;
     }
     
-    .badge-green {
-      background: var(--green-100);
-      color: var(--green-800);
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
     
-    .badge-yellow {
-      background: var(--yellow-100);
-      color: var(--yellow-800);
+    /* Content Sections */
+    .content-section {
+      margin-bottom: 2rem;
     }
     
-    .badge-red {
-      background: var(--red-50);
-      color: var(--red-700);
+    .hidden {
+      display: none !important;
     }
     
-    .muted {
-      color: var(--slate-500);
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 1.5rem;
     }
     
-    .kpi {
-      font-size: 1.75rem;
-      font-weight: 700;
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
     }
     
-    .grad {
-      background: linear-gradient(135deg, var(--primary-900) 0%, var(--primary-700) 40%, var(--accent) 100%);
+    /* Tables */
+    .table-container {
+      overflow-x: auto;
+      border-radius: 0.5rem;
+      border: 1px solid var(--gray-200);
     }
     
-    .shadow-soft {
-      box-shadow: 0 10px 20px rgba(2,6,23,.08), 0 3px 8px rgba(2,6,23,.1);
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
     }
     
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    
+    th {
+      background: var(--gray-50);
+      font-weight: 600;
+      color: var(--gray-700);
+    }
+    
+    tbody tr:hover {
+      background: var(--gray-50);
+    }
+    
+    /* Charts */
+    .chart-container {
+      position: relative;
+      height: 300px;
+      margin: 1rem 0;
+    }
+    
+    /* Alerts */
+    .alert {
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin: 1rem 0;
+      border: 1px solid;
+    }
+    
+    .alert-info {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1e40af;
+    }
+    
+    .alert-success {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+      color: #166534;
+    }
+    
+    .alert-warning {
+      background: #fffbeb;
+      border-color: #fed7aa;
+      color: #92400e;
+    }
+    
+    /* Spinner */
     .spinner {
-      border: 3px solid var(--slate-200);
-      border-top-color: var(--primary-600);
-      border-radius: 999px;
+      border: 3px solid var(--gray-200);
+      border-top-color: var(--primary-light);
+      border-radius: 50%;
       width: 20px;
       height: 20px;
       animation: spin 1s linear infinite;
@@ -301,1260 +381,1144 @@
       to { transform: rotate(360deg); }
     }
     
-    .tabs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
+    /* Toast notifications */
+    .toasts {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 1000;
     }
     
-    .tabs button[aria-selected="true"] {
-      background: var(--primary-800);
-      color: white;
-    }
-    
-    .tabs button {
-      background: var(--primary-50);
-      color: var(--primary-900);
-      border: 1px solid var(--primary-200);
-    }
-    
-    .table-hover tbody tr:hover {
-      background: var(--slate-50);
-    }
-    
-    .progress-bar {
-      background: var(--slate-200);
-      border-radius: 999px;
-      height: 8px;
-      overflow: hidden;
-    }
-    
-    .progress-fill {
-      background: var(--primary-500);
-      height: 100%;
-      transition: width 0.3s;
-    }
-    
-    input, select {
-      width: 100%;
-      padding: 0.5rem 0.75rem;
-      border-radius: 0.5rem;
-      border: 1px solid var(--slate-300);
+    .toast {
       background: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--gray-200);
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+      max-width: 300px;
+      animation: slideIn 0.3s ease-out;
     }
     
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--primary-500);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    .toast-success {
+      border-left: 4px solid var(--success);
     }
     
-    table {
-      width: 100%;
-      font-size: 0.875rem;
-      border-collapse: collapse;
+    .toast-error {
+      border-left: 4px solid var(--danger);
     }
     
-    th, td {
-      padding: 0.5rem;
-      border: 1px solid var(--slate-300);
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
     }
     
-    th {
-      background: var(--primary-50);
-      color: var(--primary-900);
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 1.875rem;
+      }
+      
+      .objetivos-tabs {
+        grid-template-columns: 1fr;
+      }
+      
+      .form-grid-2,
+      .form-grid-3,
+      .form-grid-4 {
+        grid-template-columns: 1fr;
+      }
+      
+      .grid-2,
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Upload section */
+    .upload-section {
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      border: 2px dashed var(--gray-300);
+      text-align: center;
+    }
+    
+    .upload-section.dragover {
+      border-color: var(--primary-light);
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    }
+    
+    /* Status indicators */
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
       font-weight: 600;
     }
     
-    .text-red-600 { color: #dc2626; }
-    .text-green-600 { color: #16a34a; }
-    .text-blue-700 { color: var(--blue-700); }
-    .text-blue-800 { color: var(--blue-800); }
-    .text-green-700 { color: var(--green-700); }
-    .text-green-800 { color: var(--green-800); }
-    .text-purple-700 { color: var(--purple-700); }
-    .text-purple-800 { color: var(--purple-800); }
-    .text-primary-800 { color: var(--primary-800); }
-    .text-primary-900 { color: var(--primary-900); }
+    .status-connected {
+      background: #dcfce7;
+      color: #166534;
+    }
     
-    .bg-blue-50 { background-color: var(--blue-50); }
-    .bg-green-50 { background-color: var(--green-50); }
-    .bg-purple-50 { background-color: var(--purple-50); }
-    .bg-primary-50 { background-color: var(--primary-50); }
-    
-    .border-emerald-200 { border-color: var(--emerald-200); }
-    .border-rose-200 { border-color: var(--rose-200); }
-    .text-emerald-700 { color: var(--emerald-700); }
-    .text-rose-700 { color: var(--rose-700); }
-    
-    /* Responsive utilities */
-    @media (max-width: 767px) {
-      .container { padding: 0 0.5rem; }
-      .text-3xl { font-size: 1.5rem; }
-      .text-2xl { font-size: 1.25rem; }
-      .py-8 { padding-top: 1rem; padding-bottom: 1rem; }
+    .status-disconnected {
+      background: #fee2e2;
+      color: #991b1b;
     }
   </style>
-
-  <!-- Icons -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <style>
-    .card { background:#fff; border-radius:1rem; box-shadow:0 10px 20px rgba(2, 6, 23, .04), 0 2px 6px rgba(2, 6, 23, .06); border:1px solid #e2e8f0; }
-    .btn  { display:inline-flex; align-items:center; gap:.5rem; padding:.55rem .85rem; border-radius:.75rem; border:1px solid #cbd5e1; background:#fff; transition: all .15s; cursor: pointer; }
-    .btn:hover { background:#f8fafc; transform: translateY(-1px); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary { background:#2563eb; border-color:#2563eb; color:#fff; }
-    .btn-primary:hover { background:#1d4ed8; }
-    .btn-secondary { background:#06b6d4; border-color:#06b6d4; color:#fff; }
-    .btn-secondary:hover { background:#0891b2; }
-    .chip { display:inline-flex; align-items:center; gap:.25rem; border-radius:999px; padding:.125rem .5rem; font-size:.75rem; background:#e0f2fe; color:#075985; }
-    .pill { display:inline-flex; align-items:center; gap:.375rem; border-radius:999px; padding:.125rem .5rem; font-size:.75rem; background:#eef2ff; color:#3730a3; }
-    .badge-green { background:#dcfce7; color:#166534; }
-    .badge-yellow { background:#fef3c7; color:#92400e; }
-    .badge-red { background:#fee2e2; color:#991b1b; }
-    .muted { color:#64748b; }
-    .kpi { font-size:1.75rem; font-weight:700; }
-    .grad { background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 40%, #06b6d4 100%); }
-    .shadow-soft { box-shadow: 0 10px 20px rgba(2,6,23,.08), 0 3px 8px rgba(2,6,23,.1); }
-    .spinner{ border:3px solid #e5e7eb; border-top-color:#2563eb; border-radius:999px; width:20px; height:20px; animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .tabs button[aria-selected="true"]{ background:#1e40af; color:white; }
-    .tabs button{ background:#eff6ff; color:#1e3a8a; border:1px solid #bfdbfe; }
-    .table-hover tbody tr:hover { background:#f8fafc; }
-    .progress-bar { background:#e5e7eb; border-radius:9999px; height:8px; overflow:hidden; }
-    .progress-fill { background:#3b82f6; height:100%; transition: width 0.3s; }
-  </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
-  <!-- Hero -->
-  <header class="grad text-white">
-    <div class="container py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-      <div>
-        <h1 class="text-2xl md:text-3xl font-bold">Observatorio de Fecundidad Temprana — Bogotá D.C.</h1>
-        <p class="mt-1" style="color: rgba(255,255,255,0.9)">Análisis integral por territorio, periodo y <b>cohortes (10–14, 15–19)</b>. Caracterización, asociación, brechas y tendencias.</p>
-      </div>
-      <div class="flex items-center gap-2">
-        <button id="btnRefMeta" class="btn shadow-soft"><i class="ti ti-refresh"></i> Refrescar</button>
-      </div>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <h1>Exploración Determinantes Fecundidad Temprana</h1>
+      <p>Análisis integral por territorio, periodo y cohortes - Bogotá D.C.</p>
     </div>
   </header>
 
-  <main class="container py-6 space-y-8">
-    <!-- KPIs -->
-    <section class="grid md:grid-cols-4 gap-4">
-      <div class="card p-4">
-        <div class="flex items-center justify-between"><span class="muted text-sm">Registros</span><span class="pill">/metadatos</span></div>
-        <div id="kTotal" class="kpi mt-1">—</div>
-        <div class="muted text-xs">Total registros cargados</div>
-      </div>
-      <div class="card p-4">
-        <div class="flex items-center justify-between"><span class="muted text-sm">Indicadores</span><span class="pill">Únicos</span></div>
-        <div id="kIndicadores" class="kpi mt-1">—</div>
-        <div class="muted text-xs">Variables disponibles</div>
-      </div>
-      <div class="card p-4">
-        <div class="flex items-center justify-between"><span class="muted text-sm">Localidades</span><span class="pill">Cobertura</span></div>
-        <div id="kLocs" class="kpi mt-1">—</div>
-        <div class="muted text-xs">Cobertura territorial</div>
-      </div>
-      <div class="card p-4">
-        <div class="flex items-center justify-between"><span class="muted text-sm">UPZ</span><span class="pill">Cobertura</span></div>
-        <div id="kUpz" class="kpi mt-1">—</div>
-        <div class="muted text-xs">Cobertura territorial</div>
+  <main class="container">
+    <!-- KPIs Horizontales -->
+    <section class="kpis">
+      <div class="kpis-grid">
+        <div class="kpi-item">
+          <div id="kTotal" class="kpi-value">—</div>
+          <div class="kpi-label">Total Registros</div>
+        </div>
+        <div class="kpi-item">
+          <div id="kIndicadores" class="kpi-value">—</div>
+          <div class="kpi-label">Indicadores</div>
+        </div>
+        <div class="kpi-item">
+          <div id="kLocalidades" class="kpi-value">—</div>
+          <div class="kpi-label">Localidades</div>
+        </div>
+        <div class="kpi-item">
+          <div id="kUpz" class="kpi-value">—</div>
+          <div class="kpi-label">UPZ</div>
+        </div>
+        <div class="kpi-item">
+          <div id="kFecundidad" class="kpi-value">—</div>
+          <div class="kpi-label">Indicadores Fecundidad</div>
+        </div>
       </div>
     </section>
 
-    <!-- Carga -->
-    <section class="card p-5">
-      <div class="flex items-center justify-between">
-        <h2 class="font-semibold text-primary-800 flex items-center gap-2"><i class="ti ti-upload"></i> Carga de datos</h2>
-        <span class="chip">POST /upload/excel</span>
-      </div>
-      <div class="mt-3 grid md:grid-cols-2 gap-3">
-        <div>
-          <label class="text-sm">Archivo consolidado (.xlsx)</label>
-          <input id="file" type="file" accept=".xlsx,.xls" class="mt-1 w-full px-3 py-2 rounded-lg border bg-white">
+    <!-- Carga de Datos -->
+    <section class="content-section">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="ti ti-upload"></i> Carga de Datos</h3>
         </div>
-        <div class="flex items-end gap-2">
-          <button class="btn btn-primary" onclick="upload()"><i class="ti ti-cloud-upload"></i> Subir y procesar</button>
-          <div id="uploadSpin" class="hidden spinner"></div>
-        </div>
-      </div>
-      <pre id="uploadOut" class="mt-3 text-xs muted" style="white-space: pre-wrap;"></pre>
-    </section>
-
-    <!-- Tabs de objetivos -->
-    <section class="space-y-4">
-      <div class="tabs flex flex-wrap gap-2">
-        <button class="btn" data-tab="obj1" aria-selected="true">Objetivo 1 · Caracterización Territorial</button>
-        <button class="btn" data-tab="obj2">Objetivo 2 · Análisis de Asociación</button>
-        <button class="btn" data-tab="obj3">Objetivo 3 · Brechas entre Cohortes</button>
-        <button class="btn" data-tab="obj4">Objetivo 4 · Análisis de Tendencias</button>
-      </div>
-
-      <!-- OBJ 1: Caracterización -->
-      <div id="obj1" class="space-y-4">
-        <div class="card p-5">
-          <h3 class="font-semibold text-primary-800 mb-4 flex items-center gap-2">
-            <i class="ti ti-map-2"></i> Caracterización Territorial por Indicador
-          </h3>
-          
-          <div class="grid md:grid-cols-6 gap-3">
-            <div>
-              <label class="text-sm font-medium">Indicador</label>
-              <select id="selIndicador" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
+        <div class="card-body">
+          <div class="upload-section" id="uploadSection">
+            <i class="ti ti-file-spreadsheet" style="font-size: 3rem; color: var(--gray-400); margin-bottom: 1rem;"></i>
+            <div class="form-grid form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Archivo Excel (.xlsx)</label>
+                <input id="fileInput" type="file" accept=".xlsx,.xls" class="form-input">
+              </div>
+              <div class="form-group" style="display: flex; align-items: end;">
+                <button id="uploadBtn" class="btn btn-primary" style="width: 100%;">
+                  <i class="ti ti-cloud-upload"></i> Subir y Procesar
+                </button>
+              </div>
             </div>
-            <div>
-              <label class="text-sm font-medium">Nivel</label>
-              <select id="selNivel" class="w-full px-3 py-2 rounded-lg border bg-white">
-                <option>LOCALIDAD</option><option>UPZ</option>
+            <div id="uploadStatus" class="hidden"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navegación de Objetivos -->
+    <section class="objetivos-nav">
+      <h2>Objetivos de Análisis</h2>
+      <div class="objetivos-tabs">
+        <div class="objetivo-tab active" data-objetivo="obj1">
+          <div class="tab-title">Objetivo 1: Caracterización</div>
+          <div class="tab-desc">Análisis territorial de indicadores por localidad y UPZ</div>
+        </div>
+        <div class="objetivo-tab" data-objetivo="obj2">
+          <div class="tab-title">Objetivo 2: Asociación</div>
+          <div class="tab-desc">Correlaciones entre indicadores de fecundidad y determinantes</div>
+        </div>
+        <div class="objetivo-tab" data-objetivo="obj3">
+          <div class="tab-title">Objetivo 3: Desigualdad</div>
+          <div class="tab-desc">Índice de Theil y distribución territorial</div>
+        </div>
+        <div class="objetivo-tab" data-objetivo="obj4">
+          <div class="tab-title">Objetivo 4: Tendencias</div>
+          <div class="tab-desc">Evolución temporal y comparación de indicadores</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Objetivo 1: Caracterización -->
+    <section id="obj1" class="content-section">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="ti ti-map-2"></i> Caracterización Territorial</h3>
+        </div>
+        <div class="card-body">
+          <div class="form-grid form-grid-4">
+            <div class="form-group">
+              <label class="form-label">Indicador</label>
+              <select id="obj1_indicador" class="form-select">
+                <option value="">Seleccionar indicador...</option>
               </select>
             </div>
-            <div>
-              <label class="text-sm font-medium">Localidad (filtro)</label>
-              <select id="selLocalidadFiltro" class="w-full px-3 py-2 rounded-lg border bg-white">
+            <div class="form-group">
+              <label class="form-label">Localidad</label>
+              <select id="obj1_localidad" class="form-select">
                 <option value="">Todas las localidades</option>
               </select>
             </div>
-            <div>
-              <label class="text-sm font-medium">Cohorte</label>
-              <select id="selCohorte" class="w-full px-3 py-2 rounded-lg border bg-white">
-                <option value="">Ambas</option><option>10-14</option><option>15-19</option>
+            <div class="form-group">
+              <label class="form-label">UPZ</label>
+              <select id="obj1_upz" class="form-select" disabled>
+                <option value="">Primero seleccione localidad</option>
               </select>
             </div>
-            <div>
-              <label class="text-sm font-medium">Año (opcional)</label>
-              <select id="selAnio" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
+            <div class="form-group">
+              <label class="form-label">Año</label>
+              <select id="obj1_año" class="form-select">
+                <option value="">Todos los años</option>
+              </select>
             </div>
-            <div class="flex items-end gap-2">
-              <button class="btn btn-primary" onclick="runCaracterizacion()"><i class="ti ti-sparkles"></i> Caracterizar</button>
-              <button class="btn btn-secondary" onclick="runComparativa()" id="btnComparativa" disabled><i class="ti ti-chart-line"></i> Comparar</button>
-            </div>
-          </div>
-
-          <div id="unidadMedida" class="mt-3 p-3 bg-blue-50 rounded-lg hidden">
-            <span class="text-sm text-blue-800"><strong>Unidad de medida:</strong> <span id="txtUnidadMedida">—</span></span>
-          </div>
-        </div>
-
-        <div class="grid lg:grid-cols-2 gap-4">
-          <div class="card p-4">
-            <div class="flex items-center justify-between mb-3">
-              <h4 class="font-semibold">Ranking territorial</h4>
-              <div class="flex gap-2">
-                <button class="btn text-xs" onclick="downloadCSV('carac')"><i class="ti ti-download"></i> CSV</button>
-                <button class="btn text-xs" onclick="toggleChartType('carac')"><i class="ti ti-chart-bar"></i> Cambiar vista</button>
-              </div>
-            </div>
-            <canvas id="chartCarac" style="height: 280px;"></canvas>
           </div>
           
-          <div class="card p-4 overflow-auto">
-            <h4 class="font-semibold mb-3">Estadísticas descriptivas</h4>
-            <div id="resumenLocalidad" class="mb-3 p-3 bg-green-50 rounded-lg hidden">
-              <h5 class="font-medium text-green-800">Resumen de la localidad seleccionada</h5>
-              <div id="datosLocalidad" class="text-sm text-green-700 mt-1"></div>
-            </div>
-            <table class="w-full text-sm border-collapse table-hover" id="tblCarac">
-              <thead class="bg-primary-50 text-primary-900">
-                <tr>
-                  <th class="p-2 border text-left">Territorio</th>
-                  <th class="p-2 border">n</th>
-                  <th class="p-2 border">Promedio</th>
-                  <th class="p-2 border">Mediana</th>
-                  <th class="p-2 border">Q1</th>
-                  <th class="p-2 border">Q3</th>
-                  <th class="p-2 border">Mín</th>
-                  <th class="p-2 border">Máx</th>
-                  <th class="p-2 border">DE</th>
-                  <th class="p-2 border">CV%</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+          <div style="text-align: center; margin: 1.5rem 0;">
+            <button id="obj1_analizar" class="btn btn-primary">
+              <i class="ti ti-analysis"></i> Analizar Caracterización
+            </button>
           </div>
-        </div>
-
-        <!-- Panel de comparación localidad vs UPZ -->
-        <div id="panelComparativa" class="card p-5 hidden">
-          <h4 class="font-semibold text-primary-800 mb-4 flex items-center gap-2">
-            <i class="ti ti-git-compare"></i> Comparativa: Localidad vs Bogotá vs UPZ
-          </h4>
-          <div class="grid lg:grid-cols-2 gap-4">
-            <div class="card p-4">
-              <h5 class="font-semibold mb-3">Comparación de promedios</h5>
-              <canvas id="chartComparativa" style="height: 220px;"></canvas>
-            </div>
-            <div class="card p-4">
-              <h5 class="font-semibold mb-3">Datos comparativos</h5>
-              <div id="datosComparativos" class="space-y-3"></div>
+          
+          <div id="obj1_resultados" class="hidden">
+            <div class="grid-2">
+              <div class="card">
+                <div class="card-header">
+                  <h3>Distribución Territorial</h3>
+                </div>
+                <div class="card-body">
+                  <div class="chart-container">
+                    <canvas id="obj1_chart"></canvas>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card">
+                <div class="card-header">
+                  <h3>Estadísticas Descriptivas</h3>
+                </div>
+                <div class="card-body">
+                  <div class="table-container">
+                    <table id="obj1_table">
+                      <thead>
+                        <tr>
+                          <th>Territorio</th>
+                          <th>N</th>
+                          <th>Promedio</th>
+                          <th>Mediana</th>
+                          <th>Mín</th>
+                          <th>Máx</th>
+                          <th>DE</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- OBJ 2: Asociación -->
-      <div id="obj2" class="space-y-4 hidden">
-        <div class="card p-5">
-          <h3 class="font-semibold text-primary-800 mb-4 flex items-center gap-2">
-            <i class="ti ti-chart-dots"></i> Análisis de Asociación entre Indicadores
-          </h3>
-          
-          <div class="grid md:grid-cols-5 gap-3">
-            <div>
-              <label class="text-sm font-medium">Indicador objetivo (fecundidad)</label>
-              <select id="selIndObj" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
-            </div>
-            <div>
-              <label class="text-sm font-medium">Nivel territorial</label>
-              <select id="selNivelAsoc" class="w-full px-3 py-2 rounded-lg border bg-white">
-                <option>LOCALIDAD</option><option>UPZ</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-sm font-medium">Cohorte</label>
-              <select id="selCohorteAsoc" class="w-full px-3 py-2 rounded-lg border bg-white">
-                <option value="">Ambas</option><option>10-14</option><option>15-19</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-sm font-medium">Año (opcional)</label>
-              <select id="selAnioAsoc" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
-            </div>
-            <div>
-              <label class="text-sm font-medium">Top correlaciones</label>
-              <input id="inpTop" type="number" min="3" max="50" value="15" class="w-full px-3 py-2 rounded-lg border bg-white">
-            </div>
-          </div>
-          
-          <div class="mt-3 flex gap-2">
-            <button class="btn btn-primary" onclick="runAsociacion()"><i class="ti ti-calculator"></i> Calcular asociaciones</button>
-          </div>
+    <!-- Objetivo 2: Asociación -->
+    <section id="obj2" class="content-section hidden">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="ti ti-chart-dots"></i> Análisis de Asociación</h3>
         </div>
-
-        <div class="grid lg:grid-cols-3 gap-4">
-          <div class="lg:col-span-2">
-            <div class="card p-4 overflow-auto">
-              <div class="flex items-center justify-between mb-3">
-                <h4 class="font-semibold">Correlaciones encontradas</h4>
-                <button class="btn text-xs" onclick="downloadCSV('asoc')"><i class="ti ti-download"></i> CSV</button>
-              </div>
-              <table class="w-full text-sm border-collapse table-hover" id="tblAsoc">
-                <thead class="bg-primary-50 text-primary-900">
-                  <tr>
-                    <th class="p-2 border text-left">Indicador comparado</th>
-                    <th class="p-2 border">Territorios</th>
-                    <th class="p-2 border">Pearson r</th>
-                    <th class="p-2 border">p-valor</th>
-                    <th class="p-2 border">Categoría</th>
-                    <th class="p-2 border">Significativa</th>
-                    <th class="p-2 border">Acción</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
+        <div class="card-body">
+          <div class="form-grid form-grid-3">
+            <div class="form-group">
+              <label class="form-label">Indicador Fecundidad</label>
+              <select id="obj2_indicador_x" class="form-select">
+                <option value="">Seleccionar indicador de fecundidad...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Indicador Comparación</label>
+              <select id="obj2_indicador_y" class="form-select">
+                <option value="">Seleccionar indicador a comparar...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nivel Territorial</label>
+              <select id="obj2_nivel" class="form-select">
+                <option value="LOCALIDAD">Localidad</option>
+                <option value="UPZ">UPZ</option>
+              </select>
             </div>
           </div>
           
-          <div class="card p-4">
-            <h4 class="font-semibold mb-3">Dispersión territorial</h4>
-            <canvas id="chartDisp" style="height: 280px;"></canvas>
-            <div id="dispMeta" class="text-xs muted mt-2">Seleccione una correlación para visualizar.</div>
-            <div id="dispStats" class="hidden mt-3 p-3 bg-gray-50 rounded text-xs"></div>
+          <div style="text-align: center; margin: 1.5rem 0;">
+            <button id="obj2_analizar" class="btn btn-primary">
+              <i class="ti ti-chart-dots"></i> Analizar Asociación
+            </button>
+          </div>
+          
+          <div id="obj2_resultados" class="hidden">
+            <div class="grid-2">
+              <div class="card">
+                <div class="card-header">
+                  <h3>Gráfico de Dispersión</h3>
+                </div>
+                <div class="card-body">
+                  <div class="chart-container">
+                    <canvas id="obj2_chart"></canvas>
+                  </div>
+                  <div id="obj2_correlacion" class="alert alert-info"></div>
+                </div>
+              </div>
+              
+              <div class="card">
+                <div class="card-header">
+                  <h3>Datos por Territorio</h3>
+                </div>
+                <div class="card-body">
+                  <div class="table-container">
+                    <table id="obj2_table">
+                      <thead>
+                        <tr>
+                          <th>Territorio</th>
+                          <th id="obj2_col_x">Indicador X</th>
+                          <th id="obj2_col_y">Indicador Y</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- OBJ 3: Brechas -->
-      <div id="obj3" class="space-y-4 hidden">
-        <div class="card p-5">
-          <h3 class="font-semibold text-primary-800 mb-4 flex items-center gap-2">
-            <i class="ti ti-arrows-diff"></i> Análisis de Brechas entre Cohortes (15-19 vs 10-14)
-          </h3>
-          
-          <div class="grid md:grid-cols-4 gap-3">
-            <div>
-              <label class="text-sm font-medium">Indicador</label>
-              <select id="selIndicadorBrecha" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
-            </div>
-            <div>
-              <label class="text-sm font-medium">Nivel territorial</label>
-              <select id="selNivelBrecha" class="w-full px-3 py-2 rounded-lg border bg-white">
-                <option>LOCALIDAD</option><option>UPZ</option>
+    <!-- Objetivo 3: Desigualdad (Theil) -->
+    <section id="obj3" class="content-section hidden">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="ti ti-balance-scale"></i> Análisis de Desigualdad - Índice de Theil</h3>
+        </div>
+        <div class="card-body">
+          <div class="form-grid form-grid-3">
+            <div class="form-group">
+              <label class="form-label">Indicador Fecundidad</label>
+              <select id="obj3_indicador" class="form-select">
+                <option value="">Seleccionar indicador de fecundidad...</option>
               </select>
             </div>
-            <div>
-              <label class="text-sm font-medium">Año (opcional)</label>
-              <select id="selAnioBrecha" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
+            <div class="form-group">
+              <label class="form-label">Nivel Territorial</label>
+              <select id="obj3_nivel" class="form-select">
+                <option value="LOCALIDAD">Localidad</option>
+                <option value="UPZ">UPZ</option>
+              </select>
             </div>
-            <div class="flex items-end">
-              <button class="btn btn-primary w-full" onclick="runBrechas()"><i class="ti ti-arrows-diff"></i> Calcular brechas</button>
+            <div class="form-group">
+              <label class="form-label">Año</label>
+              <select id="obj3_año" class="form-select">
+                <option value="">Todos los años</option>
+              </select>
             </div>
           </div>
           
-          <div id="unidadMedidaBrecha" class="mt-3 p-3 bg-blue-50 rounded-lg hidden">
-            <span class="text-sm text-blue-800"><strong>Unidad de medida:</strong> <span id="txtUnidadMedidaBrecha">—</span></span>
+          <div style="text-align: center; margin: 1.5rem 0;">
+            <button id="obj3_analizar" class="btn btn-primary">
+              <i class="ti ti-calculator"></i> Calcular Índice de Theil
+            </button>
           </div>
-        </div>
-
-        <div class="grid lg:grid-cols-2 gap-4">
-          <div class="card p-4">
-            <div class="flex items-center justify-between mb-3">
-              <h4 class="font-semibold">Brecha absoluta por territorio</h4>
-              <button class="btn text-xs" onclick="toggleChartType('brecha')"><i class="ti ti-chart-bar"></i> Cambiar vista</button>
+          
+          <div id="obj3_resultados" class="hidden">
+            <div class="alert alert-info" id="obj3_theil_info">
+              <strong>Índice de Theil:</strong> <span id="theil_valor">—</span> 
+              (<span id="theil_categoria">—</span>)
             </div>
-            <canvas id="chartBrecha" style="height: 280px;"></canvas>
-            <div id="resumenBrechas" class="mt-3 p-3 bg-gray-50 rounded text-sm hidden">
-              <div class="grid grid-cols-2 gap-4">
-                <div><strong>Brecha promedio:</strong> <span id="brechaPromedio">—</span></div>
-                <div><strong>Territorios:</strong> <span id="totalTerritorios">—</span></div>
-                <div><strong>Mayor brecha:</strong> <span id="mayorBrecha">—</span></div>
-                <div><strong>Menor brecha:</strong> <span id="menorBrecha">—</span></div>
+            
+            <div class="grid-2">
+              <div class="card">
+                <div class="card-header">
+                  <h3>Distribución por Territorio</h3>
+                </div>
+                <div class="card-body">
+                  <div class="chart-container">
+                    <canvas id="obj3_chart"></canvas>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card">
+                <div class="card-header">
+                  <h3>Valores por Territorio</h3>
+                </div>
+                <div class="card-body">
+                  <div class="table-container">
+                    <table id="obj3_table">
+                      <thead>
+                        <tr>
+                          <th>Territorio</th>
+                          <th>Valor</th>
+                          <th>Desviación de la Media</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div class="card p-4 overflow-auto">
-            <div class="flex items-center justify-between mb-3">
-              <h4 class="font-semibold">Detalle de brechas</h4>
-              <button class="btn text-xs" onclick="downloadCSV('brecha')"><i class="ti ti-download"></i> CSV</button>
+            
+            <div class="alert alert-warning">
+              <strong>Nota:</strong> El mapa de Bogotá requiere archivos shapefile. 
+              ¿Desea que se implementen los shapefiles para visualización geográfica?
             </div>
-            <table class="w-full text-sm border-collapse table-hover" id="tblBrecha">
-              <thead class="bg-primary-50 text-primary-900">
-                <tr>
-                  <th class="p-2 border text-left">Territorio</th>
-                  <th class="p-2 border">10–14</th>
-                  <th class="p-2 border">15–19</th>
-                  <th class="p-2 border">Brecha abs</th>
-                  <th class="p-2 border">Cambio %</th>
-                  <th class="p-2 border">n (10-14)</th>
-                  <th class="p-2 border">n (15-19)</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- OBJ 4: Tendencias -->
-      <div id="obj4" class="space-y-4 hidden">
-        <div class="card p-5">
-          <h3 class="font-semibold text-primary-800 mb-4 flex items-center gap-2">
-            <i class="ti ti-trending-up"></i> Análisis de Tendencias Temporales
-          </h3>
-          
-          <!-- Panel de series individuales -->
-          <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-            <h4 class="font-medium mb-3">Series temporales por territorio</h4>
-            <div class="grid md:grid-cols-4 gap-3">
-              <div>
-                <label class="text-sm font-medium">Indicador</label>
-                <select id="selIndSerie" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
-              </div>
-              <div>
-                <label class="text-sm font-medium">Nivel territorial</label>
-                <select id="selNivelSerie" class="w-full px-3 py-2 rounded-lg border bg-white">
-                  <option>LOCALIDAD</option><option>UPZ</option>
-                </select>
-              </div>
-              <div>
-                <label class="text-sm font-medium">Territorio</label>
-                <select id="selTerrSerie" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
-              </div>
-              <div class="flex items-end">
-                <button class="btn btn-primary w-full" onclick="runSerie()"><i class="ti ti-trending-up"></i> Ver serie</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Panel de análisis de tendencias agregadas -->
-          <div class="mb-6 p-4 bg-blue-50 rounded-lg">
-            <h4 class="font-medium mb-3">Análisis de tendencias agregadas</h4>
-            <div class="grid md:grid-cols-4 gap-3">
-              <div>
-                <label class="text-sm font-medium">Indicador</label>
-                <select id="selIndTendencia" class="w-full px-3 py-2 rounded-lg border bg-white"></select>
-              </div>
-              <div>
-                <label class="text-sm font-medium">Nivel territorial</label>
-                <select id="selNivelTendencia" class="w-full px-3 py-2 rounded-lg border bg-white">
-                  <option>LOCALIDAD</option><option>UPZ</option>
-                </select>
-              </div>
-              <div>
-                <label class="text-sm font-medium">Cohorte</label>
-                <select id="selCohorteTendencia" class="w-full px-3 py-2 rounded-lg border bg-white">
-                  <option value="">Ambas</option><option>10-14</option><option>15-19</option>
-                </select>
-              </div>
-              <div class="flex items-end">
-                <button class="btn btn-secondary w-full" onclick="runTendencias()"><i class="ti ti-chart-line"></i> Analizar tendencias</button>
-              </div>
-            </div>
-          </div>
+    <!-- Objetivo 4: Tendencias -->
+    <section id="obj4" class="content-section hidden">
+      <div class="card">
+        <div class="card-header">
+          <h3><i class="ti ti-trending-up"></i> Análisis de Tendencias y Comparación</h3>
         </div>
-
-        <!-- Resultados de series temporales -->
-        <div id="panelSeries" class="card p-4 hidden">
-          <div class="flex items-center justify-between mb-3">
-            <h4 class="font-semibold">Serie temporal por cohortes</h4>
-            <div id="unidadMedidaSerie" class="text-sm text-blue-800"></div>
-          </div>
-          <canvas id="chartSerie" style="height: 280px;"></canvas>
-        </div>
-
-        <!-- Resultados de análisis de tendencias -->
-        <div id="panelTendencias" class="grid lg:grid-cols-2 gap-4 hidden">
-          <div class="card p-4">
-            <h4 class="font-semibold mb-3">Clasificación de tendencias</h4>
-            <canvas id="chartTendencias" style="height: 280px;"></canvas>
+        <div class="card-body">
+          <div class="form-grid form-grid-4">
+            <div class="form-group">
+              <label class="form-label">Indicador Principal</label>
+              <select id="obj4_indicador1" class="form-select">
+                <option value="">Seleccionar indicador...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Indicador Comparación</label>
+              <select id="obj4_indicador2" class="form-select">
+                <option value="">Seleccionar segundo indicador...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Territorio</label>
+              <select id="obj4_territorio" class="form-select">
+                <option value="">Seleccionar territorio...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nivel</label>
+              <select id="obj4_nivel" class="form-select">
+                <option value="LOCALIDAD">Localidad</option>
+                <option value="UPZ">UPZ</option>
+              </select>
+            </div>
           </div>
           
-          <div class="card p-4 overflow-auto">
-            <div class="flex items-center justify-between mb-3">
-              <h4 class="font-semibold">Análisis detallado</h4>
-              <button class="btn text-xs" onclick="downloadCSV('tendencias')"><i class="ti ti-download"></i> CSV</button>
+          <div style="text-align: center; margin: 1.5rem 0;">
+            <button id="obj4_analizar" class="btn btn-primary">
+              <i class="ti ti-chart-line"></i> Analizar Tendencias
+            </button>
+          </div>
+          
+          <div id="obj4_resultados" class="hidden">
+            <div class="card">
+              <div class="card-header">
+                <h3>Comparación Temporal de Indicadores</h3>
+              </div>
+              <div class="card-body">
+                <div class="chart-container" style="height: 400px;">
+                  <canvas id="obj4_chart"></canvas>
+                </div>
+              </div>
             </div>
-            <table class="w-full text-sm border-collapse table-hover" id="tblTendencias">
-              <thead class="bg-primary-50 text-primary-900">
-                <tr>
-                  <th class="p-2 border text-left">Territorio</th>
-                  <th class="p-2 border">Período</th>
-                  <th class="p-2 border">Inicial</th>
-                  <th class="p-2 border">Final</th>
-                  <th class="p-2 border">Cambio %</th>
-                  <th class="p-2 border">Pendiente</th>
-                  <th class="p-2 border">R²</th>
-                  <th class="p-2 border">Clasificación</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
           </div>
         </div>
       </div>
     </section>
   </main>
 
-  <div class="fixed right-4 bottom-4 space-y-2" id="toasts"></div>
+  <!-- Toast Container -->
+  <div class="toasts" id="toastContainer"></div>
 
-<script>
-const $ = (q) => document.querySelector(q);
-const $$ = (q) => Array.from(document.querySelectorAll(q));
-
-function toast(msg, ok=true){
-  const div=document.createElement('div');
-  div.className='px-3 py-2 rounded-xl shadow-soft bg-white border '+(ok?'border-emerald-200 text-emerald-700':'border-rose-200 text-rose-700');
-  div.textContent=msg; $('#toasts').appendChild(div); setTimeout(()=>div.remove(),4000);
-}
-
-function setSpin(id,on){ const el=$('#'+id); if(el) el.classList.toggle('hidden',!on); }
-
-function fillSelect(sel, arr, ph='Selecciona...', keepValue=true){ 
-  const el=typeof sel==='string' ? $('#'+sel) : sel; 
-  if(!el) return; 
-  const keep = keepValue ? el.value : '';
-  el.innerHTML=''; 
-  const o=document.createElement('option'); 
-  o.value=''; o.textContent=ph; 
-  el.appendChild(o); 
-  (arr||[]).forEach(v=>{ 
-    const opt=document.createElement('option'); 
-    opt.value=v; opt.textContent=v; 
-    el.appendChild(opt); 
-  }); 
-  if(keepValue) el.value=keep; 
-}
-
-function toCSV(rows, headers){ 
-  const esc=s=>('"'+String(s??'').replace(/"/g,'""')+'"'); 
-  const head=headers.map(esc).join(','); 
-  const body=(rows||[]).map(r=>headers.map(h=>esc(r[h])).join(',')).join('\n'); 
-  return head+'\n'+body; 
-}
-
-let META={indicadores:[],localidades:[],upz:[],años:[], cohortes:['10-14','15-19'], unidades_medida:{}};
-let charts={}; 
-let CARAC=[], ASOC=[], BRECHA=[], TENDENCIAS=[];
-
-// Tabs
-$$('.tabs button').forEach(b=>b.addEventListener('click', e=>{
-  const id=b.dataset.tab;
-  $$('.tabs button').forEach(x=>x.setAttribute('aria-selected', x===b));
-  ['obj1','obj2','obj3','obj4'].forEach(x=>$('#'+x).classList.toggle('hidden', x!==id));
-}));
-
-// API helpers
-async function apiGet(path, params){
-  const url=new URL(path, location.origin);
-  if(params){ for(const[k,v] of Object.entries(params)){ if(v!=='' && v!=null) url.searchParams.append(k, v); } }
-  const res=await fetch(url); 
-  if(!res.ok) throw new Error((await res.text())||res.statusText); 
-  return res.json();
-}
-
-async function apiPostFile(path, file){ 
-  const fd=new FormData(); 
-  fd.append('file', file); 
-  const res=await fetch(path,{method:'POST', body:fd}); 
-  if(!res.ok) throw new Error((await res.text())||res.statusText); 
-  return res.json(); 
-}
-
-// Load meta & KPIs
-async function loadMeta(){
-  const meta=await apiGet('/metadatos'); 
-  META=meta;
-  
-  // Llenar selects
-  fillSelect('selIndicador', meta.indicadores, 'Seleccionar indicador...');
-  fillSelect('selIndObj', (meta.indicadores||[]).filter(i=>/fecund/i.test(i)).length ? 
-    (meta.indicadores||[]).filter(i=>/fecund/i.test(i)) : meta.indicadores, 'Indicador de fecundidad...');
-  fillSelect('selIndSerie', meta.indicadores, 'Seleccionar indicador...');
-  fillSelect('selIndTendencia', meta.indicadores, 'Seleccionar indicador...');
-  fillSelect('selIndicadorBrecha', meta.indicadores, 'Seleccionar indicador...');
-  fillSelect('selLocalidadFiltro', meta.localidades, 'Todas las localidades');
-  
-  // Años
-  const años = [''].concat(meta.años || []);
-  fillSelect('selAnio', años, '(opcional)');
-  fillSelect('selAnioAsoc', años, '(opcional)');
-  fillSelect('selAnioBrecha', años, '(opcional)');
-  
-  updateTerritoriosSerie();
-}
-
-async function loadKPI(){
-  try{
-    const s=await apiGet('/estadisticas/generales');
-    $('#kTotal').textContent=s.total_registros ?? '—';
-    $('#kIndicadores').textContent=s.indicadores_unicos ?? '—';
-    $('#kLocs').textContent=s.localidades_unicas ?? '—';
-    $('#kUpz').textContent=s.upzs_unicas ?? '—';
-  }catch(e){
-    console.error('Error loading KPIs:', e);
-  }
-}
-
-function updateTerritoriosSerie(){
-  const nivel=$('#selNivelSerie').value || 'LOCALIDAD';
-  fillSelect('selTerrSerie', nivel==='LOCALIDAD' ? META.localidades : META.upz, 
-    nivel==='LOCALIDAD' ? 'Seleccionar localidad...' : 'Seleccionar UPZ...');
-}
-
-// Upload
-async function upload(){
-  const f=$('#file').files[0]; 
-  if(!f){ toast('Selecciona un archivo .xlsx', false); return; }
-  setSpin('uploadSpin', true);
-  try{ 
-    const out=await apiPostFile('/upload/excel', f); 
-    $('#uploadOut').textContent=JSON.stringify(out, null, 2); 
-    toast('Archivo cargado correctamente.'); 
-    await loadMeta(); 
-    await loadKPI(); 
-  }
-  catch(e){ 
-    toast('Error subiendo archivo: '+e.message, false); 
-    $('#uploadOut').textContent = 'Error: ' + e.message;
-  }
-  finally{ setSpin('uploadSpin', false); }
-}
-
-// Función para cambiar tipo de gráfico
-function toggleChartType(chartId) {
-  if(!charts[chartId]) return;
-  
-  const chart = charts[chartId];
-  const currentType = chart.config.type;
-  const newType = currentType === 'bar' ? 'line' : 'bar';
-  
-  // Destruir y recrear con nuevo tipo
-  chart.destroy();
-  const canvas = $(`#chart${chartId.charAt(0).toUpperCase() + chartId.slice(1)}`);
-  charts[chartId] = new Chart(canvas, {
-    type: newType,
-    data: chart.data,
-    options: chart.options
-  });
-}
-
-// OBJ 1: Caracterización
-async function runCaracterizacion(){
-  const indicador=$('#selIndicador').value;
-  const nivel=$('#selNivel').value||'LOCALIDAD';
-  const año=$('#selAnio').value||'';
-  const cohorte=$('#selCohorte').value||'';
-  const localidad=$('#selLocalidadFiltro').value||'';
-  
-  if(!indicador){ toast('Selecciona un indicador', false); return; }
-  
-  try {
-    const js=await apiGet('/caracterizacion', {indicador, nivel, año, cohorte, localidad});
-    const rows=js.datos||[]; 
-    CARAC=rows;
-    
-    // Mostrar unidad de medida
-    if(js.unidad_medida) {
-      $('#txtUnidadMedida').textContent = js.unidad_medida;
-      $('#unidadMedida').classList.remove('hidden');
-    }
-    
-    // Mostrar resumen de localidad si existe
-    if(js.resumen_localidad) {
-      const rl = js.resumen_localidad;
-      $('#datosLocalidad').innerHTML = `
-        <strong>${rl.territorio}:</strong> Promedio: ${rl.promedio}, 
-        Mediana: ${rl.mediana}, Min: ${rl.min}, Max: ${rl.max}, n=${rl.n}
-      `;
-      $('#resumenLocalidad').classList.remove('hidden');
-    } else {
-      $('#resumenLocalidad').classList.add('hidden');
-    }
-    
-    // Habilitar botón de comparativa si hay filtro de localidad
-    $('#btnComparativa').disabled = !localidad;
-    
-    // Tabla
-    const tb=$('#tblCarac tbody'); 
-    tb.innerHTML=rows.map(o=>`
-      <tr>
-        <td class="p-2 border font-medium">${o.territorio}</td>
-        <td class="p-2 border text-center">${o.n}</td>
-        <td class="p-2 border text-center">${o.promedio}</td>
-        <td class="p-2 border text-center">${o.mediana}</td>
-        <td class="p-2 border text-center">${o.q1}</td>
-        <td class="p-2 border text-center">${o.q3}</td>
-        <td class="p-2 border text-center">${o.min}</td>
-        <td class="p-2 border text-center">${o.max}</td>
-        <td class="p-2 border text-center">${o.desv_estandar}</td>
-        <td class="p-2 border text-center">${o.cv_pct}%</td>
-      </tr>
-    `).join('');
-    
-    // Gráfico
-    const top=rows.slice(0,20);
-    const data={
-      labels: top.map(r=>r.territorio), 
-      datasets: [{
-        label:`Promedio — ${indicador} (${nivel}${año? ' · '+año:''}${cohorte? ' · '+cohorte:''}${localidad? ' · '+localidad:''})`, 
-        data: top.map(r=>r.promedio), 
-        borderWidth:2, 
-        backgroundColor:'#3b82f6',
-        borderColor: '#1d4ed8'
-      }]
+  <!-- JavaScript -->
+  <script>
+    // Global variables
+    let META = {
+      indicadores: { todos: [], fecundidad: [], otros: [] },
+      localidades: [],
+      upz: [],
+      años: [],
+      cohortes: []
     };
-    
-    if(charts.carac) charts.carac.destroy();
-    charts.carac=new Chart($('#chartCarac'), {
-      type:'bar', 
-      data, 
-      options:{
-        responsive:true, 
-        plugins:{legend:{display:false}}, 
-        scales:{
-          x:{ticks:{autoSkip:false, maxRotation: 45}},
-          y:{beginAtZero:false}
-        }
-      }
-    });
-    
-    toast('Caracterización completada');
-  } catch(e) {
-    toast('Error en caracterización: ' + e.message, false);
-  }
-}
+    let charts = {};
 
-async function runComparativa(){
-  const indicador=$('#selIndicador').value;
-  const localidad=$('#selLocalidadFiltro').value;
-  const año=$('#selAnio').value||'';
-  const cohorte=$('#selCohorte').value||'';
-  
-  if(!indicador || !localidad){ 
-    toast('Selecciona indicador y localidad', false); 
-    return; 
-  }
-  
-  try {
-    const js=await apiGet('/caracterizacion/comparativa', {indicador, localidad, año, cohorte});
-    
-    // Mostrar datos comparativos
-    $('#datosComparativos').innerHTML = `
-      <div class="p-3 bg-blue-50 rounded">
-        <h6 class="font-medium text-blue-800">${localidad}</h6>
-        <p class="text-sm text-blue-700">Promedio: ${js.localidad_stats.promedio} | n=${js.localidad_stats.n}</p>
-      </div>
-      <div class="p-3 bg-green-50 rounded">
-        <h6 class="font-medium text-green-800">Bogotá D.C.</h6>
-        <p class="text-sm text-green-700">Promedio: ${js.bogota_stats.promedio} | n=${js.bogota_stats.n}</p>
-      </div>
-      ${js.upz_stats ? `
-        <div class="p-3 bg-purple-50 rounded">
-          <h6 class="font-medium text-purple-800">UPZ de ${localidad}</h6>
-          <div class="text-xs text-purple-700 max-h-32 overflow-y-auto">
-            ${js.upz_stats.map(u => `<div>${u.upz}: ${u.promedio} (n=${u.n})</div>`).join('')}
-          </div>
+    // Utility functions
+    function toast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <i class="ti ti-${type === 'success' ? 'check' : 'alert-circle'}"></i>
+          <span>${message}</span>
         </div>
-      ` : ''}
-    `;
-    
-    // Gráfico comparativo
-    const labels = ['Localidad', 'Bogotá'];
-    const data_vals = [js.localidad_stats.promedio, js.bogota_stats.promedio];
-    const colors = ['#3b82f6', '#10b981'];
-    
-    if(js.upz_stats && js.upz_stats.length > 0) {
-      js.upz_stats.slice(0,5).forEach(upz => {
-        labels.push(upz.upz);
-        data_vals.push(upz.promedio);
-        colors.push('#8b5cf6');
+      `;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 4000);
+    }
+
+    function showSpinner(elementId) {
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.innerHTML = '<div class="spinner"></div>';
+      }
+    }
+
+    function hideElement(elementId) {
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.classList.add('hidden');
+      }
+    }
+
+    function showElement(elementId) {
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.classList.remove('hidden');
+      }
+    }
+
+    function fillSelect(selectId, options, placeholder = 'Seleccionar...') {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      
+      select.innerHTML = `<option value="">${placeholder}</option>`;
+      options.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option;
+        optionElement.textContent = option;
+        select.appendChild(optionElement);
       });
     }
-    
-    const compData = {
-      labels: labels,
-      datasets: [{
-        label: indicador,
-        data: data_vals,
-        backgroundColor: colors,
-        borderWidth: 1
-      }]
-    };
-    
-    if(charts.comparativa) charts.comparativa.destroy();
-    charts.comparativa = new Chart($('#chartComparativa'), {
-      type: 'bar',
-      data: compData,
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { maxRotation: 45 } },
-          y: { beginAtZero: false }
+
+    // API functions
+    async function apiGet(endpoint, params = {}) {
+      const url = new URL(endpoint, window.location.origin);
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== '' && value !== null && value !== undefined) {
+          url.searchParams.append(key, value);
         }
+      });
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
       }
-    });
-    
-    $('#panelComparativa').classList.remove('hidden');
-    toast('Comparativa generada');
-  } catch(e) {
-    toast('Error en comparativa: ' + e.message, false);
-  }
-}
-
-// OBJ 2: Asociación
-async function runAsociacion(){
-  const ind=$('#selIndObj').value;
-  const nivel=$('#selNivelAsoc').value||'LOCALIDAD';
-  const año=$('#selAnioAsoc').value||'';
-  const top=$('#inpTop').value||15;
-  const cohorte=$('#selCohorteAsoc').value||'';
-  
-  if(!ind){ toast('Selecciona el indicador objetivo', false); return; }
-  
-  try {
-    const js=await apiGet('/analisis/asociacion', {indicador_objetivo:ind, nivel, año, top, cohorte});
-    const rows=js.comparaciones||[]; 
-    ASOC=rows;
-    
-    const tb=$('#tblAsoc tbody');
-    tb.innerHTML=rows.map(o=>`
-      <tr class="cursor-pointer hover:bg-blue-50" onclick="verDispersion('${ind}','${nivel}','${año}','${o.indicador_comparado}','${cohorte}')">
-        <td class="p-2 border">${o.indicador_comparado}</td>
-        <td class="p-2 border text-center">${o.territorios}</td>
-        <td class="p-2 border text-center font-mono">${o.pearson_r}</td>
-        <td class="p-2 border text-center text-xs">${o.pearson_p}</td>
-        <td class="p-2 border text-center">
-          <span class="chip ${o.categoria_correlacion === 'Fuerte' ? 'badge-green' : 
-                              o.categoria_correlacion === 'Moderada' ? 'badge-yellow' : 'badge-red'}">
-            ${o.categoria_correlacion}
-          </span>
-        </td>
-        <td class="p-2 border text-center">
-          ${o.significativa ? '<span class="chip badge-green">Sí</span>' : '<span class="chip">No</span>'}
-        </td>
-        <td class="p-2 border text-center">
-          <button class="btn text-xs"><i class="ti ti-chart-dots"></i></button>
-        </td>
-      </tr>
-    `).join('');
-    
-    if(charts.disp) charts.disp.destroy(); 
-    $('#dispMeta').textContent='Haz clic en una correlación para visualizar la dispersión.';
-    $('#dispStats').classList.add('hidden');
-    
-    toast('Análisis de asociación completado');
-  } catch(e) {
-    toast('Error en análisis de asociación: ' + e.message, false);
-  }
-}
-
-async function verDispersion(indObj, nivel, año, indX, cohorte){
-  try {
-    const js = await apiGet('/analisis/asociacion/detalle', {
-      indicador_objetivo: indObj,
-      indicador_comparado: indX,
-      nivel, año, cohorte
-    });
-    
-    const pares = js.datos || [];
-    if(!pares.length){ 
-      toast('Sin territorios comunes', false); 
-      return; 
+      return response.json();
     }
-    
-    // Calcular estadísticas de correlación
-    const xs = pares.map(p => p.x);
-    const ys = pares.map(p => p.y);
-    
-    if(charts.disp) charts.disp.destroy();
-    charts.disp=new Chart($('#chartDisp'), {
-      type:'scatter', 
-      data:{
-        datasets:[{
-          label:`${indX} vs ${indObj}`, 
-          data:pares.map(p => ({x: p.x, y: p.y})),
-          backgroundColor: '#3b82f6',
-          pointRadius: 4,
-          pointHoverRadius: 6
-        }]
-      }, 
-      options:{
-        responsive: true,
-        plugins:{
-          legend:{display:false},
-          tooltip: {
-            callbacks: {
-              title: function(context) {
-                const punto = pares[context[0].dataIndex];
-                return punto.territorio;
-              },
-              label: function(context) {
-                return `${indX}: ${context.parsed.x}, ${indObj}: ${context.parsed.y}`;
+
+    async function uploadFile(file) {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/upload/excel', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+      }
+      return response.json();
+    }
+
+    // Load metadata
+    async function loadMetadata() {
+      try {
+        const data = await apiGet('/metadatos');
+        META = data;
+        
+        // Update KPIs
+        document.getElementById('kTotal').textContent = data.total_registros.toLocaleString();
+        document.getElementById('kIndicadores').textContent = data.indicadores.todos.length;
+        document.getElementById('kLocalidades').textContent = data.localidades.length;
+        document.getElementById('kUpz').textContent = data.upz.length;
+        document.getElementById('kFecundidad').textContent = data.indicadores.fecundidad.length;
+        
+        // Fill selects
+        fillSelect('obj1_indicador', data.indicadores.todos, 'Seleccionar indicador...');
+        fillSelect('obj1_localidad', data.localidades, 'Todas las localidades');
+        fillSelect('obj1_año', data.años, 'Todos los años');
+        
+        fillSelect('obj2_indicador_x', data.indicadores.fecundidad, 'Seleccionar indicador de fecundidad...');
+        fillSelect('obj2_indicador_y', data.indicadores.otros, 'Seleccionar indicador a comparar...');
+        
+        fillSelect('obj3_indicador', data.indicadores.fecundidad, 'Seleccionar indicador de fecundidad...');
+        fillSelect('obj3_año', data.años, 'Todos los años');
+        
+        fillSelect('obj4_indicador1', data.indicadores.todos, 'Seleccionar indicador...');
+        fillSelect('obj4_indicador2', data.indicadores.todos, 'Seleccionar segundo indicador...');
+        fillSelect('obj4_territorio', data.localidades, 'Seleccionar territorio...');
+        
+        toast('Metadatos cargados correctamente');
+      } catch (error) {
+        console.error('Error loading metadata:', error);
+        toast('Error cargando metadatos: ' + error.message, 'error');
+      }
+    }
+
+    // Upload functionality
+    async function handleUpload() {
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        toast('Por favor seleccione un archivo', 'error');
+        return;
+      }
+      
+      const uploadBtn = document.getElementById('uploadBtn');
+      const originalText = uploadBtn.innerHTML;
+      
+      try {
+        uploadBtn.innerHTML = '<div class="spinner"></div> Procesando...';
+        uploadBtn.disabled = true;
+        
+        const result = await uploadFile(file);
+        
+        if (result.status === 'success') {
+          toast(`Archivo cargado: ${result.registros_cargados} registros`);
+          await loadMetadata();
+        } else {
+          toast('Error en la carga del archivo', 'error');
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast('Error subiendo archivo: ' + error.message, 'error');
+      } finally {
+        uploadBtn.innerHTML = originalText;
+        uploadBtn.disabled = false;
+      }
+    }
+
+    // Navigation
+    function switchObjective(objective) {
+      // Update tabs
+      document.querySelectorAll('.objetivo-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelector(`[data-objetivo="${objective}"]`).classList.add('active');
+      
+      // Show/hide sections
+      document.querySelectorAll('[id^="obj"]').forEach(section => {
+        section.classList.add('hidden');
+      });
+      document.getElementById(objective).classList.remove('hidden');
+    }
+
+    // Objective 1: Caracterización
+    async function runCaracterizacion() {
+      const indicador = document.getElementById('obj1_indicador').value;
+      const localidad = document.getElementById('obj1_localidad').value;
+      const upz = document.getElementById('obj1_upz').value;
+      const año = document.getElementById('obj1_año').value;
+      
+      if (!indicador) {
+        toast('Por favor seleccione un indicador', 'error');
+        return;
+      }
+      
+      try {
+        showSpinner('obj1_resultados');
+        showElement('obj1_resultados');
+        
+        const params = {
+          indicador,
+          nivel: upz ? 'UPZ' : 'LOCALIDAD',
+          localidad: localidad || undefined,
+          año: año || undefined
+        };
+        
+        const data = await apiGet('/caracterizacion', params);
+        
+        if (data.mensaje) {
+          toast(data.mensaje, 'error');
+          hideElement('obj1_resultados');
+          return;
+        }
+        
+        // Update chart
+        updateCaracterizacionChart(data);
+        updateCaracterizacionTable(data);
+        
+      } catch (error) {
+        console.error('Error in caracterización:', error);
+        toast('Error en caracterización: ' + error.message, 'error');
+        hideElement('obj1_resultados');
+      }
+    }
+
+    function updateCaracterizacionChart(data) {
+      const ctx = document.getElementById('obj1_chart').getContext('2d');
+      
+      if (charts.obj1) {
+        charts.obj1.destroy();
+      }
+      
+      const topData = data.datos.slice(0, 15);
+      
+      charts.obj1 = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: topData.map(d => d.territorio),
+          datasets: [{
+            label: data.indicador,
+            data: topData.map(d => d.promedio),
+            backgroundColor: '#3b82f6',
+            borderColor: '#1e40af',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                maxRotation: 45
+              }
+            },
+            y: {
+              beginAtZero: false
+            }
+          }
+        }
+      });
+    }
+
+    function updateCaracterizacionTable(data) {
+      const tbody = document.querySelector('#obj1_table tbody');
+      tbody.innerHTML = '';
+      
+      data.datos.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight: 600;">${row.territorio}</td>
+          <td>${row.n}</td>
+          <td>${row.promedio}</td>
+          <td>${row.mediana}</td>
+          <td>${row.min}</td>
+          <td>${row.max}</td>
+          <td>${row.desv_estandar}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Objective 2: Asociación
+    async function runAsociacion() {
+      const indicadorX = document.getElementById('obj2_indicador_x').value;
+      const indicadorY = document.getElementById('obj2_indicador_y').value;
+      const nivel = document.getElementById('obj2_nivel').value;
+      
+      if (!indicadorX || !indicadorY) {
+        toast('Por favor seleccione ambos indicadores', 'error');
+        return;
+      }
+      
+      try {
+        showSpinner('obj2_resultados');
+        showElement('obj2_resultados');
+        
+        const data = await apiGet('/analisis/asociacion', {
+          indicador_x: indicadorX,
+          indicador_y: indicadorY,
+          nivel
+        });
+        
+        if (data.mensaje) {
+          toast(data.mensaje, 'error');
+          hideElement('obj2_resultados');
+          return;
+        }
+        
+        updateAsociacionChart(data);
+        updateAsociacionTable(data);
+        updateCorrelacionInfo(data);
+        
+      } catch (error) {
+        console.error('Error in asociación:', error);
+        toast('Error en análisis de asociación: ' + error.message, 'error');
+        hideElement('obj2_resultados');
+      }
+    }
+
+    function updateAsociacionChart(data) {
+      const ctx = document.getElementById('obj2_chart').getContext('2d');
+      
+      if (charts.obj2) {
+        charts.obj2.destroy();
+      }
+      
+      charts.obj2 = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            label: 'Territorios',
+            data: data.datos.map(d => ({ x: d.x, y: d.y })),
+            backgroundColor: '#3b82f6',
+            borderColor: '#1e40af',
+            pointRadius: 6,
+            pointHoverRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                title: function(context) {
+                  const index = context[0].dataIndex;
+                  return data.datos[index].territorio;
+                },
+                label: function(context) {
+                  return [
+                    `${data.indicador_x}: ${context.parsed.x}`,
+                    `${data.indicador_y}: ${context.parsed.y}`
+                  ];
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: data.indicador_x
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: data.indicador_y
               }
             }
           }
-        }, 
-        scales:{
-          x:{title:{display:true,text:indX}}, 
-          y:{title:{display:true,text:indObj}}
         }
-      }
-    });
-    
-    $('#dispMeta').textContent=`${js.territorios_comunes} territorios comunes`;
-    $('#dispStats').innerHTML = `
-      <div><strong>Territorios:</strong> ${js.territorios_comunes}</div>
-      <div><strong>Nivel:</strong> ${js.nivel}</div>
-      ${js.año ? `<div><strong>Año:</strong> ${js.año}</div>` : ''}
-      ${js.cohorte ? `<div><strong>Cohorte:</strong> ${js.cohorte}</div>` : ''}
-    `;
-    $('#dispStats').classList.remove('hidden');
-  } catch(e) {
-    toast('Error al cargar dispersión: ' + e.message, false);
-  }
-}
+      });
+    }
 
-// OBJ 3: Brechas
-async function runBrechas(){
-  const indicador=$('#selIndicadorBrecha').value;
-  const nivel=$('#selNivelBrecha').value||'LOCALIDAD';
-  const año=$('#selAnioBrecha').value||'';
-  
-  if(!indicador){ toast('Selecciona un indicador', false); return; }
-  
-  try {
-    const js=await apiGet('/brechas/cohortes', {indicador, nivel, año});
-    const rows=js.datos||[]; 
-    BRECHA=rows;
-    
-    // Mostrar unidad de medida
-    if(js.unidad_medida) {
-      $('#txtUnidadMedidaBrecha').textContent = js.unidad_medida;
-      $('#unidadMedidaBrecha').classList.remove('hidden');
+    function updateAsociacionTable(data) {
+      document.getElementById('obj2_col_x').textContent = data.indicador_x;
+      document.getElementById('obj2_col_y').textContent = data.indicador_y;
+      
+      const tbody = document.querySelector('#obj2_table tbody');
+      tbody.innerHTML = '';
+      
+      data.datos.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight: 600;">${row.territorio}</td>
+          <td>${row.x}</td>
+          <td>${row.y}</td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
-    
-    // Mostrar resumen
-    if(js.resumen) {
-      $('#brechaPromedio').textContent = js.resumen.brecha_promedio + ' ' + (js.unidad_medida || '');
-      $('#totalTerritorios').textContent = js.total_territorios;
-      $('#mayorBrecha').textContent = js.resumen.mayor_brecha || '—';
-      $('#menorBrecha').textContent = js.resumen.menor_brecha || '—';
-      $('#resumenBrechas').classList.remove('hidden');
+
+    function updateCorrelacionInfo(data) {
+      const correlacionDiv = document.getElementById('obj2_correlacion');
+      const corr = data.correlacion;
+      
+      correlacionDiv.innerHTML = `
+        <strong>Correlación:</strong> r = ${corr.pearson_r} (${corr.categoria})
+        <br><strong>Significancia:</strong> p = ${corr.pearson_p} ${corr.significativa ? '(Significativa)' : '(No significativa)'}
+        <br><strong>Territorios analizados:</strong> ${data.territorios_comunes}
+      `;
     }
-    
-    // Tabla
-    const tb=$('#tblBrecha tbody');
-    tb.innerHTML=rows.map(o=>`
-      <tr>
-        <td class="p-2 border font-medium">${o.territorio}</td>
-        <td class="p-2 border text-center">${o.prom_10_14}</td>
-        <td class="p-2 border text-center">${o.prom_15_19}</td>
-        <td class="p-2 border text-center font-mono ${o.brecha_abs > 0 ? 'text-red-600' : 'text-green-600'}">${o.brecha_abs}</td>
-        <td class="p-2 border text-center">${o.cambio_porcentual ? o.cambio_porcentual + '%' : '—'}</td>
-        <td class="p-2 border text-center text-xs">${o.n_10_14}</td>
-        <td class="p-2 border text-center text-xs">${o.n_15_19}</td>
-      </tr>
-    `).join('');
-    
-    // Gráfico
-    const top=rows.slice(0,15);
-    const data={
-      labels: top.map(r=>r.territorio), 
-      datasets:[{
-        label:'Brecha (15–19 - 10–14)', 
-        data: top.map(r=>r.brecha_abs), 
-        backgroundColor: top.map(r => r.brecha_abs > 0 ? '#ef4444' : '#10b981'),
-        borderWidth: 1
-      }]
-    };
-    
-    if(charts.brecha) charts.brecha.destroy();
-    charts.brecha=new Chart($('#chartBrecha'), {
-      type:'bar', 
-      data, 
-      options:{
-        responsive:true, 
-        plugins:{legend:{display:false}}, 
-        scales:{
-          x:{ticks:{autoSkip:false, maxRotation: 45}},
-          y:{
-            title: {
-              display: true,
-              text: 'Brecha (' + (js.unidad_medida || '') + ')'
-            }
-          }
+
+    // Objective 3: Theil
+    async function runTheil() {
+      const indicador = document.getElementById('obj3_indicador').value;
+      const nivel = document.getElementById('obj3_nivel').value;
+      const año = document.getElementById('obj3_año').value;
+      
+      if (!indicador) {
+        toast('Por favor seleccione un indicador', 'error');
+        return;
+      }
+      
+      try {
+        showSpinner('obj3_resultados');
+        showElement('obj3_resultados');
+        
+        const data = await apiGet('/analisis/theil', {
+          indicador,
+          nivel,
+          año: año || undefined
+        });
+        
+        if (data.mensaje) {
+          toast(data.mensaje, 'error');
+          hideElement('obj3_resultados');
+          return;
         }
+        
+        updateTheilInfo(data);
+        updateTheilChart(data);
+        updateTheilTable(data);
+        
+      } catch (error) {
+        console.error('Error in Theil analysis:', error);
+        toast('Error en análisis de Theil: ' + error.message, 'error');
+        hideElement('obj3_resultados');
       }
-    });
-    
-    toast('Análisis de brechas completado');
-  } catch(e) {
-    toast('Error en análisis de brechas: ' + e.message, false);
-  }
-}
+    }
 
-// OBJ 4: Series temporales
-async function runSerie(){
-  const indicador=$('#selIndSerie').value;
-  const nivel=$('#selNivelSerie').value||'LOCALIDAD';
-  const territorio=$('#selTerrSerie').value;
-  
-  if(!indicador||!territorio){ 
-    toast('Selecciona indicador y territorio', false); 
-    return; 
-  }
-  
-  try {
-    const j10=await apiGet('/datos/series', {indicador, territorio, nivel, cohorte:'10-14'});
-    const j15=await apiGet('/datos/series', {indicador, territorio, nivel, cohorte:'15-19'});
-    
-    const s10=(j10.serie||[]), s15=(j15.serie||[]);
-    const years=Array.from(new Set([...s10.map(x=>x.año), ...s15.map(x=>x.año)])).sort((a,b)=>a-b);
-    const d10=years.map(y=>{ const p=s10.find(x=>x.año===y); return p? p.valor : null; });
-    const d15=years.map(y=>{ const p=s15.find(x=>x.año===y); return p? p.valor : null; });
-    
-    if(charts.serie) charts.serie.destroy();
-    charts.serie=new Chart($('#chartSerie'), {
-      type:'line', 
-      data:{
-        labels:years, 
-        datasets:[
-          {
-            label:'10–14', 
-            data:d10, 
-            borderColor:'#3b82f6', 
-            backgroundColor:'rgba(59,130,246,.2)', 
-            tension:.3,
-            pointRadius: 4
-          },
-          {
-            label:'15–19', 
-            data:d15, 
-            borderColor:'#06b6d4', 
-            backgroundColor:'rgba(6,182,212,.2)', 
-            tension:.3,
-            pointRadius: 4
-          }
-        ]
-      }, 
-      options:{
-        responsive: true,
-        plugins:{legend:{display:true}}, 
-        scales:{
-          y:{
-            beginAtZero:false,
-            title: {
-              display: true,
-              text: (j10.unidad_medida || j15.unidad_medida || '')
+    function updateTheilInfo(data) {
+      document.getElementById('theil_valor').textContent = data.indice_theil;
+      document.getElementById('theil_categoria').textContent = data.interpretacion.categoria;
+    }
+
+    function updateTheilChart(data) {
+      const ctx = document.getElementById('obj3_chart').getContext('2d');
+      
+      if (charts.obj3) {
+        charts.obj3.destroy();
+      }
+      
+      const topData = data.datos.slice(0, 15);
+      
+      charts.obj3 = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: topData.map(d => d.territorio),
+          datasets: [{
+            label: data.indicador,
+            data: topData.map(d => d.valor),
+            backgroundColor: topData.map(d => 
+              d.desviacion_media > 0 ? '#ef4444' : '#10b981'
+            ),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
             }
           },
-          x:{
-            title: {
-              display: true,
-              text: 'Año'
+          scales: {
+            x: {
+              ticks: {
+                maxRotation: 45
+              }
             }
           }
         }
-      }
-    });
-    
-    // Mostrar unidad de medida
-    const unidad = j10.unidad_medida || j15.unidad_medida || '';
-    $('#unidadMedidaSerie').textContent = unidad ? `Unidad: ${unidad}` : '';
-    
-    $('#panelSeries').classList.remove('hidden');
-    toast('Serie temporal generada');
-  } catch(e) {
-    toast('Error en serie temporal: ' + e.message, false);
-  }
-}
+      });
+    }
 
-// OBJ 4: Análisis de tendencias
-async function runTendencias(){
-  const indicador=$('#selIndTendencia').value;
-  const nivel=$('#selNivelTendencia').value||'LOCALIDAD';
-  const cohorte=$('#selCohorteTendencia').value||'';
-  
-  if(!indicador){ 
-    toast('Selecciona un indicador', false); 
-    return; 
-  }
-  
-  try {
-    const js=await apiGet('/analisis/tendencias', {indicador, nivel, cohorte});
-    const rows=js.tendencias||[]; 
-    TENDENCIAS=rows;
-    
-    // Tabla
-    const tb=$('#tblTendencias tbody');
-    tb.innerHTML=rows.map(o=>`
-      <tr>
-        <td class="p-2 border font-medium">${o.territorio}</td>
-        <td class="p-2 border text-center text-xs">${o.periodo}</td>
-        <td class="p-2 border text-center">${o.valor_inicial}</td>
-        <td class="p-2 border text-center">${o.valor_final}</td>
-        <td class="p-2 border text-center ${(o.cambio_porcentual || 0) > 0 ? 'text-red-600' : 'text-green-600'}">${o.cambio_porcentual ? o.cambio_porcentual + '%' : '—'}</td>
-        <td class="p-2 border text-center font-mono text-xs">${o.pendiente}</td>
-        <td class="p-2 border text-center text-xs">${o.r_cuadrado}</td>
-        <td class="p-2 border text-center">
-          <span class="chip ${
-            o.clasificacion.includes('Creciente') ? 'badge-red' : 
-            o.clasificacion.includes('Decreciente') ? 'badge-green' : 
-            'badge-yellow'
-          }">${o.clasificacion}</span>
-        </td>
-      </tr>
-    `).join('');
-    
-    // Gráfico de clasificaciones
-    const clasificaciones = {};
-    rows.forEach(r => {
-      clasificaciones[r.clasificacion] = (clasificaciones[r.clasificacion] || 0) + 1;
-    });
-    
-    const clasData = {
-      labels: Object.keys(clasificaciones),
-      datasets: [{
-        data: Object.values(clasificaciones),
-        backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
-      }]
-    };
-    
-    if(charts.tendencias) charts.tendencias.destroy();
-    charts.tendencias = new Chart($('#chartTendencias'), {
-      type: 'doughnut',
-      data: clasData,
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: true, position: 'bottom' }
+    function updateTheilTable(data) {
+      const tbody = document.querySelector('#obj3_table tbody');
+      tbody.innerHTML = '';
+      
+      data.datos.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight: 600;">${row.territorio}</td>
+          <td>${row.valor}</td>
+          <td style="color: ${row.desviacion_media > 0 ? '#ef4444' : '#10b981'};">
+            ${row.desviacion_media > 0 ? '+' : ''}${row.desviacion_media}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Objective 4: Tendencias
+    async function runTendencias() {
+      const indicador1 = document.getElementById('obj4_indicador1').value;
+      const indicador2 = document.getElementById('obj4_indicador2').value;
+      const territorio = document.getElementById('obj4_territorio').value;
+      const nivel = document.getElementById('obj4_nivel').value;
+      
+      if (!indicador1 || !territorio) {
+        toast('Por favor seleccione al menos el indicador principal y territorio', 'error');
+        return;
+      }
+      
+      try {
+        showSpinner('obj4_resultados');
+        showElement('obj4_resultados');
+        
+        // Get series for both indicators
+        const params = { indicador: indicador1, territorio, nivel };
+        const series1 = await apiGet('/datos/series', params);
+        
+        let series2 = null;
+        if (indicador2) {
+          const params2 = { indicador: indicador2, territorio, nivel };
+          series2 = await apiGet('/datos/series', params2);
         }
+        
+        updateTendenciasChart(series1, series2, indicador1, indicador2);
+        
+      } catch (error) {
+        console.error('Error in tendencias:', error);
+        toast('Error en análisis de tendencias: ' + error.message, 'error');
+        hideElement('obj4_resultados');
       }
+    }
+
+    function updateTendenciasChart(series1, series2, indicador1, indicador2) {
+      const ctx = document.getElementById('obj4_chart').getContext('2d');
+      
+      if (charts.obj4) {
+        charts.obj4.destroy();
+      }
+      
+      const datasets = [{
+        label: indicador1,
+        data: series1.serie?.map(s => ({ x: s.año, y: s.valor })) || [],
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.3,
+        fill: false
+      }];
+      
+      if (series2 && series2.serie) {
+        datasets.push({
+          label: indicador2,
+          data: series2.serie.map(s => ({ x: s.año, y: s.valor })),
+          borderColor: '#06b6d4',
+          backgroundColor: 'rgba(6, 182, 212, 0.1)',
+          tension: 0.3,
+          fill: false
+        });
+      }
+      
+      charts.obj4 = new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              title: {
+                display: true,
+                text: 'Año'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Valor'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // UPZ selection handler
+    async function updateUpzList() {
+      const localidad = document.getElementById('obj1_localidad').value;
+      const upzSelect = document.getElementById('obj1_upz');
+      
+      if (!localidad) {
+        upzSelect.innerHTML = '<option value="">Primero seleccione localidad</option>';
+        upzSelect.disabled = true;
+        return;
+      }
+      
+      try {
+        const data = await apiGet(`/localidades/${localidad}/upz`);
+        fillSelect('obj1_upz', data.upz, 'Seleccionar UPZ...');
+        upzSelect.disabled = false;
+      } catch (error) {
+        console.error('Error loading UPZ:', error);
+        upzSelect.innerHTML = '<option value="">Error cargando UPZ</option>';
+      }
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load initial data
+      loadMetadata();
+      
+      // Objective navigation
+      document.querySelectorAll('.objetivo-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          switchObjective(tab.dataset.objetivo);
+        });
+      });
+      
+      // Upload
+      document.getElementById('uploadBtn').addEventListener('click', handleUpload);
+      
+      // Objective 1
+      document.getElementById('obj1_analizar').addEventListener('click', runCaracterizacion);
+      document.getElementById('obj1_localidad').addEventListener('change', updateUpzList);
+      
+      // Objective 2
+      document.getElementById('obj2_analizar').addEventListener('click', runAsociacion);
+      
+      // Objective 3
+      document.getElementById('obj3_analizar').addEventListener('click', runTheil);
+      
+      // Objective 4
+      document.getElementById('obj4_analizar').addEventListener('click', runTendencias);
+      document.getElementById('obj4_nivel').addEventListener('change', function() {
+        const nivel = this.value;
+        const territorios = nivel === 'LOCALIDAD' ? META.localidades : META.upz;
+        fillSelect('obj4_territorio', territorios, 'Seleccionar territorio...');
+      });
     });
-    
-    $('#panelTendencias').classList.remove('hidden');
-    toast('Análisis de tendencias completado');
-  } catch(e) {
-    toast('Error en análisis de tendencias: ' + e.message, false);
-  }
-}
-
-// Export functions
-function downloadCSV(kind){
-  let rows=[], headers=[];
-  let filename = kind;
-  
-  if(kind==='carac'){ 
-    rows=CARAC; 
-    headers=['territorio','n','promedio','mediana','q1','q3','min','max','desv_estandar','cv_pct']; 
-    filename = 'caracterizacion';
-  }
-  else if(kind==='asoc'){ 
-    rows=ASOC; 
-    headers=['indicador_comparado','territorios','pearson_r','pearson_p','spearman_rho','spearman_p','categoria_correlacion','significativa']; 
-    filename = 'asociaciones';
-  }
-  else if(kind==='brecha'){ 
-    rows=BRECHA; 
-    headers=['territorio','prom_10_14','prom_15_19','brecha_abs','cambio_porcentual','n_10_14','n_15_19']; 
-    filename = 'brechas';
-  }
-  else if(kind==='tendencias'){ 
-    rows=TENDENCIAS; 
-    headers=['territorio','periodo','valor_inicial','valor_final','cambio_porcentual','pendiente','r_cuadrado','clasificacion']; 
-    filename = 'tendencias';
-  }
-  else { 
-    toast('Nada para exportar', false); 
-    return; 
-  }
-  
-  if(!rows.length){ 
-    toast('No hay datos para exportar', false); 
-    return; 
-  }
-  
-  const csv=toCSV(rows, headers); 
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); 
-  const a=document.createElement('a'); 
-  a.href=URL.createObjectURL(blob); 
-  a.download=filename + '_' + new Date().toISOString().split('T')[0] + '.csv'; 
-  a.click(); 
-  URL.revokeObjectURL(a.href);
-  
-  toast(`Archivo ${filename}.csv descargado`);
-}
-
-// Event listeners
-$('#btnRefMeta').addEventListener('click', async()=>{ 
-  try {
-    await loadMeta(); 
-    await loadKPI(); 
-    toast('Metadatos actualizados'); 
-  } catch(e) {
-    toast('Error actualizando metadatos: ' + e.message, false);
-  }
-});
-
-$('#selNivelSerie').addEventListener('change', updateTerritoriosSerie);
-
-// Initialize
-window.addEventListener('load', async()=>{ 
-  try {
-    await loadMeta(); 
-    await loadKPI(); 
-    toast('Aplicación iniciada correctamente');
-  } catch(e) {
-    toast('Error inicializando aplicación: ' + e.message, false);
-  }
-});
-</script>
+  </script>
 </body>
 </html>
