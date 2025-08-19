@@ -66,11 +66,10 @@ def get_db():
 app = FastAPI(
     title="API Fecundidad Temprana - Bogotá D.C.",
     description=(
-        "Objetivo 1: Caracterizar por territorio y periodo. "
-        "Cohortes: 10-14 y 15-19 años. "
-        "Incluye asociación, series y brechas por cohortes."
+        "Análisis integral de fecundidad temprana por territorio, periodo y cohortes (10-14 y 15-19 años). "
+        "Incluye caracterización territorial, análisis de asociación, brechas entre cohortes y tendencias temporales."
     ),
-    version="3.0.1"
+    version="3.1.0"
 )
 
 app.add_middleware(
@@ -148,7 +147,7 @@ async def home():
 
 @app.get("/health")
 async def health():
-    return {"status":"healthy","version":"3.0.1"}
+    return {"status":"healthy","version":"3.1.0"}
 
 @app.post("/upload/excel")
 async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -230,7 +229,33 @@ async def metadatos(db: Session = Depends(get_db)):
     localidades = [r[0] for r in db.query(IndicadorFecundidad.nombre_localidad).distinct().all()]
     upzs = [r[0] for r in db.query(IndicadorFecundidad.nombre_upz).filter(IndicadorFecundidad.nombre_upz.isnot(None)).distinct().all()]
     años = sorted([r[0] for r in db.query(IndicadorFecundidad.año_inicio).filter(IndicadorFecundidad.año_inicio.isnot(None)).distinct().all()])
-    return {"total_registros": total, "indicadores": sorted(indicadores), "localidades": sorted(localidades), "upz": sorted([u for u in upzs if u]), "años": años, "cohortes": sorted(list(COHORTES_VALIDAS))}
+    
+    # Obtener unidades de medida por indicador
+    unidades_medida = {}
+    for indicador in indicadores:
+        unidad = db.query(IndicadorFecundidad.unidad_medida).filter(
+            IndicadorFecundidad.indicador_nombre == indicador
+        ).first()
+        unidades_medida[indicador] = unidad[0] if unidad else "N/A"
+    
+    return {
+        "total_registros": total, 
+        "indicadores": sorted(indicadores), 
+        "localidades": sorted(localidades), 
+        "upz": sorted([u for u in upzs if u]), 
+        "años": años, 
+        "cohortes": sorted(list(COHORTES_VALIDAS)),
+        "unidades_medida": unidades_medida
+    }
+
+@app.get("/localidades/{nombre_localidad}/upz")
+async def get_upz_por_localidad(nombre_localidad: str, db: Session = Depends(get_db)):
+    """Obtiene las UPZ de una localidad específica"""
+    upzs = [r[0] for r in db.query(IndicadorFecundidad.nombre_upz).filter(
+        IndicadorFecundidad.nombre_localidad == nombre_localidad,
+        IndicadorFecundidad.nombre_upz.isnot(None)
+    ).distinct().all()]
+    return {"localidad": nombre_localidad, "upz": sorted(upzs)}
 
 @app.get("/estadisticas/generales")
 async def estadisticas_generales(año: Optional[int] = Query(None), db: Session = Depends(get_db)):
@@ -258,7 +283,10 @@ async def listar_indicadores(buscar: Optional[str] = Query(None), db: Session = 
 
 def _caracterizacion_desde_rows(rows: List[IndicadorFecundidad], nivel: str) -> List[Dict]:
     grupos: Dict[str, List[float]] = {}
+    unidad_medida = None
     for r in rows:
+        if unidad_medida is None:
+            unidad_medida = r.unidad_medida
         k = terr_key(r, nivel)
         grupos.setdefault(k, []).append(r.valor)
     out = []
@@ -276,7 +304,7 @@ def _caracterizacion_desde_rows(rows: List[IndicadorFecundidad], nivel: str) -> 
             "desv_estandar": round(std,3), "cv_pct": round(cv,2)
         })
     out.sort(key=lambda x: x["promedio"], reverse=True)
-    return out
+    return out, unidad_medida
 
 @app.get("/caracterizacion")
 async def caracterizacion(
@@ -284,24 +312,142 @@ async def caracterizacion(
     nivel: str = Query("LOCALIDAD"),
     año: Optional[int] = Query(None),
     cohorte: Optional[str] = Query(None, description="10-14 o 15-19"),
+    localidad: Optional[str] = Query(None, description="Filtrar por localidad específica"),
     db: Session = Depends(get_db)
 ):
     if nivel.upper() not in {"LOCALIDAD","UPZ"}:
         raise HTTPException(status_code=400, detail="nivel debe ser LOCALIDAD o UPZ")
+    
     q = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
     if año is not None:
         q = q.filter(IndicadorFecundidad.año_inicio == año)
+    if localidad:
+        q = q.filter(IndicadorFecundidad.nombre_localidad == localidad)
+    
     rows = q.all()
     rows = filtrar_por_cohorte(rows, cohorte)
     if not rows:
         return {"mensaje":"Sin datos para los filtros."}
-    datos = _caracterizacion_desde_rows(rows, nivel)
+    
+    datos, unidad_medida = _caracterizacion_desde_rows(rows, nivel)
+    
+    # Si estamos filtrando por localidad y nivel es UPZ, también traer el total de la localidad
+    resumen_localidad = None
+    if localidad and nivel.upper() == "UPZ":
+        q_loc = db.query(IndicadorFecundidad).filter(
+            IndicadorFecundidad.indicador_nombre == indicador,
+            IndicadorFecundidad.nombre_localidad == localidad
+        )
+        if año is not None:
+            q_loc = q_loc.filter(IndicadorFecundidad.año_inicio == año)
+        rows_loc = filtrar_por_cohorte(q_loc.all(), cohorte)
+        if rows_loc:
+            valores_loc = [r.valor for r in rows_loc]
+            arr_loc = np.array(valores_loc, dtype=float)
+            resumen_localidad = {
+                "territorio": localidad,
+                "n": int(arr_loc.size),
+                "promedio": round(float(np.mean(arr_loc)), 3),
+                "mediana": round(float(np.percentile(arr_loc, 50)), 3),
+                "min": round(float(np.min(arr_loc)), 3),
+                "max": round(float(np.max(arr_loc)), 3),
+                "desv_estandar": round(float(np.std(arr_loc, ddof=0)), 3)
+            }
+    
     return {
-        "indicador": indicador, "nivel": nivel.upper(), "año": año, "cohorte": cohorte,
+        "indicador": indicador, 
+        "nivel": nivel.upper(), 
+        "año": año, 
+        "cohorte": cohorte,
+        "localidad": localidad,
+        "unidad_medida": unidad_medida,
         "total_territorios": len(datos),
-        "resumen": {"promedio_general": round(float(np.mean([d["promedio"] for d in datos])),3), "n_total": int(sum(d["n"] for d in datos))},
+        "resumen": {
+            "promedio_general": round(float(np.mean([d["promedio"] for d in datos])),3), 
+            "n_total": int(sum(d["n"] for d in datos))
+        },
+        "resumen_localidad": resumen_localidad,
         "datos": datos
     }
+
+@app.get("/caracterizacion/comparativa")
+async def caracterizacion_comparativa(
+    indicador: str = Query(...),
+    localidad: str = Query(...),
+    año: Optional[int] = Query(None),
+    cohorte: Optional[str] = Query(None, description="10-14 o 15-19"),
+    db: Session = Depends(get_db)
+):
+    """Compara una localidad específica con el total de Bogotá y sus UPZ"""
+    
+    # Datos de la localidad
+    q_loc = db.query(IndicadorFecundidad).filter(
+        IndicadorFecundidad.indicador_nombre == indicador,
+        IndicadorFecundidad.nombre_localidad == localidad
+    )
+    if año is not None:
+        q_loc = q_loc.filter(IndicadorFecundidad.año_inicio == año)
+    
+    rows_loc = filtrar_por_cohorte(q_loc.all(), cohorte)
+    
+    # Datos de todas las localidades (total Bogotá)
+    q_total = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
+    if año is not None:
+        q_total = q_total.filter(IndicadorFecundidad.año_inicio == año)
+    
+    rows_total = filtrar_por_cohorte(q_total.all(), cohorte)
+    
+    # UPZ de la localidad específica
+    upz_rows = [r for r in rows_loc if r.nombre_upz]
+    
+    if not rows_loc:
+        return {"mensaje": "Sin datos para la localidad especificada"}
+    
+    # Calcular estadísticas
+    vals_loc = [r.valor for r in rows_loc]
+    vals_total = [r.valor for r in rows_total]
+    
+    unidad_medida = rows_loc[0].unidad_medida if rows_loc else "N/A"
+    
+    result = {
+        "indicador": indicador,
+        "localidad": localidad,
+        "año": año,
+        "cohorte": cohorte,
+        "unidad_medida": unidad_medida,
+        "localidad_stats": {
+            "n": len(vals_loc),
+            "promedio": round(float(np.mean(vals_loc)), 3),
+            "mediana": round(float(np.percentile(vals_loc, 50)), 3),
+            "min": round(float(np.min(vals_loc)), 3),
+            "max": round(float(np.max(vals_loc)), 3)
+        },
+        "bogota_stats": {
+            "n": len(vals_total),
+            "promedio": round(float(np.mean(vals_total)), 3),
+            "mediana": round(float(np.percentile(vals_total, 50)), 3),
+            "min": round(float(np.min(vals_total)), 3),
+            "max": round(float(np.max(vals_total)), 3)
+        }
+    }
+    
+    # UPZ de la localidad
+    if upz_rows:
+        upz_grupos = {}
+        for r in upz_rows:
+            upz_grupos.setdefault(r.nombre_upz, []).append(r.valor)
+        
+        upz_stats = []
+        for upz, vals in upz_grupos.items():
+            upz_stats.append({
+                "upz": upz,
+                "n": len(vals),
+                "promedio": round(float(np.mean(vals)), 3),
+                "mediana": round(float(np.percentile(vals, 50)), 3)
+            })
+        result["upz_stats"] = sorted(upz_stats, key=lambda x: x["promedio"], reverse=True)
+    
+    return result
 
 @app.get("/analisis/asociacion")
 async def asociacion(
@@ -333,7 +479,7 @@ async def asociacion(
     for ind in otros:
         qx = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == ind)
         if año is not None:
-            qx = qx.filter(IndicadorFecundidad.año_inicio == año)
+            qx = qx.filter(IndicadorFecundidad.aÃ±o_inicio == año)
         x_rows = filtrar_por_cohorte(qx.all(), cohorte)
         if not x_rows: continue
         x_map: Dict[str, List[float]] = {}
@@ -346,13 +492,94 @@ async def asociacion(
         if np.std(x)==0 or np.std(y)==0: continue
         r_p, p_p = stats.pearsonr(x, y)
         r_s, p_s = stats.spearmanr(x, y)
+        
+        # Categorizar la correlación
+        abs_r = abs(float(r_p))
+        if abs_r >= 0.7:
+            categoria = "Fuerte"
+        elif abs_r >= 0.5:
+            categoria = "Moderada"
+        elif abs_r >= 0.3:
+            categoria = "Débil"
+        else:
+            categoria = "Muy débil"
+            
         resultados.append({
-            "indicador_comparado": ind, "territorios": len(comunes),
-            "pearson_r": round(float(r_p),3), "pearson_p": round(float(p_p),4),
-            "spearman_rho": round(float(r_s),3), "spearman_p": round(float(p_s),4)
+            "indicador_comparado": ind, 
+            "territorios": len(comunes),
+            "pearson_r": round(float(r_p),3), 
+            "pearson_p": round(float(p_p),4),
+            "spearman_rho": round(float(r_s),3), 
+            "spearman_p": round(float(p_s),4),
+            "categoria_correlacion": categoria,
+            "significativa": float(p_p) < 0.05
         })
     resultados.sort(key=lambda d: abs(d["pearson_r"]), reverse=True)
-    return {"indicador_objetivo": indicador_objetivo, "nivel": nivel.upper(), "año": año, "cohorte": cohorte, "comparaciones": resultados[:top]}
+    return {
+        "indicador_objetivo": indicador_objetivo, 
+        "nivel": nivel.upper(), 
+        "año": año, 
+        "cohorte": cohorte, 
+        "comparaciones": resultados[:top]
+    }
+
+@app.get("/analisis/asociacion/detalle")
+async def asociacion_detalle(
+    indicador_objetivo: str = Query(...),
+    indicador_comparado: str = Query(...),
+    nivel: str = Query("LOCALIDAD"),
+    año: Optional[int] = Query(None),
+    cohorte: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Obtiene los datos detallados para la dispersión entre dos indicadores"""
+    
+    # Datos del indicador objetivo
+    qy = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador_objetivo)
+    if año is not None:
+        qy = qy.filter(IndicadorFecundidad.año_inicio == año)
+    y_rows = filtrar_por_cohorte(qy.all(), cohorte)
+    
+    # Datos del indicador comparado
+    qx = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador_comparado)
+    if año is not None:
+        qx = qx.filter(IndicadorFecundidad.año_inicio == año)
+    x_rows = filtrar_por_cohorte(qx.all(), cohorte)
+    
+    # Agrupar por territorio
+    y_map = {}
+    x_map = {}
+    
+    for r in y_rows:
+        territorio = terr_key(r, nivel)
+        y_map.setdefault(territorio, []).append(r.valor)
+    
+    for r in x_rows:
+        territorio = terr_key(r, nivel)
+        x_map.setdefault(territorio, []).append(r.valor)
+    
+    # Crear pares de datos para territorios comunes
+    territorios_comunes = set(y_map.keys()) & set(x_map.keys())
+    datos_pares = []
+    
+    for territorio in territorios_comunes:
+        x_mean = float(np.mean(x_map[territorio]))
+        y_mean = float(np.mean(y_map[territorio]))
+        datos_pares.append({
+            "territorio": territorio,
+            "x": round(x_mean, 3),
+            "y": round(y_mean, 3)
+        })
+    
+    return {
+        "indicador_objetivo": indicador_objetivo,
+        "indicador_comparado": indicador_comparado,
+        "nivel": nivel,
+        "año": año,
+        "cohorte": cohorte,
+        "territorios_comunes": len(territorios_comunes),
+        "datos": datos_pares
+    }
 
 @app.get("/datos/series")
 async def serie_temporal(
@@ -371,9 +598,30 @@ async def serie_temporal(
     rows = filtrar_por_cohorte(rows, cohorte)
     if not rows:
         return {"mensaje":"Sin datos para esos filtros."}
+    
+    # Agrupar por año y calcular promedios
+    grupos_año = {}
+    unidad_medida = rows[0].unidad_medida if rows else "N/A"
+    
+    for r in rows:
+        grupos_año.setdefault(r.año_inicio, []).append(r.valor)
+    
+    serie_datos = []
+    for año in sorted(grupos_año.keys()):
+        valores = grupos_año[año]
+        serie_datos.append({
+            "año": año,
+            "valor": round(float(np.mean(valores)), 3),
+            "n_observaciones": len(valores)
+        })
+    
     return {
-        "indicador": indicador, "nivel": nivel.upper(), "territorio": territorio, "cohorte": cohorte,
-        "serie": [{"año": r.año_inicio, "valor": r.valor} for r in rows if r.año_inicio is not None]
+        "indicador": indicador, 
+        "nivel": nivel.upper(), 
+        "territorio": territorio, 
+        "cohorte": cohorte,
+        "unidad_medida": unidad_medida,
+        "serie": serie_datos
     }
 
 @app.get("/brechas/cohortes")
@@ -392,8 +640,11 @@ async def brechas_cohortes(
     rows = q.all()
     if not rows:
         return {"mensaje":"Sin datos para esos filtros."}
+    
     m10: Dict[str, List[float]] = {}
     m15: Dict[str, List[float]] = {}
+    unidad_medida = rows[0].unidad_medida if rows else "N/A"
+    
     for r in rows:
         coh = extraer_grupo_edad(r.indicador_nombre, r.grupo_etario_asociado)
         if coh not in COHORTES_VALIDAS:
@@ -403,6 +654,7 @@ async def brechas_cohortes(
             m10.setdefault(k, []).append(r.valor)
         else:
             m15.setdefault(k, []).append(r.valor)
+    
     territorios = sorted(set(m10.keys()) | set(m15.keys()))
     datos = []
     for t in territorios:
@@ -412,9 +664,113 @@ async def brechas_cohortes(
             continue
         delta = v15 - v10
         ratio = (v15 / v10) if v10 not in (0, None) else None
-        datos.append({"territorio": t, "prom_10_14": round(v10,3), "prom_15_19": round(v15,3), "brecha_abs": round(delta,3), "brecha_rel": round(ratio,3) if ratio is not None else None})
+        pct_change = ((v15 - v10) / v10 * 100) if v10 not in (0, None) else None
+        
+        datos.append({
+            "territorio": t, 
+            "prom_10_14": round(v10,3), 
+            "prom_15_19": round(v15,3), 
+            "brecha_abs": round(delta,3), 
+            "brecha_rel": round(ratio,3) if ratio is not None else None,
+            "cambio_porcentual": round(pct_change,2) if pct_change is not None else None,
+            "n_10_14": len(m10.get(t, [])),
+            "n_15_19": len(m15.get(t, []))
+        })
+    
     datos.sort(key=lambda d: d["brecha_abs"], reverse=True)
-    return {"indicador": indicador, "nivel": nivel.upper(), "año": año, "datos": datos}
+    
+    return {
+        "indicador": indicador, 
+        "nivel": nivel.upper(), 
+        "año": año,
+        "unidad_medida": unidad_medida,
+        "total_territorios": len(datos),
+        "resumen": {
+            "brecha_promedio": round(float(np.mean([d["brecha_abs"] for d in datos])), 3) if datos else 0,
+            "mayor_brecha": datos[0]["territorio"] if datos else None,
+            "menor_brecha": datos[-1]["territorio"] if datos else None
+        },
+        "datos": datos
+    }
+
+@app.get("/analisis/tendencias")
+async def analisis_tendencias(
+    indicador: str = Query(...),
+    nivel: str = Query("LOCALIDAD"),
+    cohorte: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Analiza tendencias temporales agregadas por territorio"""
+    
+    q = db.query(IndicadorFecundidad).filter(
+        IndicadorFecundidad.indicador_nombre == indicador,
+        IndicadorFecundidad.año_inicio.isnot(None)
+    )
+    rows = filtrar_por_cohorte(q.all(), cohorte)
+    
+    if not rows:
+        return {"mensaje": "Sin datos para los filtros especificados"}
+    
+    # Agrupar por territorio y año
+    datos_territorio = {}
+    unidad_medida = rows[0].unidad_medida if rows else "N/A"
+    
+    for r in rows:
+        territorio = terr_key(r, nivel)
+        if territorio not in datos_territorio:
+            datos_territorio[territorio] = {}
+        año = r.año_inicio
+        if año not in datos_territorio[territorio]:
+            datos_territorio[territorio][año] = []
+        datos_territorio[territorio][año].append(r.valor)
+    
+    # Calcular tendencias por territorio
+    tendencias = []
+    for territorio, años_datos in datos_territorio.items():
+        if len(años_datos) < 2:  # Necesita al menos 2 puntos para calcular tendencia
+            continue
+            
+        años = sorted(años_datos.keys())
+        valores = [np.mean(años_datos[año]) for año in años]
+        
+        # Calcular tendencia lineal
+        if len(años) >= 2:
+            pendiente, intercepto, r_value, p_value, std_err = stats.linregress(años, valores)
+            
+            # Clasificar tendencia
+            if abs(pendiente) < 0.1:
+                clasificacion = "Estable"
+            elif pendiente > 0:
+                clasificacion = "Creciente" if pendiente > 0.5 else "Levemente creciente"
+            else:
+                clasificacion = "Decreciente" if pendiente < -0.5 else "Levemente decreciente"
+            
+            tendencias.append({
+                "territorio": territorio,
+                "años_disponibles": len(años),
+                "periodo": f"{años[0]}-{años[-1]}",
+                "valor_inicial": round(valores[0], 3),
+                "valor_final": round(valores[-1], 3),
+                "cambio_absoluto": round(valores[-1] - valores[0], 3),
+                "cambio_porcentual": round(((valores[-1] - valores[0]) / valores[0]) * 100, 2) if valores[0] != 0 else None,
+                "pendiente": round(pendiente, 4),
+                "r_cuadrado": round(r_value**2, 3),
+                "p_valor": round(p_value, 4),
+                "clasificacion": clasificacion,
+                "significativa": p_value < 0.05
+            })
+    
+    # Ordenar por magnitud del cambio
+    tendencias.sort(key=lambda x: abs(x["cambio_absoluto"]), reverse=True)
+    
+    return {
+        "indicador": indicador,
+        "nivel": nivel,
+        "cohorte": cohorte,
+        "unidad_medida": unidad_medida,
+        "total_territorios": len(tendencias),
+        "tendencias": tendencias
+    }
 
 if __name__ == "__main__":
     import uvicorn
