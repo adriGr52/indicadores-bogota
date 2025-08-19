@@ -17,9 +17,39 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///fecundidad_temprana.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-engine = create_engine(DATABASE_URL, echo=False, future=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Configuración más robusta para producción
+engine_kwargs = {
+    "echo": False, 
+    "future": True,
+    "pool_pre_ping": True,  # Verificar conexiones
+    "pool_recycle": 300,    # Reciclar conexiones cada 5 min
+}
+
+# Agregar configuraciones específicas para PostgreSQL
+if "postgresql://" in DATABASE_URL:
+    engine_kwargs.update({
+        "pool_size": 5,
+        "max_overflow": 10,
+        "connect_args": {
+            "connect_timeout": 10,
+            "application_name": "fecundidad_temprana_api"
+        }
+    })
+
+try:
+    engine = create_engine(DATABASE_URL, **engine_kwargs)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    logger.info("Database engine created successfully")
+except Exception as e:
+    logger.error(f"Failed to create database engine: {e}")
+    # Fallback a SQLite si PostgreSQL falla
+    engine = create_engine("sqlite:///fecundidad_temprana.db", echo=False, future=True)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    logger.warning("Falling back to SQLite database")
+
 Base = declarative_base()
+
+# Definir modelo antes de crear tablas
 
 class IndicadorFecundidad(Base):
     __tablename__ = "indicadores_fecundidad"
@@ -54,7 +84,13 @@ class IndicadorFecundidad(Base):
         Index('idx_nivel_año', 'nivel_territorial', 'año_inicio'),
     )
 
-Base.metadata.create_all(bind=engine)
+# Crear tablas de forma robusta
+try:
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables created successfully")
+except Exception as e:
+    logger.warning(f"Could not create tables on startup: {e}")
+    # Las tablas se crearán cuando se necesiten
 
 def get_db():
     db = SessionLocal()
@@ -139,15 +175,65 @@ def filtrar_por_cohorte(rows: List[IndicadorFecundidad], cohorte: Optional[str])
 # ---------------- Rutas ----------------
 @app.get("/", response_class=HTMLResponse)
 async def home():
+    """Página principal del dashboard"""
     try:
         with open("dashboard_compatible.html","r",encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
-        return HTMLResponse("<h1>API Fecundidad - Use /docs</h1>")
+        logger.warning("dashboard_compatible.html not found")
+        return HTMLResponse("""
+        <html>
+        <head><title>API Fecundidad Temprana</title></head>
+        <body style="font-family: Arial, sans-serif; padding: 2rem; text-align: center;">
+            <h1>🚀 API Fecundidad Temprana - Bogotá D.C.</h1>
+            <p>La API está funcionando correctamente.</p>
+            <p><a href="/docs" style="color: #2563eb;">📚 Ver Documentación API</a></p>
+            <p><a href="/health" style="color: #16a34a;">💚 Verificar Estado</a></p>
+        </body>
+        </html>
+        """)
+    except Exception as e:
+        logger.error(f"Error loading dashboard: {e}")
+        return HTMLResponse(f"""
+        <html>
+        <head><title>API Error</title></head>
+        <body style="font-family: Arial, sans-serif; padding: 2rem; text-align: center;">
+            <h1>⚠️ Error de Configuración</h1>
+            <p>Error: {str(e)}</p>
+            <p><a href="/docs" style="color: #2563eb;">📚 Ver Documentación API</a></p>
+        </body>
+        </html>
+        """)
 
 @app.get("/health")
 async def health():
-    return {"status":"healthy","version":"3.1.0"}
+    """Endpoint de health check para Railway"""
+    try:
+        # Verificar conexión a base de datos
+        db = SessionLocal()
+        try:
+            # Consulta simple para verificar conectividad
+            db.execute("SELECT 1")
+            db_status = "connected"
+        except Exception as e:
+            logger.warning(f"Database connection issue: {e}")
+            db_status = "disconnected"
+        finally:
+            db.close()
+        
+        return {
+            "status": "healthy",
+            "version": "3.1.0",
+            "database": db_status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
 
 @app.post("/upload/excel")
 async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -774,4 +860,12 @@ async def analisis_tendencias(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)))
+    port = int(os.getenv("PORT", 8000))
+    logger.info(f"Starting server on port {port}")
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=port,
+        access_log=True,
+        log_level="info"
+    )
