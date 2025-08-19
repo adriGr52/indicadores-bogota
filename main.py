@@ -17,9 +17,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configuración de base de datos con manejo robusto
+# Configuración de base de datos
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///fecundidad_temprana.db")
-logger.info(f"Database URL configured: {DATABASE_URL[:50]}...")
+logger.info(f"Using database: {DATABASE_URL[:50]}...")
 
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
@@ -63,7 +63,7 @@ class IndicadorFecundidad(Base):
     id_upz = Column(Integer, index=True, nullable=True)
     nombre_upz = Column(String, index=True, nullable=True)
     area_geografica = Column(String)
-    año_inicio = Column(Integer, index=True)  # Corregido encoding
+    año_inicio = Column(Integer, index=True)
     periodicidad = Column(String)
     poblacion_base = Column(String)
     semaforo = Column(String)
@@ -91,14 +91,8 @@ def get_db():
 # Crear la aplicación FastAPI
 app = FastAPI(
     title="Exploración Determinantes Fecundidad Temprana - Bogotá D.C.",
-    description=(
-        "API para el análisis integral de determinantes de fecundidad temprana en Bogotá. "
-        "Incluye caracterización territorial, análisis de asociación, medición de desigualdades "
-        "y análisis de tendencias por cohortes (10-14 y 15-19 años)."
-    ),
-    version="4.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    description="Análisis integral por territorio, periodo y cohortes para la exploración de determinantes de fecundidad temprana en Bogotá D.C.",
+    version="4.0.0"
 )
 
 app.add_middleware(
@@ -118,7 +112,7 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Could not create tables on startup: {e}")
 
-# Funciones auxiliares mejoradas
+# Funciones auxiliares
 def calcular_indice_theil(valores: List[float], poblaciones: Optional[List[float]] = None) -> float:
     """Calcula el índice de Theil para medir desigualdad territorial"""
     if not valores or len(valores) < 2:
@@ -150,7 +144,7 @@ def calcular_indice_theil(valores: List[float], poblaciones: Optional[List[float
     if media <= 0:
         return 0.0
     
-    # Índice de Theil: T = Σ(pi * (yi/μ) * ln(yi/μ))
+    # Índice de Theil
     ratios = valores / media
     ratios = np.maximum(ratios, 1e-10)  # Evitar log(0)
     theil = np.sum(pesos * ratios * np.log(ratios))
@@ -234,10 +228,7 @@ async def health():
         try:
             result = db.execute(text("SELECT 1")).scalar()
             db_status = "connected" if result == 1 else "error"
-            
-            # Verificar si hay datos
             count = db.query(IndicadorFecundidad).count()
-            
         except Exception as e:
             db_status = f"error: {str(e)[:50]}"
             count = 0
@@ -370,7 +361,7 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
         column_mapping = {
             'Tipo de Unidad Observación': 'Observación',
             'Año_Inicio': 'año_inicio',
-            'AÃ±o_Inicio': 'año_inicio'  # Manejar problemas de encoding
+            'AÃ±o_Inicio': 'año_inicio'
         }
         
         for old_col, new_col in column_mapping.items():
@@ -505,6 +496,31 @@ async def metadatos(db: Session = Depends(get_db)):
             "cohortes": sorted(list(COHORTES_VALIDAS))
         },
         "unidades_medida": unidades_medida
+    }
+
+@app.get("/estadisticas/generales")
+async def estadisticas_generales(año: Optional[int] = Query(None), db: Session = Depends(get_db)):
+    q = db.query(IndicadorFecundidad)
+    if año is not None:
+        q = q.filter(IndicadorFecundidad.año_inicio == año)
+    filas = q.all()
+    total = len(filas)
+    if total == 0:
+        return {"total_registros": 0}
+    
+    c10 = len([1 for f in filas if extraer_grupo_edad(f.indicador_nombre, f.grupo_etario_asociado) == "10-14"])
+    c15 = len([1 for f in filas if extraer_grupo_edad(f.indicador_nombre, f.grupo_etario_asociado) == "15-19"])
+    localidades = len({f.nombre_localidad for f in filas})
+    upz = len({f.nombre_upz for f in filas if f.nombre_upz})
+    ind = len({f.indicador_nombre for f in filas})
+    
+    return {
+        "total_registros": total,
+        "indicadores_unicos": ind,
+        "localidades_unicas": localidades,
+        "upzs_unicas": upz,
+        "conteo_10_14": c10,
+        "conteo_15_19": c15
     }
 
 @app.get("/caracterizacion")
@@ -819,82 +835,78 @@ async def serie_temporal(
         "serie": serie_datos
     }
 
-# Endpoint adicional para análisis múltiple
-@app.get("/analisis/multiple")
-async def analisis_multiple_indicadores(
-    indicadores: str = Query(..., description="Lista de indicadores separados por comas"),
+@app.get("/brechas/cohortes")
+async def brechas_cohortes(
+    indicador: str = Query(...),
     nivel: str = Query("LOCALIDAD"),
     año: Optional[int] = Query(None),
-    cohorte: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Análisis comparativo de múltiples indicadores"""
-    lista_indicadores = [ind.strip() for ind in indicadores.split(",")]
+    """Calcula brecha 15-19 menos 10-14 por territorio"""
+    if nivel.upper() not in {"LOCALIDAD", "UPZ"}:
+        raise HTTPException(status_code=400, detail="nivel debe ser LOCALIDAD o UPZ")
     
-    if len(lista_indicadores) < 2:
-        raise HTTPException(status_code=400, detail="Se requieren al menos 2 indicadores")
+    q = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
+    if año is not None:
+        q = q.filter(IndicadorFecundidad.año_inicio == año)
     
-    resultados = {}
+    rows = q.all()
+    if not rows:
+        return {"mensaje": "Sin datos para esos filtros"}
     
-    for indicador in lista_indicadores:
-        try:
-            # Reutilizar la lógica de caracterización
-            q = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
-            if año is not None:
-                q = q.filter(IndicadorFecundidad.año_inicio == año)
-            
-            rows = filtrar_por_cohorte(q.all(), cohorte)
-            if rows:
-                grupos: Dict[str, List[float]] = {}
-                for r in rows:
-                    k = terr_key(r, nivel)
-                    grupos.setdefault(k, []).append(r.valor)
-                
-                promedios = {t: float(np.mean(vals)) for t, vals in grupos.items() if vals}
-                resultados[indicador] = promedios
-                
-        except Exception as e:
-            logger.warning(f"Error procesando {indicador}: {e}")
+    m10: Dict[str, List[float]] = {}
+    m15: Dict[str, List[float]] = {}
+    unidad_medida = rows[0].unidad_medida if rows else "N/A"
     
-    if not resultados:
-        return {"mensaje": "No se pudieron procesar los indicadores"}
-    
-    # Calcular matriz de correlaciones
-    territorios_comunes = set.intersection(*[set(data.keys()) for data in resultados.values()])
-    
-    matriz_correlacion = {}
-    for i, ind1 in enumerate(lista_indicadores):
-        if ind1 not in resultados:
+    for r in rows:
+        coh = extraer_grupo_edad(r.indicador_nombre, r.grupo_etario_asociado)
+        if coh not in COHORTES_VALIDAS:
             continue
-        matriz_correlacion[ind1] = {}
+        k = terr_key(r, nivel)
+        if coh == "10-14":
+            m10.setdefault(k, []).append(r.valor)
+        else:
+            m15.setdefault(k, []).append(r.valor)
+    
+    territorios = sorted(set(m10.keys()) | set(m15.keys()))
+    datos = []
+    
+    for t in territorios:
+        v10 = float(np.mean(m10.get(t, []))) if m10.get(t) else None
+        v15 = float(np.mean(m15.get(t, []))) if m15.get(t) else None
         
-        for j, ind2 in enumerate(lista_indicadores):
-            if ind2 not in resultados:
-                continue
-                
-            if i == j:
-                matriz_correlacion[ind1][ind2] = 1.0
-            else:
-                try:
-                    vals1 = [resultados[ind1][t] for t in territorios_comunes if t in resultados[ind1]]
-                    vals2 = [resultados[ind2][t] for t in territorios_comunes if t in resultados[ind2]]
-                    
-                    if len(vals1) >= 3 and len(vals2) >= 3 and np.std(vals1) > 0 and np.std(vals2) > 0:
-                        r, _ = stats.pearsonr(vals1, vals2)
-                        matriz_correlacion[ind1][ind2] = round(float(r), 3)
-                    else:
-                        matriz_correlacion[ind1][ind2] = None
-                except:
-                    matriz_correlacion[ind1][ind2] = None
+        if v10 is None or v15 is None:
+            continue
+            
+        delta = v15 - v10
+        ratio = (v15 / v10) if v10 not in (0, None) else None
+        pct_change = ((v15 - v10) / v10 * 100) if v10 not in (0, None) else None
+        
+        datos.append({
+            "territorio": t,
+            "prom_10_14": round(v10, 3),
+            "prom_15_19": round(v15, 3),
+            "brecha_abs": round(delta, 3),
+            "brecha_rel": round(ratio, 3) if ratio is not None else None,
+            "cambio_porcentual": round(pct_change, 2) if pct_change is not None else None,
+            "n_10_14": len(m10.get(t, [])),
+            "n_15_19": len(m15.get(t, []))
+        })
+    
+    datos.sort(key=lambda d: d["brecha_abs"], reverse=True)
     
     return {
-        "indicadores": lista_indicadores,
+        "indicador": indicador,
         "nivel": nivel.upper(),
         "año": año,
-        "cohorte": cohorte,
-        "territorios_comunes": len(territorios_comunes),
-        "matriz_correlacion": matriz_correlacion,
-        "datos_territoriales": resultados
+        "unidad_medida": unidad_medida,
+        "total_territorios": len(datos),
+        "resumen": {
+            "brecha_promedio": round(float(np.mean([d["brecha_abs"] for d in datos])), 3) if datos else 0,
+            "mayor_brecha": datos[0]["territorio"] if datos else None,
+            "menor_brecha": datos[-1]["territorio"] if datos else None
+        },
+        "datos": datos
     }
 
 if __name__ == "__main__":
