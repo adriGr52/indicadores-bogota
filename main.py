@@ -19,12 +19,12 @@ logger = logging.getLogger(__name__)
 
 # Configuración de base de datos
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///fecundidad_temprana.db")
-logger.info(f"Using database: {DATABASE_URL[:50]}...")
+logger.info(f"Using database URL: {DATABASE_URL[:50]}...")
 
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Configuración del engine con fallback
+# Configuración del engine con manejo de errores
 try:
     if "postgresql://" in DATABASE_URL:
         engine = create_engine(
@@ -87,11 +87,13 @@ def get_db():
     finally:
         db.close()
 
-# Crear la aplicación FastAPI
+# Crear aplicación FastAPI
 app = FastAPI(
     title="Exploración Determinantes Fecundidad Temprana - Bogotá D.C.",
     description="Análisis integral por territorio, periodo y cohortes para la exploración de determinantes de fecundidad temprana en Bogotá D.C.",
-    version="4.0.0"
+    version="4.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
 app.add_middleware(
@@ -102,7 +104,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Crear tablas al startup
+# Event handlers
 @app.on_event("startup")
 async def startup_event():
     try:
@@ -212,8 +214,7 @@ def filtrar_por_cohorte(rows: List[IndicadorFecundidad], cohorte: Optional[str])
             out.append(r)
     return out
 
-# ---------------- Rutas principales ----------------
-
+# Rutas principales
 @app.get("/health")
 async def health():
     """Health check optimizado para Railway"""
@@ -245,131 +246,105 @@ async def health():
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    """Página principal con dashboard integrado"""
-    try:
-        with open("dashboard_compatible.html", "r", encoding="utf-8") as f:
-            return HTMLResponse(content=f.read())
-    except FileNotFoundError:
-        logger.info("Dashboard HTML not found, serving basic welcome page")
-        return HTMLResponse("""
-        <!DOCTYPE html>
-        <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Exploración Determinantes Fecundidad Temprana - Bogotá</title>
-            <style>
-                body { 
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
-                    margin: 0; padding: 2rem; 
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    min-height: 100vh; color: #333; 
-                }
-                .container { 
-                    max-width: 900px; margin: 0 auto; background: white; padding: 3rem; 
-                    border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
-                }
-                h1 { 
-                    color: #1e3a8a; margin-bottom: 1rem; font-size: 2.5rem; text-align: center; 
-                }
-                .subtitle { 
-                    text-align: center; color: #64748b; margin-bottom: 2rem; font-size: 1.2rem; 
-                }
-                .status { 
-                    background: #dcfce7; border: 2px solid #16a34a; padding: 1rem; 
-                    border-radius: 12px; margin: 2rem 0; text-align: center; 
-                }
-                .grid { 
-                    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-                    gap: 1rem; margin: 2rem 0; 
-                }
-                .card { 
-                    background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; 
-                    border-radius: 12px; text-align: center; 
-                }
-                .links { 
-                    display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 2rem 0; 
-                }
-                .btn { 
-                    display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; 
-                    background: #2563eb; color: white; text-decoration: none; border-radius: 8px; 
-                    transition: all 0.2s; font-weight: 500; 
-                }
-                .btn:hover { 
-                    background: #1d4ed8; transform: translateY(-2px); 
-                }
-                .feature { 
-                    margin: 1rem 0; padding: 1rem; background: #f1f5f9; border-radius: 8px; 
-                }
-                ul { 
-                    text-align: left; margin: 1rem 0; 
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>🏛️ Exploración Determinantes Fecundidad Temprana</h1>
-                <p class="subtitle">Bogotá D.C. - Análisis Territorial Integral</p>
-                
-                <div class="status">
-                    <strong>✅ API Funcionando</strong> - Sistema listo para análisis
-                </div>
+    """Página principal"""
+    return HTMLResponse("""
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exploración Determinantes Fecundidad Temprana - Bogotá</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh; color: #333; padding: 2rem;
+        }
+        .container { 
+            max-width: 900px; margin: 0 auto; background: white; padding: 3rem; 
+            border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
+        }
+        h1 { color: #1e3a8a; margin-bottom: 1rem; font-size: 2.5rem; text-align: center; }
+        .subtitle { text-align: center; color: #64748b; margin-bottom: 2rem; font-size: 1.2rem; }
+        .status { 
+            background: #dcfce7; border: 2px solid #16a34a; padding: 1rem; 
+            border-radius: 12px; margin: 2rem 0; text-align: center; 
+        }
+        .grid { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 1rem; margin: 2rem 0; 
+        }
+        .card { 
+            background: #f8fafc; border: 1px solid #e2e8f0; padding: 1.5rem; 
+            border-radius: 12px; text-align: center; 
+        }
+        .links { 
+            display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 2rem 0; 
+        }
+        .btn { 
+            display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; 
+            background: #2563eb; color: white; text-decoration: none; border-radius: 8px; 
+            transition: all 0.2s; font-weight: 500; 
+        }
+        .btn:hover { background: #1d4ed8; transform: translateY(-2px); }
+        .feature { margin: 1rem 0; padding: 1rem; background: #f1f5f9; border-radius: 8px; }
+        ul { text-align: left; margin: 1rem 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏛️ Exploración Determinantes Fecundidad Temprana</h1>
+        <p class="subtitle">Bogotá D.C. - Análisis Territorial Integral</p>
+        
+        <div class="status">
+            <strong>✅ API Funcionando</strong> - Sistema listo para análisis
+        </div>
 
-                <div class="grid">
-                    <div class="card">
-                        <h3>📊 Caracterización</h3>
-                        <p>Análisis territorial por indicadores y cohortes</p>
-                    </div>
-                    <div class="card">
-                        <h3>🔗 Asociación</h3>
-                        <p>Correlaciones entre variables</p>
-                    </div>
-                    <div class="card">
-                        <h3>📏 Desigualdad</h3>
-                        <p>Índice de Theil territorial</p>
-                    </div>
-                    <div class="card">
-                        <h3>📈 Tendencias</h3>
-                        <p>Series temporales por territorio</p>
-                    </div>
-                </div>
-
-                <div class="links">
-                    <a href="/docs" class="btn">📚 Documentación API</a>
-                    <a href="/health" class="btn">💚 Estado Sistema</a>
-                    <a href="/metadatos" class="btn">📋 Metadatos</a>
-                </div>
-
-                <div class="feature">
-                    <h3>🎯 Funcionalidades Principales</h3>
-                    <ul>
-                        <li><strong>Carga de datos:</strong> Upload de archivos Excel con validación</li>
-                        <li><strong>Análisis territorial:</strong> Localidades y UPZ con estadísticas descriptivas</li>
-                        <li><strong>Cohortes específicas:</strong> Análisis para grupos 10-14 y 15-19 años</li>
-                        <li><strong>Correlaciones:</strong> Asociación entre indicadores con tests estadísticos</li>
-                        <li><strong>Desigualdad:</strong> Medición con índice de Theil</li>
-                        <li><strong>Series temporales:</strong> Evolución de indicadores por territorio</li>
-                    </ul>
-                </div>
+        <div class="grid">
+            <div class="card">
+                <h3>📊 Caracterización</h3>
+                <p>Análisis territorial por indicadores y cohortes</p>
             </div>
-        </body>
-        </html>
-        """)
-    except Exception as e:
-        logger.error(f"Error serving home page: {e}")
-        return HTMLResponse(f"""
-        <html>
-        <body style="font-family: Arial; padding: 2rem; text-align: center;">
-            <h1>⚠️ Error de Configuración</h1>
-            <p>Error: {str(e)}</p>
-            <p><a href="/docs" style="color: #2563eb;">📚 Ver Documentación API</a></p>
-        </body>
-        </html>
-        """, status_code=500)
+            <div class="card">
+                <h3>🔗 Asociación</h3>
+                <p>Correlaciones entre variables</p>
+            </div>
+            <div class="card">
+                <h3>📏 Desigualdad</h3>
+                <p>Índice de Theil territorial</p>
+            </div>
+            <div class="card">
+                <h3>📈 Tendencias</h3>
+                <p>Series temporales por territorio</p>
+            </div>
+        </div>
+
+        <div class="links">
+            <a href="/docs" class="btn">📚 Documentación API</a>
+            <a href="/health" class="btn">💚 Estado Sistema</a>
+            <a href="/metadatos" class="btn">📋 Metadatos</a>
+        </div>
+
+        <div class="feature">
+            <h3>🎯 Funcionalidades Principales</h3>
+            <ul>
+                <li><strong>Carga de datos:</strong> Upload de archivos Excel con validación</li>
+                <li><strong>Análisis territorial:</strong> Localidades y UPZ con estadísticas descriptivas</li>
+                <li><strong>Cohortes específicas:</strong> Análisis para grupos 10-14 y 15-19 años</li>
+                <li><strong>Correlaciones:</strong> Asociación entre indicadores con tests estadísticos</li>
+                <li><strong>Desigualdad:</strong> Medición con índice de Theil</li>
+                <li><strong>Series temporales:</strong> Evolución de indicadores por territorio</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+    """)
 
 @app.post("/upload/excel")
 async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """Carga datos desde archivo Excel con validación mejorada"""
+    """Carga datos desde archivo Excel"""
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="Formato no válido. Use archivos .xlsx o .xls")
     
@@ -486,14 +461,6 @@ async def metadatos(db: Session = Depends(get_db)):
         IndicadorFecundidad.año_inicio.isnot(None)
     ).distinct().all()])
     
-    # Unidades de medida
-    unidades_medida = {}
-    for indicador in todos_indicadores:
-        unidad = db.query(IndicadorFecundidad.unidad_medida).filter(
-            IndicadorFecundidad.indicador_nombre == indicador
-        ).first()
-        unidades_medida[indicador] = unidad[0] if unidad else "N/A"
-    
     return {
         "resumen": {
             "total_registros": total,
@@ -516,33 +483,7 @@ async def metadatos(db: Session = Depends(get_db)):
         "temporal": {
             "años": años,
             "cohortes": sorted(list(COHORTES_VALIDAS))
-        },
-        "unidades_medida": unidades_medida
-    }
-
-@app.get("/estadisticas/generales")
-async def estadisticas_generales(año: Optional[int] = Query(None), db: Session = Depends(get_db)):
-    q = db.query(IndicadorFecundidad)
-    if año is not None:
-        q = q.filter(IndicadorFecundidad.año_inicio == año)
-    filas = q.all()
-    total = len(filas)
-    if total == 0:
-        return {"total_registros": 0}
-    
-    c10 = len([1 for f in filas if extraer_grupo_edad(f.indicador_nombre, f.grupo_etario_asociado) == "10-14"])
-    c15 = len([1 for f in filas if extraer_grupo_edad(f.indicador_nombre, f.grupo_etario_asociado) == "15-19"])
-    localidades = len({f.nombre_localidad for f in filas})
-    upz = len({f.nombre_upz for f in filas if f.nombre_upz})
-    ind = len({f.indicador_nombre for f in filas})
-    
-    return {
-        "total_registros": total,
-        "indicadores_unicos": ind,
-        "localidades_unicas": localidades,
-        "upzs_unicas": upz,
-        "conteo_10_14": c10,
-        "conteo_15_19": c15
+        }
     }
 
 @app.get("/caracterizacion")
