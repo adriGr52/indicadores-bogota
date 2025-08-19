@@ -564,6 +564,12 @@
                     return;
                 }
                 
+                // Validate file type
+                if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
+                    showToast('Solo se permiten archivos .xlsx o .xls', 'error');
+                    return;
+                }
+                
                 const formData = new FormData();
                 formData.append('file', file);
                 
@@ -574,6 +580,8 @@
                     spinner.classList.remove('hidden');
                     btn.disabled = true;
                     
+                    showToast('Procesando archivo...', 'info');
+                    
                     const response = await fetch('/upload/excel', {
                         method: 'POST',
                         body: formData
@@ -582,31 +590,71 @@
                     const result = await response.json();
                     
                     if (response.ok) {
+                        const stats = result.estadisticas || {};
                         $('#uploadResult').innerHTML = `
                             <div class="alert alert-success">
                                 <strong>✅ Carga exitosa</strong><br>
-                                Registros cargados: ${result.estadisticas?.registros_cargados || 0}<br>
-                                Errores: ${result.estadisticas?.errores || 0}
+                                📁 Archivo: ${result.archivo}<br>
+                                📊 Registros cargados: ${stats.registros_cargados || 0}<br>
+                                📝 Filas procesadas: ${stats.filas_procesadas || 0}<br>
+                                ⚠️ Omitidos sin valor: ${stats.omitidos_sin_valor || 0}<br>
+                                ❌ Errores: ${stats.errores || 0}
+                                ${result.columnas_detectadas ? `<br><br><strong>Columnas detectadas:</strong><br>${JSON.stringify(result.columnas_detectadas, null, 2)}` : ''}
                             </div>
                         `;
                         showToast('Archivo cargado correctamente', 'success');
                         await loadMetadata();
                     } else {
-                        throw new Error(result.detail || 'Error desconocido');
+                        const errorDetails = result.detail || 'Error desconocido';
+                        $('#uploadResult').innerHTML = `
+                            <div class="alert alert-error">
+                                <strong>❌ Error en la carga</strong><br>
+                                ${errorDetails}
+                                ${result.columnas_disponibles ? `<br><br><strong>Columnas encontradas:</strong><br>${result.columnas_disponibles.join(', ')}` : ''}
+                                <br><br>
+                                <a href="/debug/columns" target="_blank" class="btn text-xs">
+                                    📋 Ver estructura esperada
+                                </a>
+                            </div>
+                        `;
+                        showToast('Error subiendo archivo', 'error');
                     }
                 } catch (error) {
                     $('#uploadResult').innerHTML = `
                         <div class="alert alert-error">
-                            <strong>❌ Error en la carga</strong><br>
+                            <strong>❌ Error de conexión</strong><br>
                             ${error.message}
+                            <br><br>
+                            <button onclick="loadDebugInfo()" class="btn text-xs">
+                                🔍 Ver información de debug
+                            </button>
                         </div>
                     `;
-                    showToast('Error subiendo archivo', 'error');
+                    showToast('Error de conexión', 'error');
                 } finally {
                     spinner.classList.add('hidden');
                     btn.disabled = false;
                 }
             });
+        }
+        
+        // Debug function
+        async function loadDebugInfo() {
+            try {
+                const debugInfo = await apiCall('/debug/columns');
+                const debugWindow = window.open('', '_blank');
+                debugWindow.document.write(`
+                    <html>
+                    <head><title>Debug - Estructura de Columnas</title></head>
+                    <body style="font-family: monospace; padding: 20px;">
+                        <h2>Estructura Esperada del Archivo Excel</h2>
+                        <pre>${JSON.stringify(debugInfo, null, 2)}</pre>
+                    </body>
+                    </html>
+                `);
+            } catch (error) {
+                showToast('Error cargando información de debug', 'error');
+            }
         }
         
         // Caracterización
