@@ -13,15 +13,4 @@ scikit-learn==1.3.2
 python-dotenv==1.0.0
 httpx==0.25.2
 aiofiles==23.2.1
-
-# Logging y monitoreo
-logging==0.4.9.6
-
-# Para mejor manejo de fechas
 python-dateutil==2.8.2
-
-# Para validación adicional
-email-validator==2.1.0
-
-# Para compresión de respuestas
-python-gzip==0.1.0
