@@ -2,7 +2,7 @@
 """
 Test suite completo para verificar que la aplicación de Fecundidad Temprana funciona correctamente.
 Incluye tests específicos para el archivo consolidado_indicadores_fecundidad.xlsx
-Versión actualizada con tests para las nuevas funcionalidades.
+Versión actualizada sin funcionalidades de brechas - v4.3.0
 """
 
 import os
@@ -465,25 +465,24 @@ def test_api_documentation():
         print(f"❌ API documentation test failed: {e}")
         return False
 
-def test_new_endpoints():
-    """Test que los nuevos endpoints funcionan correctamente"""
+def test_analysis_endpoints():
+    """Test que los endpoints de análisis funcionan correctamente"""
     try:
         from main import app
         from fastapi.testclient import TestClient
         
-        print("Testing new endpoints...")
+        print("Testing analysis endpoints...")
         client = TestClient(app)
         
         # Test debug columns endpoint
         response = client.get("/debug/columns")
         print(f"✅ Debug columns status: {response.status_code}")
         
-        # Test análisis endpoints básicos
+        # Test análisis endpoints básicos (sin brechas)
         endpoints_to_test = [
             "/analisis/theil?indicador=test",
             "/analisis/asociacion?indicador_x=test1&indicador_y=test2",
-            "/datos/series?indicador=test&territorio=test",
-            "/brechas/cohortes?indicador=test"
+            "/datos/series?indicador=test&upz=test",
         ]
         
         all_ok = True
@@ -491,7 +490,7 @@ def test_new_endpoints():
             try:
                 response = client.get(endpoint)
                 # 200 o 400 están bien (400 = validación de parámetros)
-                if response.status_code in [200, 400]:
+                if response.status_code in [200, 400, 422]:  # 422 = validation error
                     print(f"✅ {endpoint.split('?')[0]} status: {response.status_code}")
                 else:
                     print(f"⚠️ {endpoint.split('?')[0]} status: {response.status_code}")
@@ -503,12 +502,12 @@ def test_new_endpoints():
         return all_ok
         
     except Exception as e:
-        print(f"❌ New endpoints test failed: {e}")
+        print(f"❌ Analysis endpoints test failed: {e}")
         return False
 
 def run_all_tests():
     """Ejecuta todos los tests"""
-    print("🧪 Running comprehensive test suite for Fecundidad Temprana API v4.2...")
+    print("🧪 Running comprehensive test suite for Fecundidad Temprana API v4.3...")
     print(f"Python version: {sys.version}")
     print(f"Working directory: {os.getcwd()}")
     print("=" * 60)
@@ -527,7 +526,7 @@ def run_all_tests():
         ("Metadatos Endpoint", test_metadatos_endpoint),
         ("Geography Endpoint", test_geography_endpoint),
         ("Caracterizacion Endpoint", test_caracterizacion_endpoint),
-        ("New Analysis Endpoints", test_new_endpoints),
+        ("Analysis Endpoints", test_analysis_endpoints),
         ("Upload Validation", test_upload_validation),
         ("Simulated Excel Upload", test_simulated_excel_upload),
     ]
