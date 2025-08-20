@@ -27,8 +27,23 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     
     <style>
-        .card { background:#fff; border-radius:1rem; box-shadow:0 10px 20px rgba(2, 6, 23, .04), 0 2px 6px rgba(2, 6, 23, .06); border:1px solid #e2e8f0; }
-        .btn { display:inline-flex; align-items:center; gap:.5rem; padding:.55rem .85rem; border-radius:.75rem; border:1px solid #cbd5e1; background:#fff; transition: all .15s; cursor: pointer; }
+        .card { 
+            background:#fff; 
+            border-radius:1rem; 
+            box-shadow:0 10px 20px rgba(2, 6, 23, .04), 0 2px 6px rgba(2, 6, 23, .06); 
+            border:1px solid #e2e8f0; 
+        }
+        .btn { 
+            display:inline-flex; 
+            align-items:center; 
+            gap:.5rem; 
+            padding:.55rem .85rem; 
+            border-radius:.75rem; 
+            border:1px solid #cbd5e1; 
+            background:#fff; 
+            transition: all .15s; 
+            cursor: pointer; 
+        }
         .btn:hover { background:#f8fafc; transform: translateY(-1px); }
         .btn-primary { background:#2563eb; border-color:#2563eb; color:#fff; }
         .btn-primary:hover { background:#1d4ed8; }
@@ -47,26 +62,94 @@
         .alert-success { background: #dcfce7; border: 1px solid #16a34a; color: #15803d; }
         .alert-error { background: #fef2f2; border: 1px solid #dc2626; color: #dc2626; }
         .alert-info { background: #dbeafe; border: 1px solid #2563eb; color: #1d4ed8; }
+        
+        /* Chart container fixes */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            max-height: 400px;
+        }
+        
+        .chart-container-small {
+            position: relative;
+            width: 100%;
+            height: 250px;
+            max-height: 300px;
+        }
+        
+        .chart-container-large {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            max-height: 450px;
+        }
+        
+        /* Responsive select fixes */
+        select {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        /* Better table responsiveness */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .table-responsive table {
+            min-width: 100%;
+            white-space: nowrap;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .chart-container, .chart-container-small, .chart-container-large {
+                height: 250px;
+                max-height: 300px;
+            }
+            
+            .tabs {
+                flex-wrap: wrap;
+                gap: 0.25rem;
+            }
+            
+            .tabs button {
+                font-size: 0.875rem;
+                padding: 0.375rem 0.75rem;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .lg\:grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
     <!-- Header -->
     <header class="grad text-white">
-        <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:py-6">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight">
+                    <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
                         🏛️ Exploración Determinantes Fecundidad Temprana
                     </h1>
-                    <p class="mt-1 text-slate-100/90">
+                    <p class="mt-1 text-slate-100/90 text-sm sm:text-base">
                         Bogotá D.C. • Análisis territorial por cohortes (10-14, 15-19)
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <a class="btn btn-primary shadow-soft" href="/docs" target="_blank">
+                    <a class="btn btn-primary shadow-soft text-sm" href="/docs" target="_blank">
                         <i class="ti ti-api"></i> API Docs
                     </a>
-                    <button id="btnRefresh" class="btn shadow-soft">
+                    <button id="btnRefresh" class="btn shadow-soft text-sm">
                         <i class="ti ti-refresh"></i> Actualizar
                     </button>
                 </div>
@@ -74,59 +157,59 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6 space-y-8">
+    <main class="max-w-7xl mx-auto px-4 py-4 sm:py-6 space-y-6 sm:space-y-8">
         <!-- KPIs -->
-        <section class="grid md:grid-cols-4 gap-4">
-            <div class="card p-4">
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            <div class="card p-3 sm:p-4">
                 <div class="flex items-center justify-between">
-                    <span class="muted text-sm">Registros</span>
-                    <span class="pill">Total</span>
+                    <span class="muted text-xs sm:text-sm">Registros</span>
+                    <span class="pill text-xs">Total</span>
                 </div>
-                <div id="kpiTotal" class="kpi mt-1">-</div>
+                <div id="kpiTotal" class="text-lg sm:text-xl lg:text-2xl font-bold mt-1">-</div>
                 <div class="muted text-xs">Datos cargados</div>
             </div>
-            <div class="card p-4">
+            <div class="card p-3 sm:p-4">
                 <div class="flex items-center justify-between">
-                    <span class="muted text-sm">Indicadores</span>
-                    <span class="pill">Únicos</span>
+                    <span class="muted text-xs sm:text-sm">Indicadores</span>
+                    <span class="pill text-xs">Únicos</span>
                 </div>
-                <div id="kpiIndicadores" class="kpi mt-1">-</div>
+                <div id="kpiIndicadores" class="text-lg sm:text-xl lg:text-2xl font-bold mt-1">-</div>
                 <div class="muted text-xs">Variables disponibles</div>
             </div>
-            <div class="card p-4">
+            <div class="card p-3 sm:p-4">
                 <div class="flex items-center justify-between">
-                    <span class="muted text-sm">Localidades</span>
-                    <span class="pill">Cobertura</span>
+                    <span class="muted text-xs sm:text-sm">Localidades</span>
+                    <span class="pill text-xs">Cobertura</span>
                 </div>
-                <div id="kpiLocalidades" class="kpi mt-1">-</div>
+                <div id="kpiLocalidades" class="text-lg sm:text-xl lg:text-2xl font-bold mt-1">-</div>
                 <div class="muted text-xs">Territorios</div>
             </div>
-            <div class="card p-4">
+            <div class="card p-3 sm:p-4">
                 <div class="flex items-center justify-between">
-                    <span class="muted text-sm">UPZ</span>
-                    <span class="pill">Cobertura</span>
+                    <span class="muted text-xs sm:text-sm">UPZ</span>
+                    <span class="pill text-xs">Cobertura</span>
                 </div>
-                <div id="kpiUpz" class="kpi mt-1">-</div>
+                <div id="kpiUpz" class="text-lg sm:text-xl lg:text-2xl font-bold mt-1">-</div>
                 <div class="muted text-xs">Unidades territoriales</div>
             </div>
         </section>
 
         <!-- Upload Section -->
-        <section class="card p-5">
+        <section class="card p-4 sm:p-5">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="font-semibold text-primary-800 flex items-center gap-2">
+                <h2 class="font-semibold text-primary-800 flex items-center gap-2 text-sm sm:text-base">
                     <i class="ti ti-upload"></i> Carga de Datos
                 </h2>
-                <span class="chip">POST /upload/excel</span>
+                <span class="chip text-xs">POST /upload/excel</span>
             </div>
             <div class="grid md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium mb-2">Archivo Excel (.xlsx, .xls)</label>
                     <input id="fileInput" type="file" accept=".xlsx,.xls" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
                 </div>
                 <div class="flex items-end gap-2">
-                    <button id="btnUpload" class="btn btn-primary">
+                    <button id="btnUpload" class="btn btn-primary text-sm">
                         <i class="ti ti-cloud-upload"></i> Subir Archivo
                     </button>
                     <div id="uploadSpinner" class="hidden spinner"></div>
@@ -138,57 +221,51 @@
         <!-- Analysis Tabs -->
         <section class="space-y-4">
             <div class="tabs flex flex-wrap gap-2">
-                <button class="btn" data-tab="caracterizacion" aria-selected="true">
-                    <i class="ti ti-chart-bar"></i> Caracterización
+                <button class="btn text-sm" data-tab="caracterizacion" aria-selected="true">
+                    <i class="ti ti-chart-bar"></i> <span class="hidden sm:inline">Caracterización</span><span class="sm:hidden">Caract.</span>
                 </button>
-                <button class="btn" data-tab="asociacion">
-                    <i class="ti ti-chart-dots"></i> Asociación
+                <button class="btn text-sm" data-tab="asociacion">
+                    <i class="ti ti-chart-dots"></i> <span class="hidden sm:inline">Asociación</span><span class="sm:hidden">Asoc.</span>
                 </button>
-                <button class="btn" data-tab="theil">
-                    <i class="ti ti-balance"></i> Desigualdad (Theil)
+                <button class="btn text-sm" data-tab="theil">
+                    <i class="ti ti-balance"></i> <span class="hidden sm:inline">Desigualdad</span><span class="sm:hidden">Theil</span>
                 </button>
-                <button class="btn" data-tab="series">
-                    <i class="ti ti-trending-up"></i> Series Temporales
+                <button class="btn text-sm" data-tab="series">
+                    <i class="ti ti-trending-up"></i> <span class="hidden sm:inline">Series</span><span class="sm:hidden">Series</span>
                 </button>
-                <button class="btn" data-tab="brechas">
-                    <i class="ti ti-arrows-diff"></i> Brechas Cohortes
+                <button class="btn text-sm" data-tab="brechas">
+                    <i class="ti ti-arrows-diff"></i> <span class="hidden sm:inline">Brechas</span><span class="sm:hidden">Brecha</span>
                 </button>
             </div>
 
             <!-- Caracterización -->
-            <div id="tab-caracterizacion" class="card p-5 space-y-4">
+            <div id="tab-caracterizacion" class="card p-4 sm:p-5 space-y-4">
                 <h3 class="text-lg font-semibold text-primary-800">Caracterización Territorial</h3>
                 
-                <div class="grid md:grid-cols-5 gap-3">
-                    <div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div class="lg:col-span-2">
                         <label class="block text-sm font-medium mb-1">Indicador</label>
-                        <select id="caracIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="caracIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Seleccionar...</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Nivel</label>
-                        <select id="caracNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="caracNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="LOCALIDAD">LOCALIDAD</option>
                             <option value="UPZ">UPZ</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Cohorte</label>
-                        <select id="caracCohorte" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="caracCohorte" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Ambas</option>
                             <option value="10-14">10-14</option>
                             <option value="15-19">15-19</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Año</label>
-                        <select id="caracAno" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                            <option value="">Todos</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button id="btnCaracterizar" class="btn btn-primary w-full">
+                    <div class="sm:col-span-2 lg:col-span-1 flex items-end">
+                        <button id="btnCaracterizar" class="btn btn-primary w-full text-sm">
                             <i class="ti ti-chart-bar"></i> Analizar
                         </button>
                     </div>
@@ -197,17 +274,19 @@
                 <div class="grid lg:grid-cols-2 gap-4">
                     <div class="card p-4">
                         <div class="flex items-center justify-between mb-3">
-                            <h4 class="font-semibold">Top 10 Territorios</h4>
+                            <h4 class="font-semibold text-sm sm:text-base">Top 10 Territorios</h4>
                             <button id="btnDownloadCarac" class="btn text-xs">
                                 <i class="ti ti-download"></i> CSV
                             </button>
                         </div>
-                        <canvas id="chartCaracterizacion" height="250"></canvas>
+                        <div class="chart-container-small">
+                            <canvas id="chartCaracterizacion"></canvas>
+                        </div>
                     </div>
                     <div class="card p-4">
-                        <h4 class="font-semibold mb-3">Estadísticas Descriptivas</h4>
-                        <div class="overflow-auto max-h-80">
-                            <table id="tableCaracterizacion" class="w-full text-sm">
+                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Estadísticas Descriptivas</h4>
+                        <div class="table-responsive max-h-64 overflow-auto">
+                            <table id="tableCaracterizacion" class="w-full text-xs sm:text-sm">
                                 <thead class="bg-primary-50 text-primary-900 sticky top-0">
                                     <tr>
                                         <th class="p-2 text-left">Territorio</th>
@@ -225,39 +304,39 @@
             </div>
 
             <!-- Asociación -->
-            <div id="tab-asociacion" class="card p-5 space-y-4 hidden">
+            <div id="tab-asociacion" class="card p-4 sm:p-5 space-y-4 hidden">
                 <h3 class="text-lg font-semibold text-primary-800">Análisis de Asociación</h3>
                 
-                <div class="grid md:grid-cols-5 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     <div>
                         <label class="block text-sm font-medium mb-1">Indicador X</label>
-                        <select id="asocIndicadorX" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="asocIndicadorX" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Seleccionar...</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Indicador Y</label>
-                        <select id="asocIndicadorY" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="asocIndicadorY" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Seleccionar...</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Nivel</label>
-                        <select id="asocNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="asocNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="LOCALIDAD">LOCALIDAD</option>
                             <option value="UPZ">UPZ</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Cohorte</label>
-                        <select id="asocCohorte" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="asocCohorte" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Ambas</option>
                             <option value="10-14">10-14</option>
                             <option value="15-19">15-19</option>
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button id="btnAsociar" class="btn btn-primary w-full">
+                        <button id="btnAsociar" class="btn btn-primary w-full text-sm">
                             <i class="ti ti-chart-dots"></i> Correlacionar
                         </button>
                     </div>
@@ -265,12 +344,14 @@
 
                 <div class="grid lg:grid-cols-2 gap-4">
                     <div class="card p-4">
-                        <h4 class="font-semibold mb-3">Dispersión</h4>
-                        <canvas id="chartAsociacion" height="250"></canvas>
+                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Dispersión</h4>
+                        <div class="chart-container-small">
+                            <canvas id="chartAsociacion"></canvas>
+                        </div>
                     </div>
                     <div class="card p-4">
-                        <h4 class="font-semibold mb-3">Estadísticas de Correlación</h4>
-                        <div id="resultadoAsociacion" class="space-y-3">
+                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Estadísticas de Correlación</h4>
+                        <div id="resultadoAsociacion" class="space-y-3 text-sm">
                             <p class="text-gray-500">Seleccione dos indicadores para ver la correlación</p>
                         </div>
                     </div>
@@ -278,33 +359,33 @@
             </div>
 
             <!-- Theil -->
-            <div id="tab-theil" class="card p-5 space-y-4 hidden">
+            <div id="tab-theil" class="card p-4 sm:p-5 space-y-4 hidden">
                 <h3 class="text-lg font-semibold text-primary-800">Índice de Theil - Desigualdad Territorial</h3>
                 
-                <div class="grid md:grid-cols-4 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div>
                         <label class="block text-sm font-medium mb-1">Indicador</label>
-                        <select id="theilIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="theilIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Seleccionar...</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Nivel</label>
-                        <select id="theilNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="theilNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="LOCALIDAD">LOCALIDAD</option>
                             <option value="UPZ">UPZ</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Cohorte</label>
-                        <select id="theilCohorte" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="theilCohorte" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Ambas</option>
                             <option value="10-14">10-14</option>
                             <option value="15-19">15-19</option>
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button id="btnTheil" class="btn btn-primary w-full">
+                        <button id="btnTheil" class="btn btn-primary w-full text-sm">
                             <i class="ti ti-balance"></i> Calcular
                         </button>
                     </div>
@@ -312,10 +393,10 @@
 
                 <div class="grid lg:grid-cols-2 gap-4">
                     <div class="card p-4">
-                        <h4 class="font-semibold mb-3">Índice de Desigualdad</h4>
+                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Índice de Desigualdad</h4>
                         <div id="theilResultado" class="space-y-4">
                             <div class="text-center">
-                                <div class="text-4xl font-bold text-gray-400" id="theilValor">-</div>
+                                <div class="text-3xl sm:text-4xl font-bold text-gray-400" id="theilValor">-</div>
                                 <div class="text-sm text-gray-500">Índice de Theil</div>
                                 <div class="mt-2">
                                     <span id="theilCategoria" class="px-3 py-1 rounded-full text-sm bg-gray-100">
@@ -329,89 +410,95 @@
                         </div>
                     </div>
                     <div class="card p-4">
-                        <h4 class="font-semibold mb-3">Distribución por Territorio</h4>
-                        <canvas id="chartTheil" height="250"></canvas>
+                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Distribución por Territorio</h4>
+                        <div class="chart-container-small">
+                            <canvas id="chartTheil"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Series -->
-            <div id="tab-series" class="card p-5 space-y-4 hidden">
+            <div id="tab-series" class="card p-4 sm:p-5 space-y-4 hidden">
                 <h3 class="text-lg font-semibold text-primary-800">Series Temporales</h3>
                 
-                <div class="grid md:grid-cols-4 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div>
                         <label class="block text-sm font-medium mb-1">Indicador</label>
-                        <select id="serieIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="serieIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Seleccionar...</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Territorio</label>
-                        <select id="serieTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="serieTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Seleccionar...</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Nivel</label>
-                        <select id="serieNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="serieNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="LOCALIDAD">LOCALIDAD</option>
                             <option value="UPZ">UPZ</option>
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button id="btnSerie" class="btn btn-primary w-full">
-                            <i class="ti ti-trending-up"></i> Generar Serie
+                        <button id="btnSerie" class="btn btn-primary w-full text-sm">
+                            <i class="ti ti-trending-up"></i> Serie
                         </button>
                     </div>
                 </div>
 
                 <div class="card p-4">
-                    <h4 class="font-semibold mb-3">Evolución Temporal por Cohortes</h4>
-                    <canvas id="chartSeries" height="300"></canvas>
+                    <h4 class="font-semibold mb-3 text-sm sm:text-base">Evolución Temporal por Cohortes</h4>
+                    <div class="chart-container">
+                        <canvas id="chartSeries"></canvas>
+                    </div>
                 </div>
             </div>
 
             <!-- Brechas -->
-            <div id="tab-brechas" class="card p-5 space-y-4 hidden">
+            <div id="tab-brechas" class="card p-4 sm:p-5 space-y-4 hidden">
                 <h3 class="text-lg font-semibold text-primary-800">Brechas entre Cohortes</h3>
                 
-                <div class="grid md:grid-cols-4 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div>
                         <label class="block text-sm font-medium mb-1">Indicador</label>
-                        <select id="brechaIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="brechaIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Seleccionar...</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Nivel</label>
-                        <select id="brechaNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="brechaNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="LOCALIDAD">LOCALIDAD</option>
                             <option value="UPZ">UPZ</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Año</label>
-                        <select id="brechaAno" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        <select id="brechaAno" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Todos</option>
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button id="btnBrechas" class="btn btn-primary w-full">
-                            <i class="ti ti-arrows-diff"></i> Calcular Brechas
+                        <button id="btnBrechas" class="btn btn-primary w-full text-sm">
+                            <i class="ti ti-arrows-diff"></i> Calcular
                         </button>
                     </div>
                 </div>
 
                 <div class="grid lg:grid-cols-2 gap-4">
                     <div class="card p-4">
-                        <h4 class="font-semibold mb-3">Brecha por Territorio (15-19 - 10-14)</h4>
-                        <canvas id="chartBrechas" height="250"></canvas>
+                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Brecha por Territorio (15-19 - 10-14)</h4>
+                        <div class="chart-container-small">
+                            <canvas id="chartBrechas"></canvas>
+                        </div>
                     </div>
                     <div class="card p-4">
-                        <h4 class="font-semibold mb-3">Resumen de Brechas</h4>
-                        <div class="overflow-auto max-h-64">
-                            <table id="tableBrechas" class="w-full text-sm">
+                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Resumen de Brechas</h4>
+                        <div class="table-responsive max-h-64 overflow-auto">
+                            <table id="tableBrechas" class="w-full text-xs sm:text-sm">
                                 <thead class="bg-primary-50 text-primary-900 sticky top-0">
                                     <tr>
                                         <th class="p-2 text-left">Territorio</th>
@@ -440,10 +527,126 @@
         let charts = {};
         let metadata = {};
         
+        // Chart.js default configuration with responsive fixes
+        Chart.defaults.responsive = true;
+        Chart.defaults.maintainAspectRatio = false;
+        Chart.defaults.plugins.legend.display = true;
+        Chart.defaults.plugins.legend.position = 'top';
+        Chart.defaults.plugins.legend.labels.usePointStyle = true;
+        Chart.defaults.plugins.legend.labels.padding = 15;
+        Chart.defaults.plugins.legend.labels.font = { size: 12 };
+        
+        // Custom chart creation function with responsive settings
+        function createResponsiveChart(canvasId, config) {
+            const canvas = $(canvasId);
+            if (!canvas) return null;
+            
+            // Destroy existing chart
+            if (charts[canvasId]) {
+                charts[canvasId].destroy();
+                delete charts[canvasId];
+            }
+            
+            // Enhanced responsive configuration
+            const responsiveConfig = {
+                ...config,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    scales: {
+                        ...config.options?.scales,
+                        x: {
+                            ...config.options?.scales?.x,
+                            ticks: {
+                                ...config.options?.scales?.x?.ticks,
+                                maxRotation: window.innerWidth < 768 ? 90 : 45,
+                                minRotation: window.innerWidth < 768 ? 45 : 0,
+                                font: {
+                                    size: window.innerWidth < 768 ? 10 : 12
+                                }
+                            }
+                        },
+                        y: {
+                            ...config.options?.scales?.y,
+                            ticks: {
+                                ...config.options?.scales?.y?.ticks,
+                                font: {
+                                    size: window.innerWidth < 768 ? 10 : 12
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        ...config.options?.plugins,
+                        legend: {
+                            display: true,
+                            position: window.innerWidth < 768 ? 'bottom' : 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: window.innerWidth < 768 ? 10 : 15,
+                                font: {
+                                    size: window.innerWidth < 768 ? 10 : 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            enabled: true,
+                            titleFont: {
+                                size: window.innerWidth < 768 ? 12 : 14
+                            },
+                            bodyFont: {
+                                size: window.innerWidth < 768 ? 11 : 13
+                            }
+                        }
+                    },
+                    ...config.options
+                }
+            };
+            
+            try {
+                const chart = new Chart(canvas, responsiveConfig);
+                charts[canvasId] = chart;
+                return chart;
+            } catch (error) {
+                console.error('Error creating chart:', error);
+                showToast('Error creando gráfica', 'error');
+                return null;
+            }
+        }
+        
+        // Resize handler for charts
+        function handleResize() {
+            Object.values(charts).forEach(chart => {
+                if (chart && typeof chart.resize === 'function') {
+                    chart.resize();
+                }
+            });
+        }
+        
+        // Add resize listener
+        window.addEventListener('resize', debounce(handleResize, 250));
+        
+        // Debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
         // Toast notifications
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
-            toast.className = `alert alert-${type} shadow-lg max-w-sm animate-fade-in`;
+            toast.className = `alert alert-${type} shadow-lg max-w-sm animate-fade-in text-sm`;
             toast.textContent = message;
             
             $('#toastContainer').appendChild(toast);
@@ -490,26 +693,34 @@
         
         // Update KPIs
         function updateKPIs() {
-            $('#kpiTotal').textContent = metadata.resumen?.total_registros || '-';
-            $('#kpiIndicadores').textContent = metadata.resumen?.total_indicadores || '-';
-            $('#kpiLocalidades').textContent = metadata.resumen?.localidades || '-';
-            $('#kpiUpz').textContent = metadata.resumen?.upz || '-';
+            $('#kpiTotal').textContent = formatNumber(metadata.resumen?.total_registros) || '-';
+            $('#kpiIndicadores').textContent = formatNumber(metadata.resumen?.total_indicadores) || '-';
+            $('#kpiLocalidades').textContent = formatNumber(metadata.resumen?.localidades) || '-';
+            $('#kpiUpz').textContent = formatNumber(metadata.resumen?.upz) || '-';
         }
         
-        // Populate selectors
+        // Format large numbers
+        function formatNumber(num) {
+            if (!num) return '-';
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toLocaleString();
+        }
+        
+        // Populate selectors with better text handling
         function populateSelectors() {
             const indicadores = metadata.indicadores?.todos || [];
             const años = metadata.temporal?.años || [];
             const localidades = metadata.geografia?.localidades || [];
             const upz = metadata.geografia?.upz || [];
             
-            // Indicadores
-            populateSelect('caracIndicador', indicadores);
-            populateSelect('asocIndicadorX', indicadores);
-            populateSelect('asocIndicadorY', indicadores);
-            populateSelect('theilIndicador', indicadores);
-            populateSelect('serieIndicador', indicadores);
-            populateSelect('brechaIndicador', indicadores);
+            // Indicadores with truncation for long names
+            populateSelect('caracIndicador', indicadores, true);
+            populateSelect('asocIndicadorX', indicadores, true);
+            populateSelect('asocIndicadorY', indicadores, true);
+            populateSelect('theilIndicador', indicadores, true);
+            populateSelect('serieIndicador', indicadores, true);
+            populateSelect('brechaIndicador', indicadores, true);
             
             // Años
             populateSelect('caracAno', años);
@@ -519,7 +730,7 @@
             populateSelect('serieTerritorio', localidades);
         }
         
-        function populateSelect(selectId, options) {
+        function populateSelect(selectId, options, truncate = false) {
             const select = $(`#${selectId}`);
             if (!select) return;
             
@@ -531,7 +742,15 @@
             options.forEach(option => {
                 const optionElement = document.createElement('option');
                 optionElement.value = option;
-                optionElement.textContent = option;
+                
+                // Truncate long text for better display
+                let displayText = option;
+                if (truncate && option.length > 50) {
+                    displayText = option.substring(0, 47) + '...';
+                }
+                
+                optionElement.textContent = displayText;
+                optionElement.title = option; // Full text in tooltip
                 select.appendChild(optionElement);
             });
         }
@@ -548,12 +767,17 @@
                     
                     // Update content
                     $$('[id^="tab-"]').forEach(tab => tab.classList.add('hidden'));
-                    $(`#tab-${tabId}`).classList.remove('hidden');
+                    const targetTab = $(`#tab-${tabId}`);
+                    if (targetTab) {
+                        targetTab.classList.remove('hidden');
+                        // Trigger resize for charts in the newly visible tab
+                        setTimeout(handleResize, 100);
+                    }
                 });
             });
         }
         
-        // File upload
+        // File upload with better error handling
         function initUpload() {
             $('#btnUpload').addEventListener('click', async () => {
                 const fileInput = $('#fileInput');
@@ -594,12 +818,11 @@
                         $('#uploadResult').innerHTML = `
                             <div class="alert alert-success">
                                 <strong>✅ Carga exitosa</strong><br>
-                                📁 Archivo: ${result.archivo}<br>
-                                📊 Registros cargados: ${stats.registros_cargados || 0}<br>
-                                📝 Filas procesadas: ${stats.filas_procesadas || 0}<br>
-                                ⚠️ Omitidos sin valor: ${stats.omitidos_sin_valor || 0}<br>
-                                ❌ Errores: ${stats.errores || 0}
-                                ${result.columnas_detectadas ? `<br><br><strong>Columnas detectadas:</strong><br>${JSON.stringify(result.columnas_detectadas, null, 2)}` : ''}
+                                📂 Archivo: ${result.archivo}<br>
+                                📊 Registros cargados: ${formatNumber(stats.registros_cargados) || 0}<br>
+                                📄 Filas procesadas: ${formatNumber(stats.filas_procesadas) || 0}<br>
+                                ⚠️ Omitidos sin valor: ${formatNumber(stats.omitidos_sin_valor) || 0}<br>
+                                ❌ Errores: ${formatNumber(stats.errores) || 0}
                             </div>
                         `;
                         showToast('Archivo cargado correctamente', 'success');
@@ -611,10 +834,6 @@
                                 <strong>❌ Error en la carga</strong><br>
                                 ${errorDetails}
                                 ${result.columnas_disponibles ? `<br><br><strong>Columnas encontradas:</strong><br>${result.columnas_disponibles.join(', ')}` : ''}
-                                <br><br>
-                                <a href="/debug/columns" target="_blank" class="btn text-xs">
-                                    📋 Ver estructura esperada
-                                </a>
                             </div>
                         `;
                         showToast('Error subiendo archivo', 'error');
@@ -624,10 +843,6 @@
                         <div class="alert alert-error">
                             <strong>❌ Error de conexión</strong><br>
                             ${error.message}
-                            <br><br>
-                            <button onclick="loadDebugInfo()" class="btn text-xs">
-                                🔍 Ver información de debug
-                            </button>
                         </div>
                     `;
                     showToast('Error de conexión', 'error');
@@ -638,26 +853,7 @@
             });
         }
         
-        // Debug function
-        async function loadDebugInfo() {
-            try {
-                const debugInfo = await apiCall('/debug/columns');
-                const debugWindow = window.open('', '_blank');
-                debugWindow.document.write(`
-                    <html>
-                    <head><title>Debug - Estructura de Columnas</title></head>
-                    <body style="font-family: monospace; padding: 20px;">
-                        <h2>Estructura Esperada del Archivo Excel</h2>
-                        <pre>${JSON.stringify(debugInfo, null, 2)}</pre>
-                    </body>
-                    </html>
-                `);
-            } catch (error) {
-                showToast('Error cargando información de debug', 'error');
-            }
-        }
-        
-        // Caracterización
+        // Caracterización with responsive charts
         function initCaracterizacion() {
             $('#btnCaracterizar').addEventListener('click', async () => {
                 const indicador = $('#caracIndicador').value;
@@ -695,19 +891,19 @@
         }
         
         function renderCaracterizacionChart(data) {
-            const ctx = $('#chartCaracterizacion');
             const top10 = data.datos.slice(0, 10);
             
-            if (charts.caracterizacion) {
-                charts.caracterizacion.destroy();
-            }
-            
-            charts.caracterizacion = new Chart(ctx, {
+            const config = {
                 type: 'bar',
                 data: {
-                    labels: top10.map(d => d.territorio),
+                    labels: top10.map(d => {
+                        // Truncate long territory names
+                        return d.territorio.length > 15 ? 
+                            d.territorio.substring(0, 12) + '...' : 
+                            d.territorio;
+                    }),
                     datasets: [{
-                        label: `${data.indicador} (${data.unidad_medida})`,
+                        label: `${data.indicador.length > 30 ? data.indicador.substring(0, 27) + '...' : data.indicador}`,
                         data: top10.map(d => d.promedio),
                         backgroundColor: '#3b82f6',
                         borderColor: '#1d4ed8',
@@ -715,29 +911,40 @@
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (context) => {
+                                    // Show full territory name in tooltip
+                                    return top10[context[0].dataIndex].territorio;
+                                },
+                                label: (context) => {
+                                    return `${data.unidad_medida}: ${context.parsed.y}`;
+                                }
+                            }
+                        }
                     },
                     scales: {
-                        x: { 
-                            ticks: { 
-                                maxRotation: 45,
-                                minRotation: 45
+                        y: { 
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: data.unidad_medida
                             }
-                        },
-                        y: { beginAtZero: true }
+                        }
                     }
                 }
-            });
+            };
+            
+            createResponsiveChart('#chartCaracterizacion', config);
         }
         
         function renderCaracterizacionTable(data) {
             const tbody = $('#tableCaracterizacion tbody');
             tbody.innerHTML = data.datos.map(d => `
-                <tr class="border-b">
-                    <td class="p-2">${d.territorio}</td>
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-2" title="${d.territorio}">${d.territorio.length > 20 ? d.territorio.substring(0, 17) + '...' : d.territorio}</td>
                     <td class="p-2 text-right">${d.n}</td>
                     <td class="p-2 text-right">${d.promedio}</td>
                     <td class="p-2 text-right">${d.mediana}</td>
@@ -746,7 +953,7 @@
             `).join('');
         }
         
-        // Asociación
+        // Asociación with responsive scatter plots
         function initAsociacion() {
             $('#btnAsociar').addEventListener('click', async () => {
                 const indicadorX = $('#asocIndicadorX').value;
@@ -784,13 +991,7 @@
         }
         
         function renderAsociacionChart(data) {
-            const ctx = $('#chartAsociacion');
-            
-            if (charts.asociacion) {
-                charts.asociacion.destroy();
-            }
-            
-            charts.asociacion = new Chart(ctx, {
+            const config = {
                 type: 'scatter',
                 data: {
                     datasets: [{
@@ -798,31 +999,43 @@
                         data: data.datos.map(d => ({ x: d.x, y: d.y })),
                         backgroundColor: '#06b6d4',
                         borderColor: '#0891b2',
-                        pointRadius: 5
+                        pointRadius: window.innerWidth < 768 ? 4 : 5,
+                        pointHoverRadius: window.innerWidth < 768 ? 6 : 8
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (context) => {
+                                    return data.datos[context[0].dataIndex].territorio;
+                                }
+                            }
+                        }
                     },
                     scales: {
                         x: { 
                             title: { 
                                 display: true, 
-                                text: data.indicador_x 
+                                text: data.indicador_x.length > 25 ? 
+                                    data.indicador_x.substring(0, 22) + '...' : 
+                                    data.indicador_x
                             }
                         },
                         y: { 
                             title: { 
                                 display: true, 
-                                text: data.indicador_y 
+                                text: data.indicador_y.length > 25 ? 
+                                    data.indicador_y.substring(0, 22) + '...' : 
+                                    data.indicador_y
                             }
                         }
                     }
                 }
-            });
+            };
+            
+            createResponsiveChart('#chartAsociacion', config);
         }
         
         function renderAsociacionStats(data) {
@@ -830,7 +1043,7 @@
             const corr = data.correlacion;
             
             container.innerHTML = `
-                <div class="space-y-2">
+                <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
                         <span>Correlación de Pearson:</span>
                         <span class="font-mono">${corr.pearson_r} (p=${corr.pearson_p})</span>
@@ -857,7 +1070,7 @@
             `;
         }
         
-        // Theil Index
+        // Theil Index with responsive visualization
         function initTheil() {
             $('#btnTheil').addEventListener('click', async () => {
                 const indicador = $('#theilIndicador').value;
@@ -907,17 +1120,16 @@
         }
         
         function renderTheilChart(data) {
-            const ctx = $('#chartTheil');
             const top10 = data.datos.slice(0, 10);
             
-            if (charts.theil) {
-                charts.theil.destroy();
-            }
-            
-            charts.theil = new Chart(ctx, {
+            const config = {
                 type: 'bar',
                 data: {
-                    labels: top10.map(d => d.territorio),
+                    labels: top10.map(d => {
+                        return d.territorio.length > 15 ? 
+                            d.territorio.substring(0, 12) + '...' : 
+                            d.territorio;
+                    }),
                     datasets: [{
                         label: `Valor (${data.unidad_medida})`,
                         data: top10.map(d => d.valor),
@@ -927,25 +1139,32 @@
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (context) => {
+                                    return top10[context[0].dataIndex].territorio;
+                                }
+                            }
+                        }
                     },
                     scales: {
-                        x: { 
-                            ticks: { 
-                                maxRotation: 45,
-                                minRotation: 45
+                        y: { 
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: data.unidad_medida
                             }
-                        },
-                        y: { beginAtZero: true }
+                        }
                     }
                 }
-            });
+            };
+            
+            createResponsiveChart('#chartTheil', config);
         }
         
-        // Series Temporales
+        // Series Temporales with responsive line charts
         function initSeries() {
             // Update territories based on level selection
             $('#serieNivel').addEventListener('change', () => {
@@ -996,8 +1215,6 @@
         }
         
         function renderSeriesChart(data10, data15, metadata) {
-            const ctx = $('#chartSeries');
-            
             // Combine all years
             const años10 = data10.serie?.map(s => s.año) || [];
             const años15 = data15.serie?.map(s => s.año) || [];
@@ -1014,11 +1231,7 @@
                 return punto ? punto.valor : null;
             });
             
-            if (charts.series) {
-                charts.series.destroy();
-            }
-            
-            charts.series = new Chart(ctx, {
+            const config = {
                 type: 'line',
                 data: {
                     labels: allYears,
@@ -1029,7 +1242,8 @@
                             borderColor: '#3b82f6',
                             backgroundColor: 'rgba(59, 130, 246, 0.1)',
                             tension: 0.3,
-                            pointRadius: 4
+                            pointRadius: window.innerWidth < 768 ? 3 : 4,
+                            pointHoverRadius: window.innerWidth < 768 ? 5 : 6
                         },
                         {
                             label: '15-19 años',
@@ -1037,19 +1251,22 @@
                             borderColor: '#06b6d4',
                             backgroundColor: 'rgba(6, 182, 212, 0.1)',
                             tension: 0.3,
-                            pointRadius: 4
+                            pointRadius: window.innerWidth < 768 ? 3 : 4,
+                            pointHoverRadius: window.innerWidth < 768 ? 5 : 6
                         }
                     ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
                     plugins: {
                         title: {
                             display: true,
-                            text: `${metadata.indicador} - ${metadata.territorio}`
-                        },
-                        legend: { display: true }
+                            text: window.innerWidth < 768 ? 
+                                `${metadata.territorio}` : 
+                                `${metadata.indicador} - ${metadata.territorio}`,
+                            font: {
+                                size: window.innerWidth < 768 ? 12 : 14
+                            }
+                        }
                     },
                     scales: {
                         x: { 
@@ -1066,10 +1283,12 @@
                         }
                     }
                 }
-            });
+            };
+            
+            createResponsiveChart('#chartSeries', config);
         }
         
-        // Brechas
+        // Brechas with responsive bar charts
         function initBrechas() {
             $('#btnBrechas').addEventListener('click', async () => {
                 const indicador = $('#brechaIndicador').value;
@@ -1105,17 +1324,16 @@
         }
         
         function renderBrechasChart(data) {
-            const ctx = $('#chartBrechas');
             const top10 = data.datos.slice(0, 10);
             
-            if (charts.brechas) {
-                charts.brechas.destroy();
-            }
-            
-            charts.brechas = new Chart(ctx, {
+            const config = {
                 type: 'bar',
                 data: {
-                    labels: top10.map(d => d.territorio),
+                    labels: top10.map(d => {
+                        return d.territorio.length > 15 ? 
+                            d.territorio.substring(0, 12) + '...' : 
+                            d.territorio;
+                    }),
                     datasets: [{
                         label: `Brecha (${data.unidad_medida})`,
                         data: top10.map(d => d.brecha_abs),
@@ -1124,18 +1342,17 @@
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (context) => {
+                                    return top10[context[0].dataIndex].territorio;
+                                }
+                            }
+                        }
                     },
                     scales: {
-                        x: { 
-                            ticks: { 
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
-                        },
                         y: { 
                             beginAtZero: true,
                             title: {
@@ -1145,14 +1362,16 @@
                         }
                     }
                 }
-            });
+            };
+            
+            createResponsiveChart('#chartBrechas', config);
         }
         
         function renderBrechasTable(data) {
             const tbody = $('#tableBrechas tbody');
             tbody.innerHTML = data.datos.slice(0, 20).map(d => `
-                <tr class="border-b">
-                    <td class="p-2">${d.territorio}</td>
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-2" title="${d.territorio}">${d.territorio.length > 20 ? d.territorio.substring(0, 17) + '...' : d.territorio}</td>
                     <td class="p-2 text-right">${d.prom_10_14}</td>
                     <td class="p-2 text-right">${d.prom_15_19}</td>
                     <td class="p-2 text-right ${d.brecha_abs >= 0 ? 'text-red-600' : 'text-green-600'}">
@@ -1162,10 +1381,9 @@
             `).join('');
         }
         
-        // CSV Download
+        // CSV Download placeholder
         function initDownloads() {
             $('#btnDownloadCarac').addEventListener('click', () => {
-                // This would implement CSV download functionality
                 showToast('Función de descarga en desarrollo', 'info');
             });
         }
