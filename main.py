@@ -281,7 +281,7 @@ async def health():
 async def home():
     """Página principal con dashboard integrado"""
     try:
-        with open("dashboard_compatible.final.html", "r", encoding="utf-8") as f:
+        with open("dashboard_compatible.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
         logger.info("Dashboard HTML not found, serving basic welcome page")
