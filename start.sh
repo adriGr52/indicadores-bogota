@@ -30,10 +30,10 @@ else
     exit 1
 fi
 
-if [ -f "dashboard_compatible.final.html" ]; then
-    echo "✅ dashboard_compatible.final.html found"
+if [ -f "dashboard_compatible.html" ]; then
+    echo "✅ dashboard_compatible.html found"
 else
-    echo "⚠️ dashboard_compatible.final.html not found - will use fallback"
+    echo "⚠️ dashboard_compatible.html not found - will use fallback"
 fi
 
 # Crear directorio de logs si no existe
