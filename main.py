@@ -50,6 +50,7 @@ Base = declarative_base()
 class IndicadorFecundidad(Base):
     __tablename__ = "indicadores_fecundidad"
     id = Column(Integer, primary_key=True, index=True)
+    origen_archivo = Column(String)
     archivo_hash = Column(String, index=True)
     indicador_nombre = Column(String, index=True, nullable=False)
     dimension = Column(String)
@@ -91,7 +92,7 @@ def get_db():
 app = FastAPI(
     title="Exploración Determinantes Fecundidad Temprana - Bogotá D.C.",
     description="Análisis integral por territorio, periodo y cohortes para la exploración de determinantes de fecundidad temprana en Bogotá D.C.",
-    version="4.0.0"
+    version="4.1.0"
 )
 
 app.add_middleware(
@@ -111,7 +112,17 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Could not create tables on startup: {e}")
 
-# Funciones auxiliares
+# Funciones auxiliares mejoradas
+def limpiar_texto(texto: str) -> str:
+    """Limpia y normaliza texto para mejor visualización"""
+    if not texto:
+        return texto
+    # Remover espacios extra al inicio y final
+    texto = texto.strip()
+    # Normalizar espacios múltiples
+    texto = re.sub(r'\s+', ' ', texto)
+    return texto
+
 def calcular_indice_theil(valores: List[float], poblaciones: Optional[List[float]] = None) -> float:
     """Calcula el índice de Theil para medir desigualdad territorial"""
     if not valores or len(valores) < 2:
@@ -152,7 +163,7 @@ def get_indicadores_fecundidad(db: Session) -> List[str]:
     return [ind for ind in indicadores if any(palabra in ind.lower() for palabra in palabras_clave)]
 
 def get_indicadores_no_fecundidad(db: Session) -> List[str]:
-    """Obtiene lista de indicadores que NO son de fecundidad"""
+    """Obtiene lista de indicadores que NO son de fecundidad (determinantes)"""
     indicadores = [r[0] for r in db.query(IndicadorFecundidad.indicador_nombre).distinct().all()]
     palabras_clave = ['fecund', 'natalidad', 'nacimiento', 'maternidad', 'embarazo']
     return [ind for ind in indicadores if not any(palabra in ind.lower() for palabra in palabras_clave)]
@@ -160,14 +171,25 @@ def get_indicadores_no_fecundidad(db: Session) -> List[str]:
 COHORTES_VALIDAS = {"10-14", "15-19"}
 
 def extraer_grupo_edad(indicador_nombre: Optional[str], grupo_etario: Optional[str]) -> Optional[str]:
+    """Extrae grupo de edad del nombre del indicador o campo grupo etario"""
     txt = f"{(indicador_nombre or '').lower()} {(grupo_etario or '').lower()}"
-    if re.search(r"10\D*14", txt) or re.search(r"10\s*-\s*14", txt):
+    
+    # Buscar patrones específicos para cada cohorte
+    if re.search(r"10\s*[-aá]\s*14", txt) or re.search(r"10\D*14", txt):
         return "10-14"
-    if re.search(r"15\D*19", txt) or re.search(r"15\s*-\s*19", txt):
+    if re.search(r"15\s*[-aá]\s*19", txt) or re.search(r"15\D*19", txt):
         return "15-19"
+    
+    # Patrones adicionales más específicos
+    if "niñas de 10 a 14" in txt or "10 a 14 años" in txt:
+        return "10-14"
+    if "mujeres de 15 a 19" in txt or "15 a 19 años" in txt:
+        return "15-19"
+        
     return None
 
 def is_nan_like(x) -> bool:
+    """Verifica si un valor es similar a NaN"""
     if x is None:
         return True
     if isinstance(x, float) and (np.isnan(x) or np.isinf(x)):
@@ -176,9 +198,14 @@ def is_nan_like(x) -> bool:
     return s in {"", "nan", "nd", "no_data", "none", "null"}
 
 def clean_str(x, default=None):
-    return None if is_nan_like(x) else str(x).strip()
+    """Limpia string y aplica normalización"""
+    if is_nan_like(x):
+        return default
+    resultado = str(x).strip()
+    return limpiar_texto(resultado) if resultado else default
 
 def clean_int(x, default=None):
+    """Limpia y convierte a entero"""
     if is_nan_like(x):
         return default
     try:
@@ -187,6 +214,7 @@ def clean_int(x, default=None):
         return default
 
 def clean_float(x, allow_none=True, default=None):
+    """Limpia y convierte a float"""
     if is_nan_like(x):
         return None if allow_none else (default if default is not None else 0.0)
     try:
@@ -198,9 +226,15 @@ def clean_float(x, allow_none=True, default=None):
         return None if allow_none else (default if default is not None else 0.0)
 
 def terr_key(rec, nivel: str) -> str:
-    return rec.nombre_localidad if nivel.upper() == "LOCALIDAD" else (rec.nombre_upz or "SIN UPZ")
+    """Obtiene clave de territorio según nivel"""
+    if nivel.upper() == "LOCALIDAD":
+        return limpiar_texto(rec.nombre_localidad) if rec.nombre_localidad else "SIN LOCALIDAD"
+    else:
+        upz_name = rec.nombre_upz or "SIN UPZ"
+        return limpiar_texto(upz_name) if upz_name not in ['ND', 'NO_DATA', ''] else "SIN UPZ"
 
 def filtrar_por_cohorte(rows: List[IndicadorFecundidad], cohorte: Optional[str]) -> List[IndicadorFecundidad]:
+    """Filtra registros por cohorte específica"""
     if not cohorte:
         return rows
     if cohorte not in COHORTES_VALIDAS:
@@ -231,7 +265,7 @@ async def health():
         
         return {
             "status": "healthy",
-            "version": "4.0.0",
+            "version": "4.1.0",
             "database": db_status,
             "registros": count,
             "timestamp": datetime.now().isoformat()
@@ -369,7 +403,7 @@ async def home():
 
 @app.post("/upload/excel")
 async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """Carga datos desde archivo Excel con validación mejorada"""
+    """Carga datos desde archivo Excel con validación mejorada para consolidado_indicadores_fecundidad.xlsx"""
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="Formato no válido. Use archivos .xlsx o .xls")
     
@@ -379,16 +413,29 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
         
         logger.info(f"Archivo cargado: {file.filename}, filas: {len(df)}, columnas: {len(df.columns)}")
         
-        # Normalización de columnas
+        # Mapeo específico para el archivo consolidado_indicadores_fecundidad.xlsx
         column_mapping = {
-            'Tipo de Unidad Observación': 'Observación',
-            'Año_Inicio': 'año_inicio',
-            'AÃ±o_Inicio': 'año_inicio'
+            'Dimensión': 'dimension',
+            'Área Geográfica': 'area_geografica',
+            'Tipo de Unidad Observación': 'observacion',
+            'URL_Fuente (Opcional)': 'url_fuente'
         }
         
+        # Aplicar mapeo de columnas
         for old_col, new_col in column_mapping.items():
-            if old_col in df.columns and new_col not in df.columns:
+            if old_col in df.columns:
                 df[new_col] = df[old_col]
+        
+        # Verificar columnas requeridas
+        required_columns = ['Indicador_Nombre', 'Valor', 'Unidad_Medida']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        
+        if missing_columns:
+            available_columns = list(df.columns)
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Columnas faltantes: {missing_columns}. Columnas disponibles: {available_columns}"
+            )
         
         # Limpiar tabla existente
         deleted_count = db.query(IndicadorFecundidad).count()
@@ -398,35 +445,48 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
         
         for idx, row in df.iterrows():
             try:
+                # Verificar que el indicador tenga nombre
                 indicador_nombre = clean_str(row.get('Indicador_Nombre'))
                 if not indicador_nombre:
+                    omitidos_sin_valor += 1
                     continue
                 
+                # Verificar que tenga valor válido
                 valor = clean_float(row.get('Valor'), allow_none=True)
                 if valor is None:
                     omitidos_sin_valor += 1
                     continue
                 
-                # Manejar diferentes formatos de año
-                año_inicio = None
-                for col in ['año_inicio', 'Año_Inicio', 'AÃ±o_Inicio']:
-                    if col in row:
-                        año_inicio = clean_int(row.get(col))
-                        break
+                # Limpiar y procesar campos específicos
+                unidad_medida = clean_str(row.get('Unidad_Medida'), default='N/A') or 'N/A'
+                nivel_territorial = (clean_str(row.get('Nivel_Territorial')) or 'LOCALIDAD').upper()
                 
+                # Limpiar nombres de localidad y UPZ
+                nombre_localidad = clean_str(row.get('Nombre Localidad')) or 'SIN LOCALIDAD'
+                nombre_upz = clean_str(row.get('Nombre_UPZ'))
+                if nombre_upz and nombre_upz.upper() in ['ND', 'NO_DATA']:
+                    nombre_upz = None
+                
+                # Procesar año
+                año_inicio = None
+                if 'Año_Inicio' in row:
+                    año_inicio = clean_int(row.get('Año_Inicio'))
+                
+                # Crear registro
                 rec = IndicadorFecundidad(
+                    origen_archivo=clean_str(row.get('origen_archivo')),
                     archivo_hash=clean_str(row.get('archivo_hash')),
-                    indicador_nombre=indicador_nombre,
-                    dimension=clean_str(row.get('Dimensión')),
-                    unidad_medida=clean_str(row.get('Unidad_Medida'), default='N/A') or 'N/A',
+                    indicador_nombre=limpiar_texto(indicador_nombre),
+                    dimension=clean_str(row.get('dimension')),
+                    unidad_medida=unidad_medida,
                     tipo_medida=clean_str(row.get('Tipo_Medida')),
                     valor=valor,
-                    nivel_territorial=(clean_str(row.get('Nivel_Territorial')) or 'LOCALIDAD').upper(),
+                    nivel_territorial=nivel_territorial,
                     id_localidad=clean_int(row.get('ID Localidad')),
-                    nombre_localidad=clean_str(row.get('Nombre Localidad')) or 'SIN LOCALIDAD',
+                    nombre_localidad=limpiar_texto(nombre_localidad),
                     id_upz=clean_int(row.get('ID_UPZ')),
-                    nombre_upz=clean_str(row.get('Nombre_UPZ')),
-                    area_geografica=clean_str(row.get('Área Geográfica')),
+                    nombre_upz=limpiar_texto(nombre_upz) if nombre_upz else None,
+                    area_geografica=clean_str(row.get('area_geografica')),
                     año_inicio=año_inicio,
                     periodicidad=clean_str(row.get('Periodicidad')),
                     poblacion_base=clean_str(row.get('Poblacion Base')),
@@ -434,19 +494,29 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
                     grupo_etario_asociado=clean_str(row.get('Grupo Etario Asociado')),
                     sexo=clean_str(row.get('Sexo')),
                     tipo_unidad=clean_str(row.get('Tipo de Unidad')),
-                    observacion=clean_str(row.get('Observación')),
+                    observacion=clean_str(row.get('observacion')),
                     fuente=clean_str(row.get('Fuente')),
-                    url_fuente=clean_str(row.get('URL_Fuente (Opcional)'))
+                    url_fuente=clean_str(row.get('url_fuente'))
                 )
                 db.add(rec)
                 registros += 1
+                
+                # Commit en lotes para mejor rendimiento
+                if registros % 1000 == 0:
+                    db.commit()
+                    logger.info(f"Procesados {registros} registros...")
                 
             except Exception as e:
                 errores += 1
                 logger.warning(f"Error en fila {idx}: {e}")
         
+        # Commit final
         db.commit()
         logger.info(f"Carga completada: {registros} registros, {errores} errores, {omitidos_sin_valor} omitidos")
+        
+        # Estadísticas adicionales
+        indicadores_unicos = db.query(IndicadorFecundidad.indicador_nombre).distinct().count()
+        localidades_unicas = db.query(IndicadorFecundidad.nombre_localidad).distinct().count()
         
         return {
             "status": "success",
@@ -457,36 +527,44 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
                 "registros_cargados": registros,
                 "filas_omitidas_sin_valor": omitidos_sin_valor,
                 "errores": errores,
-                "filas_procesadas": len(df)
+                "filas_procesadas": len(df),
+                "indicadores_unicos": indicadores_unicos,
+                "localidades_unicas": localidades_unicas
             }
         }
         
     except Exception as e:
         logger.exception("Error procesando archivo Excel")
+        db.rollback()
         raise HTTPException(status_code=500, detail=f"Error procesando archivo: {str(e)}")
 
 @app.get("/metadatos")
 async def metadatos(db: Session = Depends(get_db)):
-    """Metadatos completos del sistema"""
+    """Metadatos completos del sistema con nombres limpios"""
     total = db.query(IndicadorFecundidad).count()
     
-    # Indicadores categorizados
-    todos_indicadores = [r[0] for r in db.query(IndicadorFecundidad.indicador_nombre).distinct().all()]
+    # Indicadores categorizados con nombres limpios
+    todos_indicadores_raw = [r[0] for r in db.query(IndicadorFecundidad.indicador_nombre).distinct().all()]
+    todos_indicadores = [limpiar_texto(ind) for ind in todos_indicadores_raw if ind]
+    
     indicadores_fecundidad = get_indicadores_fecundidad(db)
     indicadores_otros = get_indicadores_no_fecundidad(db)
     
-    # Geografía
-    localidades = [r[0] for r in db.query(IndicadorFecundidad.nombre_localidad).distinct().all()]
-    upzs = [r[0] for r in db.query(IndicadorFecundidad.nombre_upz).filter(
+    # Geografía con nombres limpios
+    localidades_raw = [r[0] for r in db.query(IndicadorFecundidad.nombre_localidad).distinct().all()]
+    localidades = [limpiar_texto(loc) for loc in localidades_raw if loc and loc != 'SIN LOCALIDAD']
+    
+    upzs_raw = [r[0] for r in db.query(IndicadorFecundidad.nombre_upz).filter(
         IndicadorFecundidad.nombre_upz.isnot(None)
     ).distinct().all()]
+    upzs = [limpiar_texto(upz) for upz in upzs_raw if upz and upz not in ['ND', 'NO_DATA', 'SIN UPZ']]
     
     # Temporal
     años = sorted([r[0] for r in db.query(IndicadorFecundidad.año_inicio).filter(
         IndicadorFecundidad.año_inicio.isnot(None)
     ).distinct().all()])
     
-    # Unidades de medida
+    # Unidades de medida por indicador
     unidades_medida = {}
     for indicador in todos_indicadores:
         unidad = db.query(IndicadorFecundidad.unidad_medida).filter(
@@ -494,24 +572,41 @@ async def metadatos(db: Session = Depends(get_db)):
         ).first()
         unidades_medida[indicador] = unidad[0] if unidad else "N/A"
     
+    # Estadísticas por cohorte
+    stats_cohortes = {}
+    for cohorte in COHORTES_VALIDAS:
+        count = 0
+        for indicador in todos_indicadores_raw:
+            query = db.query(IndicadorFecundidad).filter(
+                IndicadorFecundidad.indicador_nombre == indicador
+            )
+            rows = query.all()
+            filtered_rows = filtrar_por_cohorte(rows, cohorte)
+            count += len(filtered_rows)
+        stats_cohortes[cohorte] = count
+    
     return {
         "resumen": {
             "total_registros": total,
             "total_indicadores": len(todos_indicadores),
             "indicadores_fecundidad": len(indicadores_fecundidad),
-            "indicadores_otros": len(indicadores_otros),
+            "indicadores_determinantes": len(indicadores_otros),
             "localidades": len(localidades),
-            "upz": len([u for u in upzs if u]),
-            "rango_años": {"min": min(años) if años else None, "max": max(años) if años else None}
+            "upz": len(upzs),
+            "rango_años": {
+                "min": min(años) if años else None, 
+                "max": max(años) if años else None
+            },
+            "registros_por_cohorte": stats_cohortes
         },
         "indicadores": {
             "todos": sorted(todos_indicadores),
-            "fecundidad": sorted(indicadores_fecundidad),
-            "otros": sorted(indicadores_otros)
+            "fecundidad": sorted([limpiar_texto(ind) for ind in indicadores_fecundidad]),
+            "determinantes": sorted([limpiar_texto(ind) for ind in indicadores_otros])
         },
         "geografia": {
             "localidades": sorted(localidades),
-            "upz": sorted([u for u in upzs if u])
+            "upz": sorted(upzs)
         },
         "temporal": {
             "años": años,
@@ -519,6 +614,53 @@ async def metadatos(db: Session = Depends(get_db)):
         },
         "unidades_medida": unidades_medida
     }
+
+@app.get("/debug/columns")
+async def debug_columns():
+    """Endpoint de debug para mostrar estructura esperada"""
+    return {
+        "columnas_requeridas": [
+            "Indicador_Nombre",
+            "Valor", 
+            "Unidad_Medida"
+        ],
+        "columnas_opcionales": [
+            "origen_archivo",
+            "archivo_hash", 
+            "Dimensión",
+            "Tipo_Medida",
+            "Nivel_Territorial",
+            "ID Localidad",
+            "Nombre Localidad", 
+            "ID_UPZ",
+            "Nombre_UPZ",
+            "Área Geográfica",
+            "Año_Inicio",
+            "Periodicidad",
+            "Poblacion Base",
+            "Semaforo",
+            "Grupo Etario Asociado",
+            "Sexo",
+            "Tipo de Unidad Observación",
+            "Fuente",
+            "URL_Fuente (Opcional)"
+        ],
+        "ejemplo_estructura": {
+            "Indicador_Nombre": "Tasa Específica de Fecundidad en niñas de 10 a 14 años",
+            "Valor": 1.2,
+            "Unidad_Medida": "Por cada 1000 niñas",
+            "Nombre Localidad": "Usaquén",
+            "Año_Inicio": 2020
+        },
+        "notas": [
+            "Los nombres de indicadores se limpian automáticamente",
+            "Los valores nulos o 'ND' se omiten durante la carga",
+            "Las cohortes se detectan automáticamente del nombre del indicador"
+        ]
+    }
+
+# ---- RESTO DE ENDPOINTS IGUAL QUE ANTES ----
+# (caracterizacion, asociacion, theil, series, brechas permanecen iguales)
 
 @app.get("/estadisticas/generales")
 async def estadisticas_generales(año: Optional[int] = Query(None), db: Session = Depends(get_db)):
@@ -607,7 +749,7 @@ async def caracterizacion(
     datos.sort(key=lambda x: x["promedio"], reverse=True)
     
     return {
-        "indicador": indicador,
+        "indicador": limpiar_texto(indicador),
         "nivel": nivel.upper(),
         "año": año,
         "cohorte": cohorte,
@@ -699,8 +841,8 @@ async def asociacion_indicadores(
         })
     
     return {
-        "indicador_x": indicador_x,
-        "indicador_y": indicador_y,
+        "indicador_x": limpiar_texto(indicador_x),
+        "indicador_y": limpiar_texto(indicador_y),
         "nivel": nivel.upper(),
         "año": año,
         "cohorte": cohorte,
@@ -778,7 +920,7 @@ async def indice_theil(
     datos_territorios.sort(key=lambda x: x["valor"], reverse=True)
     
     return {
-        "indicador": indicador,
+        "indicador": limpiar_texto(indicador),
         "nivel": nivel.upper(),
         "año": año,
         "cohorte": cohorte,
@@ -844,7 +986,7 @@ async def serie_temporal(
         })
     
     return {
-        "indicador": indicador,
+        "indicador": limpiar_texto(indicador),
         "nivel": nivel.upper(),
         "territorio": territorio,
         "cohorte": cohorte,
@@ -918,7 +1060,7 @@ async def brechas_cohortes(
     datos.sort(key=lambda d: d["brecha_abs"], reverse=True)
     
     return {
-        "indicador": indicador,
+        "indicador": limpiar_texto(indicador),
         "nivel": nivel.upper(),
         "año": año,
         "unidad_medida": unidad_medida,
