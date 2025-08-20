@@ -47,6 +47,8 @@
         .btn:hover { background:#f8fafc; transform: translateY(-1px); }
         .btn-primary { background:#2563eb; border-color:#2563eb; color:#fff; }
         .btn-primary:hover { background:#1d4ed8; }
+        .btn-dark { background:#1f2937; border-color:#374151; color:#fff; }
+        .btn-dark:hover { background:#111827; }
         .chip { display:inline-flex; align-items:center; gap:.25rem; border-radius:999px; padding:.125rem .5rem; font-size:.75rem; background:#e0f2fe; color:#075985; }
         .pill { display:inline-flex; align-items:center; gap:.375rem; border-radius:999px; padding:.125rem .5rem; font-size:.75rem; background:#eef2ff; color:#3730a3; }
         .muted { color:#64748b; }
@@ -146,10 +148,7 @@
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <a class="btn btn-primary shadow-soft text-sm" href="/docs" target="_blank">
-                        <i class="ti ti-api"></i> API Docs
-                    </a>
-                    <button id="btnRefresh" class="btn shadow-soft text-sm">
+                    <button id="btnRefresh" class="btn btn-dark shadow-soft text-sm">
                         <i class="ti ti-refresh"></i> Actualizar
                     </button>
                 </div>
@@ -257,11 +256,9 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Cohorte</label>
-                        <select id="caracCohorte" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Ambas</option>
-                            <option value="10-14">10-14</option>
-                            <option value="15-19">15-19</option>
+                        <label class="block text-sm font-medium mb-1">Territorio</label>
+                        <select id="caracTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="">Todos</option>
                         </select>
                     </div>
                     <div class="sm:col-span-2 lg:col-span-1 flex items-end">
@@ -328,11 +325,9 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Cohorte</label>
-                        <select id="asocCohorte" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Ambas</option>
-                            <option value="10-14">10-14</option>
-                            <option value="15-19">15-19</option>
+                        <label class="block text-sm font-medium mb-1">Territorio</label>
+                        <select id="asocTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="">Todos</option>
                         </select>
                     </div>
                     <div class="flex items-end">
@@ -362,7 +357,7 @@
             <div id="tab-theil" class="card p-4 sm:p-5 space-y-4 hidden">
                 <h3 class="text-lg font-semibold text-primary-800">Índice de Theil - Desigualdad Territorial</h3>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     <div>
                         <label class="block text-sm font-medium mb-1">Indicador</label>
                         <select id="theilIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
@@ -377,11 +372,15 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Cohorte</label>
-                        <select id="theilCohorte" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Ambas</option>
-                            <option value="10-14">10-14</option>
-                            <option value="15-19">15-19</option>
+                        <label class="block text-sm font-medium mb-1">Año</label>
+                        <select id="theilAno" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Territorio</label>
+                        <select id="theilTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="">Todos</option>
                         </select>
                     </div>
                     <div class="flex items-end">
@@ -463,7 +462,7 @@
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div>
-                        <label class="block text-sm font-medium mb-1">Indicador</label>
+                        <label class="block text-sm font-medium mb-1">Indicador (Fecundidad)</label>
                         <select id="brechaIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Seleccionar...</option>
                         </select>
@@ -710,23 +709,29 @@
         // Populate selectors with better text handling
         function populateSelectors() {
             const indicadores = metadata.indicadores?.todos || [];
+            const fecundidadIndicadores = metadata.indicadores?.fecundidad || [];
             const años = metadata.temporal?.años || [];
             const localidades = metadata.geografia?.localidades || [];
             const upz = metadata.geografia?.upz || [];
             
-            // Indicadores with truncation for long names
+            // Indicadores (todos)
             populateSelect('caracIndicador', indicadores, true);
             populateSelect('asocIndicadorX', indicadores, true);
             populateSelect('asocIndicadorY', indicadores, true);
             populateSelect('theilIndicador', indicadores, true);
             populateSelect('serieIndicador', indicadores, true);
-            populateSelect('brechaIndicador', indicadores, true);
+            
+            // Solo fecundidad para brechas
+            populateSelect('brechaIndicador', fecundidadIndicadores, true);
             
             // Años
-            populateSelect('caracAno', años);
+            populateSelect('theilAno', años);
             populateSelect('brechaAno', años);
             
-            // Territorios (inicialmente localidades)
+            // Territorios iniciales (localidades)
+            populateSelect('caracTerritorio', localidades);
+            populateSelect('asocTerritorio', localidades);
+            populateSelect('theilTerritorio', localidades);
             populateSelect('serieTerritorio', localidades);
         }
         
@@ -753,6 +758,31 @@
                 optionElement.title = option; // Full text in tooltip
                 select.appendChild(optionElement);
             });
+        }
+        
+        // Update territories based on level selection
+        function updateTerritoriesForLevel(levelSelectId, territorySelectId) {
+            const nivel = $(`#${levelSelectId}`).value;
+            const territorios = nivel === 'LOCALIDAD' ? 
+                metadata.geografia?.localidades || [] : 
+                metadata.geografia?.upz || [];
+            populateSelect(territorySelectId, territorios);
+        }
+        
+        // Filter UPZ by selected localidad
+        async function filterUpzByLocalidad(localidad, territorySelectId) {
+            try {
+                if (!localidad) {
+                    populateSelect(territorySelectId, metadata.geografia?.upz || []);
+                    return;
+                }
+                
+                const data = await apiCall(`/geografia/upz_por_localidad?localidad=${encodeURIComponent(localidad)}`);
+                populateSelect(territorySelectId, data.upz || []);
+            } catch (error) {
+                console.error('Error filtering UPZ:', error);
+                populateSelect(territorySelectId, []);
+            }
         }
         
         // Tab management
@@ -853,13 +883,17 @@
             });
         }
         
-        // Caracterización with responsive charts
+        // Caracterización with territory filtering
         function initCaracterizacion() {
+            // Level change handler
+            $('#caracNivel').addEventListener('change', () => {
+                updateTerritoriesForLevel('caracNivel', 'caracTerritorio');
+            });
+            
             $('#btnCaracterizar').addEventListener('click', async () => {
                 const indicador = $('#caracIndicador').value;
                 const nivel = $('#caracNivel').value;
-                const cohorte = $('#caracCohorte').value;
-                const año = $('#caracAno').value;
+                const territorio = $('#caracTerritorio').value;
                 
                 if (!indicador) {
                     showToast('Seleccione un indicador', 'error');
@@ -870,8 +904,7 @@
                     const params = new URLSearchParams({
                         indicador,
                         nivel,
-                        ...(cohorte && { cohorte }),
-                        ...(año && { año })
+                        ...(territorio && { [nivel.toLowerCase()]: territorio })
                     });
                     
                     const data = await apiCall(`/caracterizacion?${params}`);
@@ -953,13 +986,21 @@
             `).join('');
         }
         
-        // Asociación with responsive scatter plots
+        // Continue with other functions (asociacion, theil, etc.)
+        // Similar pattern with territory filtering
+        
+        // Asociación
         function initAsociacion() {
+            // Level change handler
+            $('#asocNivel').addEventListener('change', () => {
+                updateTerritoriesForLevel('asocNivel', 'asocTerritorio');
+            });
+            
             $('#btnAsociar').addEventListener('click', async () => {
                 const indicadorX = $('#asocIndicadorX').value;
                 const indicadorY = $('#asocIndicadorY').value;
                 const nivel = $('#asocNivel').value;
-                const cohorte = $('#asocCohorte').value;
+                const territorio = $('#asocTerritorio').value;
                 
                 if (!indicadorX || !indicadorY) {
                     showToast('Seleccione ambos indicadores', 'error');
@@ -971,7 +1012,7 @@
                         indicador_x: indicadorX,
                         indicador_y: indicadorY,
                         nivel,
-                        ...(cohorte && { cohorte })
+                        ...(territorio && { [nivel.toLowerCase()]: territorio })
                     });
                     
                     const data = await apiCall(`/analisis/asociacion?${params}`);
@@ -1070,12 +1111,18 @@
             `;
         }
         
-        // Theil Index with responsive visualization
+        // Theil Index with year filtering
         function initTheil() {
+            // Level change handler
+            $('#theilNivel').addEventListener('change', () => {
+                updateTerritoriesForLevel('theilNivel', 'theilTerritorio');
+            });
+            
             $('#btnTheil').addEventListener('click', async () => {
                 const indicador = $('#theilIndicador').value;
                 const nivel = $('#theilNivel').value;
-                const cohorte = $('#theilCohorte').value;
+                const año = $('#theilAno').value;
+                const territorio = $('#theilTerritorio').value;
                 
                 if (!indicador) {
                     showToast('Seleccione un indicador', 'error');
@@ -1086,7 +1133,8 @@
                     const params = new URLSearchParams({
                         indicador,
                         nivel,
-                        ...(cohorte && { cohorte })
+                        ...(año && { año }),
+                        ...(territorio && { [nivel.toLowerCase()]: territorio })
                     });
                     
                     const data = await apiCall(`/analisis/theil?${params}`);
@@ -1164,15 +1212,11 @@
             createResponsiveChart('#chartTheil', config);
         }
         
-        // Series Temporales with responsive line charts
+        // Series Temporales with territory selection
         function initSeries() {
             // Update territories based on level selection
             $('#serieNivel').addEventListener('change', () => {
-                const nivel = $('#serieNivel').value;
-                const territorios = nivel === 'LOCALIDAD' ? 
-                    metadata.geografia?.localidades || [] : 
-                    metadata.geografia?.upz || [];
-                populateSelect('serieTerritorio', territorios);
+                updateTerritoriesForLevel('serieNivel', 'serieTerritorio');
             });
             
             $('#btnSerie').addEventListener('click', async () => {
@@ -1186,27 +1230,20 @@
                 }
                 
                 try {
-                    // Get series for both cohorts
-                    const params10 = new URLSearchParams({
+                    const params = new URLSearchParams({
                         indicador,
                         territorio,
-                        nivel,
-                        cohorte: '10-14'
+                        nivel
                     });
                     
-                    const params15 = new URLSearchParams({
-                        indicador,
-                        territorio,
-                        nivel,
-                        cohorte: '15-19'
-                    });
+                    const data = await apiCall(`/datos/series?${params}`);
                     
-                    const [data10, data15] = await Promise.all([
-                        apiCall(`/datos/series?${params10}`),
-                        apiCall(`/datos/series?${params15}`)
-                    ]);
+                    if (data.mensaje) {
+                        showToast(data.mensaje, 'info');
+                        return;
+                    }
                     
-                    renderSeriesChart(data10, data15, { indicador, territorio });
+                    renderSeriesChart(data, { indicador, territorio });
                     showToast('Serie temporal generada', 'success');
                 } catch (error) {
                     showToast('Error generando serie temporal', 'error');
@@ -1214,47 +1251,24 @@
             });
         }
         
-        function renderSeriesChart(data10, data15, metadata) {
-            // Combine all years
-            const años10 = data10.serie?.map(s => s.año) || [];
-            const años15 = data15.serie?.map(s => s.año) || [];
-            const allYears = [...new Set([...años10, ...años15])].sort();
-            
-            // Create datasets
-            const valores10 = allYears.map(año => {
-                const punto = data10.serie?.find(s => s.año === año);
-                return punto ? punto.valor : null;
-            });
-            
-            const valores15 = allYears.map(año => {
-                const punto = data15.serie?.find(s => s.año === año);
-                return punto ? punto.valor : null;
-            });
+        function renderSeriesChart(data, metadata) {
+            const serie = data.serie || [];
             
             const config = {
                 type: 'line',
                 data: {
-                    labels: allYears,
-                    datasets: [
-                        {
-                            label: '10-14 años',
-                            data: valores10,
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            tension: 0.3,
-                            pointRadius: window.innerWidth < 768 ? 3 : 4,
-                            pointHoverRadius: window.innerWidth < 768 ? 5 : 6
-                        },
-                        {
-                            label: '15-19 años',
-                            data: valores15,
-                            borderColor: '#06b6d4',
-                            backgroundColor: 'rgba(6, 182, 212, 0.1)',
-                            tension: 0.3,
-                            pointRadius: window.innerWidth < 768 ? 3 : 4,
-                            pointHoverRadius: window.innerWidth < 768 ? 5 : 6
-                        }
-                    ]
+                    labels: serie.map(s => s.año),
+                    datasets: [{
+                        label: metadata.indicador.length > 30 ? 
+                            metadata.indicador.substring(0, 27) + '...' : 
+                            metadata.indicador,
+                        data: serie.map(s => s.valor),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.3,
+                        pointRadius: window.innerWidth < 768 ? 3 : 4,
+                        pointHoverRadius: window.innerWidth < 768 ? 5 : 6
+                    }]
                 },
                 options: {
                     plugins: {
@@ -1278,7 +1292,7 @@
                         y: { 
                             title: { 
                                 display: true, 
-                                text: data10.unidad_medida || data15.unidad_medida || 'Valor'
+                                text: data.unidad_medida || 'Valor'
                             }
                         }
                     }
@@ -1288,7 +1302,7 @@
             createResponsiveChart('#chartSeries', config);
         }
         
-        // Brechas with responsive bar charts
+        // Brechas between cohorts
         function initBrechas() {
             $('#btnBrechas').addEventListener('click', async () => {
                 const indicador = $('#brechaIndicador').value;
@@ -1296,7 +1310,7 @@
                 const año = $('#brechaAno').value;
                 
                 if (!indicador) {
-                    showToast('Seleccione un indicador', 'error');
+                    showToast('Seleccione un indicador de fecundidad', 'error');
                     return;
                 }
                 
