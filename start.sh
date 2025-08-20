@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Starting Fecundidad Temprana API..."
+echo "🚀 Starting Fecundidad Temprana API v4.3..."
 echo "Environment: $(echo $RAILWAY_ENVIRONMENT || echo 'local')"
 echo "Port: $PORT"
 echo "Database URL: ${DATABASE_URL:0:50}..."
@@ -30,10 +30,10 @@ else
     exit 1
 fi
 
-if [ -f "dashboard_compatible.html" ]; then
-    echo "✅ dashboard_compatible.html found"
+if [ -f "dashboard_compatible.final.html" ]; then
+    echo "✅ dashboard_compatible.final.html found"
 else
-    echo "⚠️ dashboard_compatible.html not found - will use fallback"
+    echo "⚠️ dashboard_compatible.final.html not found - will use fallback"
 fi
 
 # Crear directorio de logs si no existe
@@ -71,6 +71,8 @@ fi
 
 echo "🎯 Starting FastAPI server..."
 echo "📍 Server will be available at: http://0.0.0.0:$PORT"
+echo "🏛️ Exploración Determinantes Fecundidad Temprana - Bogotá D.C."
+echo "📊 Análisis territorial por UPZ (10-14, 15-19 años)"
 
 # Iniciar la aplicación con configuración optimizada
 exec uvicorn main:app \
