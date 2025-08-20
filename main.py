@@ -91,8 +91,8 @@ def get_db():
 # Crear la aplicación FastAPI
 app = FastAPI(
     title="Exploración Determinantes Fecundidad Temprana - Bogotá D.C.",
-    description="Análisis integral por territorio, periodo y cohortes para la exploración de determinantes de fecundidad temprana en Bogotá D.C.",
-    version="4.2.0"
+    description="Análisis integral por UPZ, periodo y cohortes para la exploración de determinantes de fecundidad temprana en Bogotá D.C.",
+    version="4.3.0"
 )
 
 app.add_middleware(
@@ -225,8 +225,8 @@ def clean_float(x, allow_none=True, default=None):
     except Exception:
         return None if allow_none else (default if default is not None else 0.0)
 
-def terr_key(rec, nivel: str) -> str:
-    """Obtiene clave de territorio según nivel"""
+def upz_key(rec, nivel: str) -> str:
+    """Obtiene clave de UPZ según nivel"""
     if nivel.upper() == "LOCALIDAD":
         return limpiar_texto(rec.nombre_localidad) if rec.nombre_localidad else "SIN LOCALIDAD"
     else:
@@ -265,7 +265,7 @@ async def health():
         
         return {
             "status": "healthy",
-            "version": "4.2.0",
+            "version": "4.3.0",
             "database": db_status,
             "registros": count,
             "timestamp": datetime.now().isoformat()
@@ -281,7 +281,7 @@ async def health():
 async def home():
     """Página principal con dashboard integrado"""
     try:
-        with open("dashboard_compatible.html", "r", encoding="utf-8") as f:
+        with open("dashboard_compatible.final.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
         logger.info("Dashboard HTML not found, serving basic welcome page")
@@ -343,7 +343,7 @@ async def home():
         <body>
             <div class="container">
                 <h1>🏛️ Exploración Determinantes Fecundidad Temprana</h1>
-                <p class="subtitle">Bogotá D.C. - Análisis Territorial Integral</p>
+                <p class="subtitle">Bogotá D.C. - Análisis Territorial Integral por UPZ</p>
                 
                 <div class="status">
                     <strong>✅ API Funcionando</strong> - Sistema listo para análisis
@@ -359,12 +359,12 @@ async def home():
                         <p>Correlaciones entre variables</p>
                     </div>
                     <div class="card">
-                        <h3>📏 Desigualdad</h3>
+                        <h3>🔍 Desigualdad</h3>
                         <p>Índice de Theil territorial</p>
                     </div>
                     <div class="card">
                         <h3>📈 Tendencias</h3>
-                        <p>Series temporales por territorio</p>
+                        <p>Series temporales por UPZ</p>
                     </div>
                 </div>
 
@@ -382,7 +382,7 @@ async def home():
                         <li><strong>Cohortes específicas:</strong> Análisis para grupos 10-14 y 15-19 años</li>
                         <li><strong>Correlaciones:</strong> Asociación entre indicadores con tests estadísticos</li>
                         <li><strong>Desigualdad:</strong> Medición con índice de Theil</li>
-                        <li><strong>Series temporales:</strong> Evolución de indicadores por territorio</li>
+                        <li><strong>Series temporales:</strong> Evolución de indicadores por UPZ</li>
                     </ul>
                 </div>
             </div>
@@ -710,17 +710,17 @@ async def caracterizacion(
     if not rows:
         return {"mensaje": "Sin datos para los filtros especificados"}
     
-    # Agrupar por territorio
+    # Agrupar por UPZ
     grupos: Dict[str, List[float]] = {}
     unidad_medida = rows[0].unidad_medida if rows else "N/A"
     
     for r in rows:
-        k = terr_key(r, nivel)
+        k = upz_key(r, nivel)
         grupos.setdefault(k, []).append(r.valor)
     
     # Calcular estadísticas
     datos = []
-    for territorio, valores in grupos.items():
+    for upz, valores in grupos.items():
         if not valores:
             continue
             
@@ -734,7 +734,7 @@ async def caracterizacion(
         cv = float((std/promedio)*100) if promedio != 0 else 0.0
         
         datos.append({
-            "territorio": territorio,
+            "upz": upz,
             "n": int(arr.size),
             "promedio": round(promedio, 3),
             "mediana": round(float(mediana), 3),
@@ -755,7 +755,7 @@ async def caracterizacion(
         "localidad": localidad,
         "upz": upz,
         "unidad_medida": unidad_medida,
-        "total_territorios": len(datos),
+        "total_upz": len(datos),
         "resumen": {
             "promedio_general": round(float(np.mean([d["promedio"] for d in datos])), 3) if datos else 0,
             "n_total": int(sum(d["n"] for d in datos)) if datos else 0
@@ -799,28 +799,28 @@ async def asociacion_indicadores(
     if not x_rows or not y_rows:
         return {"mensaje": "No se encontraron datos para los indicadores seleccionados"}
     
-    # Agrupar por territorio
+    # Agrupar por UPZ
     x_map: Dict[str, List[float]] = {}
     y_map: Dict[str, List[float]] = {}
     
     for r in x_rows:
-        x_map.setdefault(terr_key(r, nivel), []).append(r.valor)
+        x_map.setdefault(upz_key(r, nivel), []).append(r.valor)
     
     for r in y_rows:
-        y_map.setdefault(terr_key(r, nivel), []).append(r.valor)
+        y_map.setdefault(upz_key(r, nivel), []).append(r.valor)
     
-    # Territorios comunes
-    territorios_comunes = set(x_map.keys()) & set(y_map.keys())
-    if len(territorios_comunes) < 3:
-        return {"mensaje": "Insuficientes territorios comunes para el análisis"}
+    # UPZ comunes
+    upz_comunes = set(x_map.keys()) & set(y_map.keys())
+    if len(upz_comunes) < 3:
+        return {"mensaje": "Insuficientes UPZ comunes para el análisis"}
     
     # Calcular promedios
-    x_mean = {k: float(np.mean(v)) for k, v in x_map.items() if k in territorios_comunes}
-    y_mean = {k: float(np.mean(v)) for k, v in y_map.items() if k in territorios_comunes}
+    x_mean = {k: float(np.mean(v)) for k, v in x_map.items() if k in upz_comunes}
+    y_mean = {k: float(np.mean(v)) for k, v in y_map.items() if k in upz_comunes}
     
     # Arrays para correlación
-    x_vals = [x_mean[t] for t in territorios_comunes]
-    y_vals = [y_mean[t] for t in territorios_comunes]
+    x_vals = [x_mean[t] for t in upz_comunes]
+    y_vals = [y_mean[t] for t in upz_comunes]
     
     if np.std(x_vals) == 0 or np.std(y_vals) == 0:
         return {"mensaje": "Una de las variables no tiene variación"}
@@ -842,11 +842,11 @@ async def asociacion_indicadores(
     
     # Datos para gráfico de dispersión
     datos_pares = []
-    for territorio in territorios_comunes:
+    for upz in upz_comunes:
         datos_pares.append({
-            "territorio": territorio,
-            "x": round(x_mean[territorio], 3),
-            "y": round(y_mean[territorio], 3)
+            "upz": upz,
+            "x": round(x_mean[upz], 3),
+            "y": round(y_mean[upz], 3)
         })
     
     return {
@@ -856,7 +856,7 @@ async def asociacion_indicadores(
         "año": año,
         "localidad": localidad,
         "upz": upz,
-        "territorios_comunes": len(territorios_comunes),
+        "upz_comunes": len(upz_comunes),
         "correlacion": {
             "pearson_r": round(float(r_p), 3),
             "pearson_p": round(float(p_p), 4),
@@ -894,26 +894,26 @@ async def indice_theil(
     if not rows:
         return {"mensaje": "Sin datos para los filtros especificados"}
     
-    # Agrupar por territorio
+    # Agrupar por UPZ
     grupos: Dict[str, List[float]] = {}
     unidad_medida = rows[0].unidad_medida if rows else "N/A"
     
     for r in rows:
-        k = terr_key(r, nivel)
+        k = upz_key(r, nivel)
         grupos.setdefault(k, []).append(r.valor)
     
-    # Calcular promedios por territorio
-    territorios = []
+    # Calcular promedios por UPZ
+    upzs = []
     valores = []
     
-    for territorio, vals in grupos.items():
+    for upz, vals in grupos.items():
         if vals:
             promedio = float(np.mean(vals))
-            territorios.append(territorio)
+            upzs.append(upz)
             valores.append(promedio)
     
     if len(valores) < 2:
-        return {"mensaje": "Insuficientes territorios para calcular el índice de Theil"}
+        return {"mensaje": "Insuficientes UPZ para calcular el índice de Theil"}
     
     # Calcular índice de Theil
     theil = calcular_indice_theil(valores)
@@ -923,17 +923,17 @@ async def indice_theil(
     std_val = float(np.std(valores))
     cv = (std_val / mean_val * 100) if mean_val != 0 else 0
     
-    # Datos por territorio
-    datos_territorios = []
-    for i, territorio in enumerate(territorios):
-        datos_territorios.append({
-            "territorio": territorio,
+    # Datos por UPZ
+    datos_upz = []
+    for i, upz in enumerate(upzs):
+        datos_upz.append({
+            "upz": upz,
             "valor": round(valores[i], 3),
             "desviacion_media": round(valores[i] - mean_val, 3),
             "ratio_media": round(valores[i] / mean_val, 3) if mean_val != 0 else 0
         })
     
-    datos_territorios.sort(key=lambda x: x["valor"], reverse=True)
+    datos_upz.sort(key=lambda x: x["valor"], reverse=True)
     
     return {
         "indicador": limpiar_texto(indicador),
@@ -949,30 +949,30 @@ async def indice_theil(
             "categoria": "Baja" if theil < 0.1 else "Moderada" if theil < 0.3 else "Alta"
         },
         "estadisticas": {
-            "territorios": len(territorios),
+            "upz": len(upzs),
             "promedio_general": round(mean_val, 3),
             "desviacion_estandar": round(std_val, 3),
             "coeficiente_variacion": round(cv, 2),
             "min": round(min(valores), 3),
             "max": round(max(valores), 3)
         },
-        "datos": datos_territorios
+        "datos": datos_upz
     }
 
 @app.get("/datos/series")
 async def serie_temporal(
     indicador: str = Query(..., description="Indicador para análisis temporal"),
-    territorio: str = Query(..., description="Territorio específico"),
+    upz: str = Query(..., description="UPZ específica"),
     nivel: str = Query("LOCALIDAD", description="Nivel territorial"),
     db: Session = Depends(get_db)
 ):
-    """Serie temporal de un indicador en un territorio específico"""
+    """Serie temporal de un indicador en una UPZ específica"""
     q = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
     
     if nivel.upper() == "LOCALIDAD":
-        q = q.filter(IndicadorFecundidad.nombre_localidad == territorio)
+        q = q.filter(IndicadorFecundidad.nombre_localidad == upz)
     else:
-        q = q.filter(IndicadorFecundidad.nombre_upz == territorio)
+        q = q.filter(IndicadorFecundidad.nombre_upz == upz)
     
     rows = q.filter(IndicadorFecundidad.año_inicio.isnot(None)).order_by(
         IndicadorFecundidad.año_inicio.asc()
@@ -1003,7 +1003,7 @@ async def serie_temporal(
     return {
         "indicador": limpiar_texto(indicador),
         "nivel": nivel.upper(),
-        "territorio": territorio,
+        "upz": upz,
         "unidad_medida": unidad_medida,
         "periodo": {
             "inicio": min(grupos_año.keys()),
@@ -1011,80 +1011,6 @@ async def serie_temporal(
             "años": len(grupos_año)
         },
         "serie": serie_datos
-    }
-
-@app.get("/brechas/cohortes")
-async def brechas_cohortes(
-    indicador: str = Query(...),
-    nivel: str = Query("LOCALIDAD"),
-    año: Optional[int] = Query(None),
-    db: Session = Depends(get_db)
-):
-    """Calcula brecha 15-19 menos 10-14 por territorio"""
-    if nivel.upper() not in {"LOCALIDAD", "UPZ"}:
-        raise HTTPException(status_code=400, detail="nivel debe ser LOCALIDAD o UPZ")
-    
-    q = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
-    if año is not None:
-        q = q.filter(IndicadorFecundidad.año_inicio == año)
-    
-    rows = q.all()
-    if not rows:
-        return {"mensaje": "Sin datos para esos filtros"}
-    
-    m10: Dict[str, List[float]] = {}
-    m15: Dict[str, List[float]] = {}
-    unidad_medida = rows[0].unidad_medida if rows else "N/A"
-    
-    for r in rows:
-        coh = extraer_grupo_edad(r.indicador_nombre, r.grupo_etario_asociado)
-        if coh not in COHORTES_VALIDAS:
-            continue
-        k = terr_key(r, nivel)
-        if coh == "10-14":
-            m10.setdefault(k, []).append(r.valor)
-        else:
-            m15.setdefault(k, []).append(r.valor)
-    
-    territorios = sorted(set(m10.keys()) | set(m15.keys()))
-    datos = []
-    
-    for t in territorios:
-        v10 = float(np.mean(m10.get(t, []))) if m10.get(t) else None
-        v15 = float(np.mean(m15.get(t, []))) if m15.get(t) else None
-        
-        if v10 is None or v15 is None:
-            continue
-            
-        delta = v15 - v10
-        ratio = (v15 / v10) if v10 not in (0, None) else None
-        pct_change = ((v15 - v10) / v10 * 100) if v10 not in (0, None) else None
-        
-        datos.append({
-            "territorio": t,
-            "prom_10_14": round(v10, 3),
-            "prom_15_19": round(v15, 3),
-            "brecha_abs": round(delta, 3),
-            "brecha_rel": round(ratio, 3) if ratio is not None else None,
-            "cambio_porcentual": round(pct_change, 2) if pct_change is not None else None,
-            "n_10_14": len(m10.get(t, [])),
-            "n_15_19": len(m15.get(t, []))
-        })
-    
-    datos.sort(key=lambda d: d["brecha_abs"], reverse=True)
-    
-    return {
-        "indicador": limpiar_texto(indicador),
-        "nivel": nivel.upper(),
-        "año": año,
-        "unidad_medida": unidad_medida,
-        "total_territorios": len(datos),
-        "resumen": {
-            "brecha_promedio": round(float(np.mean([d["brecha_abs"] for d in datos])), 3) if datos else 0,
-            "mayor_brecha": datos[0]["territorio"] if datos else None,
-            "menor_brecha": datos[-1]["territorio"] if datos else None
-        },
-        "datos": datos
     }
 
 if __name__ == "__main__":
