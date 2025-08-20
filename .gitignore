@@ -135,12 +135,5 @@ dmypy.json
 static/charts/
 static/temp/
 
-# Application specific
-dashboard_compatible.html
-test.py
-start.sh
-requirements.txt
-runtime.txt
-railway.json
-Procfile.txt
-.gitignore
+# Keep only standard deployment files
+*.final.*
