@@ -92,7 +92,7 @@ def get_db():
 app = FastAPI(
     title="Exploración Determinantes Fecundidad Temprana - Bogotá D.C.",
     description="Análisis integral por territorio, periodo y cohortes para la exploración de determinantes de fecundidad temprana en Bogotá D.C.",
-    version="4.1.0"
+    version="4.2.0"
 )
 
 app.add_middleware(
@@ -265,7 +265,7 @@ async def health():
         
         return {
             "status": "healthy",
-            "version": "4.1.0",
+            "version": "4.2.0",
             "database": db_status,
             "registros": count,
             "timestamp": datetime.now().isoformat()
@@ -615,6 +615,29 @@ async def metadatos(db: Session = Depends(get_db)):
         "unidades_medida": unidades_medida
     }
 
+@app.get("/geografia/upz_por_localidad")
+async def upz_por_localidad(localidad: str = Query(...), db: Session = Depends(get_db)):
+    """Obtiene las UPZ para una localidad específica"""
+    try:
+        upzs = db.query(IndicadorFecundidad.nombre_upz).filter(
+            IndicadorFecundidad.nombre_localidad == localidad,
+            IndicadorFecundidad.nombre_upz.isnot(None),
+            IndicadorFecundidad.nombre_upz != 'ND',
+            IndicadorFecundidad.nombre_upz != 'NO_DATA'
+        ).distinct().all()
+        
+        upz_list = [limpiar_texto(upz[0]) for upz in upzs if upz[0]]
+        upz_list = sorted(list(set(upz_list)))
+        
+        return {
+            "localidad": localidad,
+            "upz": upz_list,
+            "total": len(upz_list)
+        }
+    except Exception as e:
+        logger.error(f"Error getting UPZ for localidad {localidad}: {e}")
+        return {"localidad": localidad, "upz": [], "total": 0}
+
 @app.get("/debug/columns")
 async def debug_columns():
     """Endpoint de debug para mostrar estructura esperada"""
@@ -659,41 +682,15 @@ async def debug_columns():
         ]
     }
 
-# ---- RESTO DE ENDPOINTS IGUAL QUE ANTES ----
-# (caracterizacion, asociacion, theil, series, brechas permanecen iguales)
-
-@app.get("/estadisticas/generales")
-async def estadisticas_generales(año: Optional[int] = Query(None), db: Session = Depends(get_db)):
-    q = db.query(IndicadorFecundidad)
-    if año is not None:
-        q = q.filter(IndicadorFecundidad.año_inicio == año)
-    filas = q.all()
-    total = len(filas)
-    if total == 0:
-        return {"total_registros": 0}
-    
-    c10 = len([1 for f in filas if extraer_grupo_edad(f.indicador_nombre, f.grupo_etario_asociado) == "10-14"])
-    c15 = len([1 for f in filas if extraer_grupo_edad(f.indicador_nombre, f.grupo_etario_asociado) == "15-19"])
-    localidades = len({f.nombre_localidad for f in filas})
-    upz = len({f.nombre_upz for f in filas if f.nombre_upz})
-    ind = len({f.indicador_nombre for f in filas})
-    
-    return {
-        "total_registros": total,
-        "indicadores_unicos": ind,
-        "localidades_unicas": localidades,
-        "upzs_unicas": upz,
-        "conteo_10_14": c10,
-        "conteo_15_19": c15
-    }
+# ---- ENDPOINTS PRINCIPALES CORREGIDOS ----
 
 @app.get("/caracterizacion")
 async def caracterizacion(
     indicador: str = Query(..., description="Nombre del indicador a caracterizar"),
     nivel: str = Query("LOCALIDAD", description="Nivel territorial: LOCALIDAD o UPZ"),
     año: Optional[int] = Query(None, description="Año específico (opcional)"),
-    cohorte: Optional[str] = Query(None, description="Cohorte específica: 10-14 o 15-19"),
     localidad: Optional[str] = Query(None, description="Filtrar por localidad específica"),
+    upz: Optional[str] = Query(None, description="Filtrar por UPZ específica"),
     db: Session = Depends(get_db)
 ):
     """Caracterización estadística territorial"""
@@ -701,12 +698,15 @@ async def caracterizacion(
         raise HTTPException(status_code=400, detail="nivel debe ser LOCALIDAD o UPZ")
     
     q = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
+    
     if año is not None:
         q = q.filter(IndicadorFecundidad.año_inicio == año)
     if localidad:
         q = q.filter(IndicadorFecundidad.nombre_localidad == localidad)
+    if upz:
+        q = q.filter(IndicadorFecundidad.nombre_upz == upz)
     
-    rows = filtrar_por_cohorte(q.all(), cohorte)
+    rows = q.all()
     if not rows:
         return {"mensaje": "Sin datos para los filtros especificados"}
     
@@ -752,8 +752,8 @@ async def caracterizacion(
         "indicador": limpiar_texto(indicador),
         "nivel": nivel.upper(),
         "año": año,
-        "cohorte": cohorte,
         "localidad": localidad,
+        "upz": upz,
         "unidad_medida": unidad_medida,
         "total_territorios": len(datos),
         "resumen": {
@@ -769,7 +769,8 @@ async def asociacion_indicadores(
     indicador_y: str = Query(..., description="Segundo indicador"),
     nivel: str = Query("LOCALIDAD", description="Nivel territorial"),
     año: Optional[int] = Query(None, description="Año específico"),
-    cohorte: Optional[str] = Query(None, description="Cohorte específica"),
+    localidad: Optional[str] = Query(None, description="Filtrar por localidad"),
+    upz: Optional[str] = Query(None, description="Filtrar por UPZ"),
     db: Session = Depends(get_db)
 ):
     """Análisis de asociación entre dos indicadores"""
@@ -784,8 +785,16 @@ async def asociacion_indicadores(
         qx = qx.filter(IndicadorFecundidad.año_inicio == año)
         qy = qy.filter(IndicadorFecundidad.año_inicio == año)
     
-    x_rows = filtrar_por_cohorte(qx.all(), cohorte)
-    y_rows = filtrar_por_cohorte(qy.all(), cohorte)
+    if localidad:
+        qx = qx.filter(IndicadorFecundidad.nombre_localidad == localidad)
+        qy = qy.filter(IndicadorFecundidad.nombre_localidad == localidad)
+    
+    if upz:
+        qx = qx.filter(IndicadorFecundidad.nombre_upz == upz)
+        qy = qy.filter(IndicadorFecundidad.nombre_upz == upz)
+    
+    x_rows = qx.all()
+    y_rows = qy.all()
     
     if not x_rows or not y_rows:
         return {"mensaje": "No se encontraron datos para los indicadores seleccionados"}
@@ -845,7 +854,8 @@ async def asociacion_indicadores(
         "indicador_y": limpiar_texto(indicador_y),
         "nivel": nivel.upper(),
         "año": año,
-        "cohorte": cohorte,
+        "localidad": localidad,
+        "upz": upz,
         "territorios_comunes": len(territorios_comunes),
         "correlacion": {
             "pearson_r": round(float(r_p), 3),
@@ -863,7 +873,8 @@ async def indice_theil(
     indicador: str = Query(..., description="Indicador para análisis de desigualdad"),
     nivel: str = Query("LOCALIDAD", description="Nivel territorial"),
     año: Optional[int] = Query(None, description="Año específico"),
-    cohorte: Optional[str] = Query(None, description="Cohorte específica"),
+    localidad: Optional[str] = Query(None, description="Filtrar por localidad"),
+    upz: Optional[str] = Query(None, description="Filtrar por UPZ"),
     db: Session = Depends(get_db)
 ):
     """Calcula el índice de Theil para medir desigualdad territorial"""
@@ -871,10 +882,15 @@ async def indice_theil(
         raise HTTPException(status_code=400, detail="nivel debe ser LOCALIDAD o UPZ")
     
     q = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
+    
     if año is not None:
         q = q.filter(IndicadorFecundidad.año_inicio == año)
+    if localidad:
+        q = q.filter(IndicadorFecundidad.nombre_localidad == localidad)
+    if upz:
+        q = q.filter(IndicadorFecundidad.nombre_upz == upz)
     
-    rows = filtrar_por_cohorte(q.all(), cohorte)
+    rows = q.all()
     if not rows:
         return {"mensaje": "Sin datos para los filtros especificados"}
     
@@ -923,7 +939,8 @@ async def indice_theil(
         "indicador": limpiar_texto(indicador),
         "nivel": nivel.upper(),
         "año": año,
-        "cohorte": cohorte,
+        "localidad": localidad,
+        "upz": upz,
         "unidad_medida": unidad_medida,
         "indice_theil": round(theil, 4),
         "interpretacion": {
@@ -947,7 +964,6 @@ async def serie_temporal(
     indicador: str = Query(..., description="Indicador para análisis temporal"),
     territorio: str = Query(..., description="Territorio específico"),
     nivel: str = Query("LOCALIDAD", description="Nivel territorial"),
-    cohorte: Optional[str] = Query(None, description="Cohorte específica"),
     db: Session = Depends(get_db)
 ):
     """Serie temporal de un indicador en un territorio específico"""
@@ -962,7 +978,6 @@ async def serie_temporal(
         IndicadorFecundidad.año_inicio.asc()
     ).all()
     
-    rows = filtrar_por_cohorte(rows, cohorte)
     if not rows:
         return {"mensaje": "Sin datos para los filtros especificados"}
     
@@ -989,7 +1004,6 @@ async def serie_temporal(
         "indicador": limpiar_texto(indicador),
         "nivel": nivel.upper(),
         "territorio": territorio,
-        "cohorte": cohorte,
         "unidad_medida": unidad_medida,
         "periodo": {
             "inicio": min(grupos_año.keys()),
