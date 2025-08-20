@@ -134,3 +134,13 @@ dmypy.json
 # Chart.js and dashboard assets (if generated)
 static/charts/
 static/temp/
+
+# Application specific
+dashboard_compatible.html
+test.py
+start.sh
+requirements.txt
+runtime.txt
+railway.json
+Procfile.txt
+.gitignore
