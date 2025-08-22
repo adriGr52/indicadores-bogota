@@ -1,18 +1,18 @@
-# 🏛️ Exploración Determinantes Fecundidad Temprana - Bogotá D.C.
+# Exploración Determinantes Fecundidad Temprana - Bogotá D.C.
 
-## 📊 Análisis territorial por UPZ (Cohortes 10-14, 15-19 años) - v4.3.0
+## Análisis territorial por UPZ (Cohortes 10-14, 15-19 años) - v4.3.0
 
 Sistema web integral para el análisis de determinantes de fecundidad temprana en Bogotá D.C., con funcionalidades avanzadas de caracterización territorial, correlaciones estadísticas, medición de desigualdad y series temporales.
 
 ---
 
-## ✨ **Características Principales**
+## **Características Principales**
 
-### 📈 **Análisis Disponibles:**
-- **🔍 Caracterización Territorial**: Estadísticas descriptivas por UPZ y localidad
-- **🔗 Análisis de Asociación**: Correlaciones de Pearson y Spearman
-- **⚖️ Índice de Theil**: Medición de desigualdad territorial
-- **📊 Series Temporales**: Evolución de indicadores por UPZ
+### **Análisis Disponibles:**
+- **Caracterización Territorial**: Estadísticas descriptivas por UPZ y localidad
+- **Análisis de Asociación**: Correlaciones de Pearson y Spearman
+- **Índice de Theil**: Medición de desigualdad territorial
+- **Series Temporales**: Evolución de indicadores por UPZ
 
 ### 🎯 **Funcionalidades Clave:**
 - ✅ Carga y validación de archivos Excel
@@ -24,7 +24,7 @@ Sistema web integral para el análisis de determinantes de fecundidad temprana e
 
 ---
 
-## 🚀 **Deployment en Railway**
+## **Deployment en Railway**
 
 ### **Paso 1: Preparar archivos**
 Asegúrate de tener todos estos archivos en tu repositorio:
@@ -111,30 +111,30 @@ El sistema espera un archivo `consolidado_indicadores_fecundidad.xlsx` con estas
 
 ---
 
-## 🌐 **Endpoints de la API**
+##  **Endpoints de la API**
 
-### **📊 Principales:**
+### ** Principales:**
 - `GET /` - Dashboard principal
 - `GET /health` - Estado del sistema
 - `GET /metadatos` - Información del dataset
 - `POST /upload/excel` - Carga de archivos
 
-### **🔍 Análisis:**
+### ** Análisis:**
 - `GET /caracterizacion` - Estadísticas por territorio
 - `GET /analisis/asociacion` - Correlaciones entre indicadores
 - `GET /analisis/theil` - Índice de desigualdad territorial
 - `GET /datos/series` - Series temporales
 
-### **📍 Geografía:**
+### ** Geografía:**
 - `GET /geografia/upz_por_localidad` - UPZ por localidad
 
-### **📚 Documentación:**
+### ** Documentación:**
 - `GET /docs` - Swagger UI (documentación interactiva)
 - `GET /openapi.json` - Schema OpenAPI
 
 ---
 
-## 🧪 **Testing**
+##  **Testing**
 
 ```bash
 # Ejecutar suite completa de tests
@@ -154,16 +154,16 @@ python test.py
 ## 📊 **Dashboard Interactivo**
 
 ### **Características:**
-- **🎨 Diseño responsive**: Funciona en desktop, tablet y móvil
-- **📈 Gráficos dinámicos**: Barras, dispersión, líneas temporales
-- **🔧 Filtros avanzados**: Por indicador, territorio, año
-- **📱 Optimización móvil**: Interfaz adaptativa
+- * Diseño responsive**: Funciona en desktop, tablet y móvil
+- ** Gráficos dinámicos**: Barras, dispersión, líneas temporales
+- ** Filtros avanzados**: Por indicador, territorio, año
+- ** Optimización móvil**: Interfaz adaptativa
 
 ### **Tabs disponibles:**
-1. **📊 Caracterización**: Estadísticas descriptivas
-2. **🔗 Asociación**: Correlaciones entre variables  
-3. **⚖️ Desigualdad**: Índice de Theil
-4. **📈 Series**: Evolución temporal
+1. **Caracterización**: Estadísticas descriptivas
+2. **Asociación**: Correlaciones entre variables  
+3. ** Desigualdad**: Índice de Theil
+4. **Series**: Evolución temporal
 
 ---
 
@@ -191,20 +191,20 @@ tabla: indicadores_fecundidad
 
 ---
 
-## 🔍 **Funcionalidades Especiales**
+##  **Funcionalidades Especiales**
 
-### **🎯 Detección automática de cohortes:**
+### ** Detección automática de cohortes:**
 El sistema identifica automáticamente grupos etarios:
 - **10-14 años**: Niñas 
 - **15-19 años**: Adolescentes
 
-### **📊 Análisis estadísticos:**
+### ** Análisis estadísticos:**
 - Estadísticas descriptivas completas
 - Correlaciones de Pearson y Spearman
 - Índice de Theil para desigualdad
 - Coeficientes de variación
 
-### **🛡️ Validación de datos:**
+### **🛡 Validación de datos:**
 - Limpieza automática de valores nulos
 - Normalización de texto
 - Validación de tipos de datos
@@ -212,7 +212,7 @@ El sistema identifica automáticamente grupos etarios:
 
 ---
 
-## 🆘 **Solución de Problemas**
+##  **Solución de Problemas**
 
 ### **Error de dependencias:**
 ```bash
@@ -239,7 +239,7 @@ python -c "from main import SessionLocal; db=SessionLocal(); print('✅ DB OK')"
 
 ---
 
-## 👥 **Contribuciones**
+##  **Contribuciones**
 
 El proyecto está diseñado para ser extensible:
 
@@ -249,13 +249,13 @@ El proyecto está diseñado para ser extensible:
 
 ---
 
-## 📄 **Licencia**
+##  **Licencia**
 
 Este proyecto está desarrollado para análisis de políticas públicas en Bogotá D.C.
 
 ---
 
-## 🔗 **Enlaces Útiles**
+## **Enlaces Útiles**
 
 - [Railway Documentation](https://docs.railway.app/)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
@@ -263,12 +263,12 @@ Este proyecto está desarrollado para análisis de políticas públicas en Bogot
 
 ---
 
-## 📧 **Soporte**
+##  **Soporte**
 
 Para reportar issues o solicitar nuevas funcionalidades, utiliza el sistema de issues del repositorio.
 
 ---
 
-**💡 Versión 4.3.0** - Sistema optimizado sin funcionalidad de brechas, enfocado en análisis territorial por UPZ.
+** Versión 4.3.0** - Sistema optimizado sin funcionalidad de brechas, enfocado en análisis territorial por UPZ.
 
 se debe cumplir con un requisito mínimo de plantilla
