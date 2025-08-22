@@ -272,3 +272,10 @@ Para reportar issues o solicitar nuevas funcionalidades, utiliza el sistema de i
 ** Versión 4.3.0** - Sistema optimizado sin funcionalidad de brechas, enfocado en análisis territorial por UPZ.
 
 se debe cumplir con un requisito mínimo de plantilla
+
+## Actualización del Equipo
+- Nueva función de cálculos añadida
+- Corregido bug en la validación
+- Documentación actualizada
+
+*Última actualización: [fecha de hoy]*
