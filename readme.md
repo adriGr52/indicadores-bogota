@@ -278,4 +278,5 @@ se debe cumplir con un requisito mínimo de plantilla
 - Corregido bug en la validación
 - Documentación actualizada
 
-*Última actualización: [fecha de hoy]*
+*Última actualización: [fecha de hoy]* 
+esoy editando el codigo
