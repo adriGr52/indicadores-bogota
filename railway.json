@@ -14,19 +14,8 @@
   "environment": {
     "PYTHONPATH": "/app",
     "PYTHONUNBUFFERED": "1",
-    "PORT": "8000",
-    "APP_VERSION": "4.3.1"
+    "PORT": "8000"
   },
   "regions": ["us-west1"],
-  "plugins": ["postgresql"],
-  "metadata": {
-    "version": "4.3.1",
-    "description": "Fecundidad Temprana API - Filtros corregidos y Theil mejorado",
-    "features": [
-      "Filtros Localidad/UPZ corregidos",
-      "Índice Theil con todas las UPZ",
-      "Dashboard responsive mejorado",
-      "Series temporales reubicadas"
-    ]
-  }
+  "plugins": ["postgresql"]
 }
