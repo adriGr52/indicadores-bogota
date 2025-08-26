@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Fecundidad Temprana Bogotá v4.3.1</title>
+    <title>Dashboard DEBUG - Fecundidad Temprana v4.3.1</title>
     
     <!-- TailwindCSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,97 +16,61 @@
     
     <style>
         .card { 
-            background:#fff; 
-            border-radius:1rem; 
-            box-shadow:0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); 
-            border:1px solid #e5e7eb; 
+            background: #fff; 
+            border-radius: 0.5rem; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+            border: 1px solid #e5e7eb; 
+            padding: 1rem;
         }
         .btn { 
-            display:inline-flex; 
-            align-items:center; 
-            gap:.5rem; 
-            padding:.75rem 1rem; 
-            border-radius:.5rem; 
-            border:1px solid #d1d5db; 
-            background:#fff; 
-            transition: all .2s; 
-            cursor: pointer; 
-            text-align: center;
-            font-size: 0.875rem;
-        }
-        .btn:hover { background:#f9fafb; transform: translateY(-1px); }
-        .btn-primary { background:#2563eb; border-color:#2563eb; color:#fff; }
-        .btn-primary:hover { background:#1d4ed8; }
-        .btn-primary:disabled { background:#9ca3af; cursor: not-allowed; transform: none; }
-        
-        .tabs { 
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr); 
+            display: inline-flex; 
+            align-items: center; 
             gap: 0.5rem; 
-            margin-bottom: 2rem; 
-        }
-        .tabs button[aria-selected="true"] { 
-            background:#1e40af; 
-            color:white; 
-            border-color:#1e40af; 
-        }
-        .tabs button { 
-            background:#eff6ff; 
-            color:#1e3a8a; 
-            border:1px solid #bfdbfe; 
-            padding: 1rem;
-            text-align: center;
-            border-radius: 0.5rem;
+            padding: 0.75rem 1rem; 
+            border-radius: 0.375rem; 
+            border: 1px solid #d1d5db; 
+            background: #fff; 
+            cursor: pointer; 
+            font-size: 0.875rem;
             transition: all 0.2s;
-            min-height: 4rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 0.25rem;
         }
-        .tabs button:hover { background:#dbeafe; border-color:#93c5fd; }
+        .btn:hover { background: #f9fafb; }
+        .btn-primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-primary:disabled { background: #9ca3af; cursor: not-allowed; }
         
-        .loading { opacity: 0.5; pointer-events: none; }
-        .spinner { 
-            border:3px solid #e5e7eb; 
-            border-top-color:#2563eb; 
-            border-radius:50%; 
-            width:20px; 
-            height:20px; 
-            animation: spin 1s linear infinite; 
-            display: inline-block;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .alert { padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; }
+        .alert { padding: 1rem; border-radius: 0.5rem; margin: 0.5rem 0; font-size: 0.875rem; }
         .alert-success { background: #dcfce7; border: 1px solid #16a34a; color: #15803d; }
         .alert-error { background: #fef2f2; border: 1px solid #dc2626; color: #dc2626; }
         .alert-info { background: #dbeafe; border: 1px solid #2563eb; color: #1d4ed8; }
         .alert-warning { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; }
         
-        /* Chart containers específicos */
-        .chart-small { position: relative; height: 300px; }
-        .chart-medium { position: relative; height: 400px; }
-        .chart-scrollable { 
-            position: relative; 
-            height: 400px; 
-            overflow-x: auto; 
-            overflow-y: hidden;
-            border: 1px solid #e5e7eb;
+        .debug-panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             border-radius: 0.5rem;
-            padding: 0.5rem;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.75rem;
+            max-height: 300px;
+            overflow-y: auto;
         }
-        .chart-scrollable canvas { min-width: 100%; }
         
-        /* Form styles */
+        .debug-log {
+            margin: 0.25rem 0;
+            padding: 0.25rem;
+        }
+        .debug-info { color: #3b82f6; }
+        .debug-success { color: #10b981; }
+        .debug-error { color: #ef4444; }
+        .debug-warning { color: #f59e0b; }
+        
         select, input { 
             width: 100%; 
-            padding: 0.5rem 0.75rem; 
+            padding: 0.5rem; 
             border: 1px solid #d1d5db; 
             border-radius: 0.375rem; 
             font-size: 0.875rem;
-            background: white;
         }
         select:focus, input:focus { 
             outline: none; 
@@ -115,407 +79,260 @@
             border-color: #2563eb; 
         }
         
-        .kpi-card {
+        .spinner { 
+            border: 2px solid #e5e7eb; 
+            border-top-color: #2563eb; 
+            border-radius: 50%; 
+            width: 16px; 
+            height: 16px; 
+            animation: spin 1s linear infinite; 
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .tabs button {
+            background: #eff6ff;
+            color: #1e3a8a;
+            border: 1px solid #bfdbfe;
+            padding: 0.75rem;
             text-align: center;
-            padding: 1rem;
-        }
-        .kpi-number {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #1f2937;
-        }
-        .kpi-label {
-            font-size: 0.75rem;
-            color: #6b7280;
-            margin-top: 0.25rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
         }
         
-        /* Responsive */
-        @media (max-width: 768px) {
-            .tabs { 
-                grid-template-columns: repeat(2, 1fr); 
-            }
-            .chart-small, .chart-medium { height: 250px; }
-            .chart-scrollable { height: 300px; }
+        .tabs button[aria-selected="true"] {
+            background: #1e40af;
+            color: white;
+            border-color: #1e40af;
         }
         
-        @media (max-width: 640px) {
-            .tabs { 
-                grid-template-columns: 1fr; 
-            }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-50">
     <!-- Header -->
-    <header class="bg-gradient-to-r from-blue-800 to-blue-600 text-white">
-        <div class="max-w-7xl mx-auto px-4 py-6">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-bold">
-                        🏛️ Exploración Determinantes Fecundidad Temprana
-                    </h1>
-                    <p class="mt-1 text-blue-100">
-                        Bogotá D.C. • Análisis territorial por UPZ (Cohortes 10-14, 15-19 años) v4.3.1
-                    </p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button id="btnRefresh" class="btn bg-gray-700 text-white border-gray-600 hover:bg-gray-600">
-                        <i class="ti ti-refresh"></i> Actualizar
-                    </button>
-                </div>
-            </div>
+    <header class="bg-blue-800 text-white p-4">
+        <div class="max-w-7xl mx-auto">
+            <h1 class="text-xl font-bold">🛠️ Dashboard DEBUG - Fecundidad Temprana v4.3.1</h1>
+            <p class="text-sm text-blue-200">Modo debugging para identificar problemas de datos</p>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <!-- KPIs -->
-        <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="card kpi-card">
-                <div class="kpi-number" id="kpiTotal">-</div>
-                <div class="kpi-label">Registros Totales</div>
-            </div>
-            <div class="card kpi-card">
-                <div class="kpi-number" id="kpiIndicadores">-</div>
-                <div class="kpi-label">Indicadores Únicos</div>
-            </div>
-            <div class="card kpi-card">
-                <div class="kpi-number" id="kpiLocalidades">-</div>
-                <div class="kpi-label">Localidades</div>
-            </div>
-            <div class="card kpi-card">
-                <div class="kpi-number" id="kpiUpz">-</div>
-                <div class="kpi-label">UPZ</div>
-            </div>
-        </section>
-
-        <!-- Upload Section -->
-        <section class="card p-6">
+    <main class="max-w-7xl mx-auto p-4 space-y-4">
+        <!-- Debug Panel -->
+        <div class="card">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                    <i class="ti ti-upload"></i> Carga de Datos Excel
-                </h2>
-                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">POST /upload/excel</span>
+                <h2 class="font-semibold">🐛 Panel de Debugging</h2>
+                <button id="btnClearLog" class="btn text-xs">Limpiar Log</button>
             </div>
+            <div id="debugLog" class="debug-panel">
+                <div class="debug-info">Sistema iniciado - Modo debugging activado</div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="card text-center">
+                <div class="text-2xl font-bold" id="statusRegistros">-</div>
+                <div class="text-sm text-gray-500">Registros BD</div>
+                <div id="statusRegistrosIcon" class="mt-1">⏳</div>
+            </div>
+            <div class="card text-center">
+                <div class="text-2xl font-bold" id="statusIndicadores">-</div>
+                <div class="text-sm text-gray-500">Indicadores</div>
+                <div id="statusIndicadoresIcon" class="mt-1">⏳</div>
+            </div>
+            <div class="card text-center">
+                <div class="text-2xl font-bold" id="statusLocalidades">-</div>
+                <div class="text-sm text-gray-500">Localidades</div>
+                <div id="statusLocalidadesIcon" class="mt-1">⏳</div>
+            </div>
+            <div class="card text-center">
+                <div class="text-2xl font-bold" id="statusUpz">-</div>
+                <div class="text-sm text-gray-500">UPZ</div>
+                <div id="statusUpzIcon" class="mt-1">⏳</div>
+            </div>
+        </div>
+
+        <!-- Upload Section con más debugging -->
+        <div class="card">
+            <h3 class="font-semibold mb-4">📂 Carga de Datos Excel</h3>
             <div class="grid md:grid-cols-3 gap-4 items-end">
                 <div class="md:col-span-2">
-                    <label class="block text-sm font-medium mb-2">Archivo Excel (.xlsx, .xls)</label>
-                    <input id="fileInput" type="file" accept=".xlsx,.xls" 
-                           class="w-full">
+                    <label class="block text-sm font-medium mb-2">Archivo Excel</label>
+                    <input id="fileInput" type="file" accept=".xlsx,.xls">
                 </div>
-                <div class="flex gap-2">
-                    <button id="btnUpload" class="btn btn-primary">
-                        <i class="ti ti-cloud-upload"></i> Subir Archivo
+                <div>
+                    <button id="btnUpload" class="btn btn-primary w-full">
+                        <i class="ti ti-upload"></i> Subir y Analizar
                     </button>
-                    <div id="uploadSpinner" class="spinner hidden"></div>
                 </div>
             </div>
             <div id="uploadResult" class="mt-4"></div>
-        </section>
+        </div>
 
-        <!-- Analysis Tabs -->
-        <section class="space-y-4">
-            <div class="tabs">
-                <button class="btn" data-tab="caracterizacion" aria-selected="true">
-                    <i class="ti ti-chart-bar text-xl"></i>
-                    <span class="text-sm font-medium">Caracterización</span>
-                    <span class="text-xs opacity-75">Estadísticas UPZ</span>
-                </button>
-                <button class="btn" data-tab="series">
-                    <i class="ti ti-trending-up text-xl"></i>
-                    <span class="text-sm font-medium">Series</span>
-                    <span class="text-xs opacity-75">Evolución temporal</span>
-                </button>
-                <button class="btn" data-tab="asociacion">
-                    <i class="ti ti-chart-dots text-xl"></i>
-                    <span class="text-sm font-medium">Asociación</span>
-                    <span class="text-xs opacity-75">Correlaciones</span>
-                </button>
-                <button class="btn" data-tab="theil">
-                    <i class="ti ti-balance text-xl"></i>
-                    <span class="text-sm font-medium">Desigualdad</span>
-                    <span class="text-xs opacity-75">Índice Theil</span>
-                </button>
+        <!-- API Testing -->
+        <div class="card">
+            <h3 class="font-semibold mb-4">🔬 Pruebas de API</h3>
+            <div class="grid md:grid-cols-3 gap-2">
+                <button id="btnTestHealth" class="btn">Test Health</button>
+                <button id="btnTestMetadatos" class="btn">Test Metadatos</button>
+                <button id="btnTestData" class="btn">Test Datos</button>
             </div>
+            <div id="apiTestResult" class="mt-4"></div>
+        </div>
 
-            <!-- Caracterización -->
-            <div id="tab-caracterizacion" class="card p-6 space-y-4">
-                <h3 class="text-lg font-semibold text-gray-800">Caracterización Territorial</h3>
+        <!-- Tabs simplificadas -->
+        <div class="tabs">
+            <button data-tab="debug" aria-selected="true">🔍 Debug Completo</button>
+            <button data-tab="caracterizacion">📊 Caracterización</button>
+            <button data-tab="datos">📋 Ver Datos Raw</button>
+        </div>
+
+        <!-- Debug Tab -->
+        <div id="tab-debug" class="card">
+            <h3 class="font-semibold mb-4">🔍 Análisis Completo de Datos</h3>
+            
+            <!-- Metadata Display -->
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-semibold mb-2">Metadatos del Sistema:</h4>
+                    <div id="metadataDisplay" class="debug-panel">
+                        <div class="debug-info">Cargando metadatos...</div>
+                    </div>
+                </div>
                 
-                <!-- FILTROS CORREGIDOS: SEPARADOS -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div class="lg:col-span-2">
-                        <label class="block text-sm font-medium mb-2">Indicador *</label>
-                        <select id="caracIndicador">
-                            <option value="">Seleccionar indicador...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Localidad</label>
-                        <select id="caracLocalidad">
-                            <option value="">Todas las localidades</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">UPZ</label>
-                        <select id="caracUpz">
-                            <option value="">Todas las UPZ</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button id="btnCaracterizar" class="btn btn-primary w-full">
-                            <i class="ti ti-chart-bar"></i> Analizar
-                        </button>
+                <div>
+                    <h4 class="font-semibold mb-2">Estructura de Base de Datos:</h4>
+                    <div id="dbStructure" class="debug-panel">
+                        <div class="debug-info">Analizando estructura...</div>
                     </div>
                 </div>
-
-                <div class="grid lg:grid-cols-2 gap-6">
-                    <div class="card p-4">
-                        <h4 class="font-semibold mb-4 flex items-center justify-between">
-                            Top 10 UPZ por Indicador
-                            <button id="btnDescargar" class="btn text-xs">
-                                <i class="ti ti-download"></i> Exportar
-                            </button>
-                        </h4>
-                        <div class="chart-small">
-                            <canvas id="chartCaracterizacion"></canvas>
-                        </div>
-                    </div>
-                    <div class="card p-4">
-                        <h4 class="font-semibold mb-4">Estadísticas Descriptivas</h4>
-                        <div class="overflow-x-auto max-h-80 overflow-y-auto">
-                            <table id="tableCaracterizacion" class="w-full text-sm">
-                                <thead class="bg-gray-50 sticky top-0">
-                                    <tr>
-                                        <th class="p-2 text-left border-b">UPZ</th>
-                                        <th class="p-2 text-center border-b">N</th>
-                                        <th class="p-2 text-right border-b">Promedio</th>
-                                        <th class="p-2 text-right border-b">Mediana</th>
-                                        <th class="p-2 text-right border-b">CV%</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Series Temporales -->
-            <div id="tab-series" class="card p-6 space-y-4 hidden">
-                <h3 class="text-lg font-semibold text-gray-800">Series Temporales por UPZ</h3>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Indicador *</label>
-                        <select id="serieIndicador">
-                            <option value="">Seleccionar indicador...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Localidad</label>
-                        <select id="serieLocalidad">
-                            <option value="">Todas las localidades</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">UPZ *</label>
-                        <select id="serieUpz">
-                            <option value="">Seleccionar UPZ...</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button id="btnSerie" class="btn btn-primary w-full">
-                            <i class="ti ti-trending-up"></i> Generar Serie
-                        </button>
-                    </div>
-                </div>
-
-                <div class="card p-4">
-                    <h4 class="font-semibold mb-4">Evolución Temporal</h4>
-                    <div class="chart-medium">
-                        <canvas id="chartSeries"></canvas>
+                <div>
+                    <h4 class="font-semibold mb-2">Muestras de Datos:</h4>
+                    <div id="dataSamples" class="debug-panel">
+                        <div class="debug-info">Obteniendo muestras...</div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Asociación -->
-            <div id="tab-asociacion" class="card p-6 space-y-4 hidden">
-                <h3 class="text-lg font-semibold text-gray-800">Análisis de Asociación entre Indicadores</h3>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Indicador X *</label>
-                        <select id="asocIndicadorX">
-                            <option value="">Seleccionar...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Indicador Y *</label>
-                        <select id="asocIndicadorY">
-                            <option value="">Seleccionar...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Localidad</label>
-                        <select id="asocLocalidad">
-                            <option value="">Todas las localidades</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">UPZ</label>
-                        <select id="asocUpz">
-                            <option value="">Todas las UPZ</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button id="btnAsociar" class="btn btn-primary w-full">
-                            <i class="ti ti-chart-dots"></i> Correlacionar
-                        </button>
-                    </div>
+        <!-- Caracterización Tab -->
+        <div id="tab-caracterizacion" class="card hidden">
+            <h3 class="font-semibold mb-4">📊 Caracterización (Modo Debug)</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Indicador</label>
+                    <select id="caracIndicador">
+                        <option value="">Cargando...</option>
+                    </select>
                 </div>
-
-                <div class="grid lg:grid-cols-2 gap-6">
-                    <div class="card p-4">
-                        <h4 class="font-semibold mb-4">Gráfico de Dispersión</h4>
-                        <div class="chart-small">
-                            <canvas id="chartAsociacion"></canvas>
-                        </div>
-                    </div>
-                    <div class="card p-4">
-                        <h4 class="font-semibold mb-4">Estadísticas de Correlación</h4>
-                        <div id="resultadoAsociacion" class="space-y-3">
-                            <p class="text-gray-500">Seleccione dos indicadores para analizar su correlación</p>
-                        </div>
-                    </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Localidad</label>
+                    <select id="caracLocalidad">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">UPZ</label>
+                    <select id="caracUpz">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button id="btnCaracterizar" class="btn btn-primary w-full">Analizar</button>
                 </div>
             </div>
 
-            <!-- Índice de Theil -->
-            <div id="tab-theil" class="card p-6 space-y-4 hidden">
-                <h3 class="text-lg font-semibold text-gray-800">Índice de Theil - Desigualdad Territorial</h3>
-                <p class="text-sm text-gray-600">Valores cercanos a 0 indican mayor igualdad entre territorios.</p>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div class="lg:col-span-2">
-                        <label class="block text-sm font-medium mb-2">Indicador *</label>
-                        <select id="theilIndicador">
-                            <option value="">Seleccionar indicador...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Localidad</label>
-                        <select id="theilLocalidad">
-                            <option value="">Todas las localidades</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Año</label>
-                        <select id="theilAno">
-                            <option value="">Todos los años</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button id="btnTheil" class="btn btn-primary w-full">
-                            <i class="ti ti-balance"></i> Calcular
-                        </button>
+            <div class="grid lg:grid-cols-2 gap-4">
+                <div>
+                    <h4 class="font-semibold mb-2">Gráfico</h4>
+                    <div class="chart-container">
+                        <canvas id="chartCaracterizacion"></canvas>
                     </div>
                 </div>
-
-                <!-- Layout mejorado: Compacto + Scrolleable -->
-                <div class="grid lg:grid-cols-4 gap-6">
-                    <div class="card p-4">
-                        <h4 class="font-semibold mb-4 text-center">Índice Calculado</h4>
-                        <div class="text-center space-y-3">
-                            <div class="text-4xl font-bold text-blue-600" id="theilValor">-</div>
-                            <div class="text-sm text-gray-500">Índice de Theil</div>
-                            <div>
-                                <span id="theilCategoria" class="px-3 py-1 rounded-full text-sm bg-gray-100">
-                                    Seleccionar indicador
-                                </span>
-                            </div>
-                            <div class="text-xs text-gray-400 bg-gray-50 p-2 rounded">
-                                0 = igualdad perfecta<br>
-                                >0 = mayor desigualdad
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card p-4 lg:col-span-3">
-                        <h4 class="font-semibold mb-4">Distribución por TODAS las UPZ (Scrolleable)</h4>
-                        <div class="chart-scrollable">
-                            <canvas id="chartTheil"></canvas>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-2">💡 Usa la barra de desplazamiento horizontal para ver todas las UPZ</p>
+                <div>
+                    <h4 class="font-semibold mb-2">Resultados Debug</h4>
+                    <div id="caracResults" class="debug-panel">
+                        <div class="debug-info">Selecciona un indicador para analizar</div>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
+
+        <!-- Datos Raw Tab -->
+        <div id="tab-datos" class="card hidden">
+            <h3 class="font-semibold mb-4">📋 Datos Raw de la Base de Datos</h3>
+            <div class="space-y-4">
+                <div class="flex gap-2">
+                    <button id="btnGetRawData" class="btn btn-primary">Obtener Datos Raw</button>
+                    <button id="btnAnalyzeColumns" class="btn">Analizar Columnas</button>
+                    <input id="limitInput" type="number" placeholder="Límite (ej: 100)" class="w-32" value="50">
+                </div>
+                <div id="rawDataDisplay" class="debug-panel">
+                    <div class="debug-info">Haz click en "Obtener Datos Raw" para ver los datos</div>
+                </div>
+            </div>
+        </div>
     </main>
-
-    <!-- Toast Container -->
-    <div id="toastContainer" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
 
     <script>
         // Variables globales
-        const $ = (selector) => document.querySelector(selector);
-        const $$ = (selector) => document.querySelectorAll(selector);
-        
+        let debugLog = [];
         let charts = {};
-        let metadata = {};
-        let currentData = {
-            localidades: [],
-            upz: [],
-            indicadores: [],
-            años: []
-        };
-        
-        // Configuración Chart.js
-        Chart.defaults.responsive = true;
-        Chart.defaults.maintainAspectRatio = false;
-        Chart.defaults.plugins.legend.display = true;
-        Chart.defaults.plugins.legend.position = 'top';
-        
+        let currentData = {};
+
         // Utility functions
-        function showLoading(element) {
-            if (element) element.classList.add('loading');
-        }
-        
-        function hideLoading(element) {
-            if (element) element.classList.remove('loading');
-        }
-        
-        function showSpinner(spinnerId) {
-            const spinner = $(spinnerId);
-            if (spinner) spinner.classList.remove('hidden');
-        }
-        
-        function hideSpinner(spinnerId) {
-            const spinner = $(spinnerId);
-            if (spinner) spinner.classList.add('hidden');
-        }
-        
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = `alert alert-${type} shadow-lg max-w-sm text-sm`;
-            toast.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <i class="ti ti-${type === 'error' ? 'alert-circle' : type === 'success' ? 'check' : 'info-circle'}"></i>
-                    <span>${message}</span>
-                </div>
-            `;
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            debugLog.push({ timestamp, message, type });
             
-            $('#toastContainer').appendChild(toast);
+            const logDiv = document.createElement('div');
+            logDiv.className = `debug-log debug-${type}`;
+            logDiv.textContent = logEntry;
             
-            setTimeout(() => {
-                toast.remove();
-            }, 4000);
+            const container = document.getElementById('debugLog');
+            container.appendChild(logDiv);
+            container.scrollTop = container.scrollHeight;
+            
+            console.log(`[DEBUG-${type.toUpperCase()}]`, message);
         }
-        
-        // API calls
+
+        function updateStatus(elementId, iconId, value, status = 'success') {
+            document.getElementById(elementId).textContent = value;
+            const icon = document.getElementById(iconId);
+            if (status === 'success') {
+                icon.textContent = '✅';
+            } else if (status === 'error') {
+                icon.textContent = '❌';
+            } else {
+                icon.textContent = '⏳';
+            }
+        }
+
+        function showResult(containerId, content, type = 'info') {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="alert alert-${type}">${content}</div>`;
+        }
+
+        // API calls con logging detallado
         async function apiCall(endpoint, options = {}) {
             try {
-                console.log(`API Call: ${endpoint}`);
+                log(`API Call: ${endpoint}`, 'info');
+                
                 const response = await fetch(endpoint, {
                     headers: {
                         'Content-Type': 'application/json',
@@ -524,98 +341,127 @@
                     ...options
                 });
                 
+                const responseText = await response.text();
+                log(`API Response Status: ${response.status}`, response.ok ? 'success' : 'error');
+                
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                    log(`API Error Response: ${responseText}`, 'error');
+                    throw new Error(`HTTP ${response.status}: ${responseText}`);
                 }
                 
-                const data = await response.json();
-                console.log(`API Response for ${endpoint}:`, data);
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                    log(`API Data received: ${Object.keys(data).join(', ')}`, 'success');
+                } catch (e) {
+                    log(`Error parsing JSON response: ${e.message}`, 'error');
+                    throw new Error('Invalid JSON response');
+                }
+                
                 return data;
             } catch (error) {
-                console.error('API Error:', error);
-                showToast(`Error: ${error.message}`, 'error');
+                log(`API Call failed: ${error.message}`, 'error');
                 throw error;
             }
         }
-        
-        // Cargar metadatos
-        async function loadMetadata() {
+
+        // Test individual endpoints
+        async function testHealth() {
             try {
-                console.log('Loading metadata...');
-                showToast('Cargando metadatos del sistema...', 'info');
-                
-                metadata = await apiCall('/metadatos');
-                console.log('Metadata loaded:', metadata);
-                
-                if (metadata && metadata.indicadores && metadata.geografia) {
-                    currentData.indicadores = metadata.indicadores.todos || [];
-                    currentData.localidades = metadata.geografia.localidades || [];
-                    currentData.upz = metadata.geografia.upz || [];
-                    currentData.años = metadata.temporal?.años || [];
-                    
-                    updateKPIs();
-                    populateAllSelectors();
-                    showToast('Metadatos cargados correctamente', 'success');
-                    
-                    console.log('Current data:', currentData);
-                } else {
-                    throw new Error('Estructura de metadatos inválida');
-                }
+                const data = await apiCall('/health');
+                log(`Health check OK - Version: ${data.version}, DB: ${data.database}`, 'success');
+                showResult('apiTestResult', `
+                    <strong>✅ Health Check OK</strong><br>
+                    Version: ${data.version}<br>
+                    Database: ${data.database}<br>
+                    Registros: ${data.registros}<br>
+                    Timestamp: ${data.timestamp}
+                `, 'success');
+                return data;
             } catch (error) {
-                console.error('Error loading metadata:', error);
-                showToast('Error cargando metadatos del sistema', 'error');
+                showResult('apiTestResult', `❌ Health check failed: ${error.message}`, 'error');
+                return null;
             }
         }
-        
-        // Actualizar KPIs
-        function updateKPIs() {
-            if (!metadata.resumen) return;
-            
-            $('#kpiTotal').textContent = formatNumber(metadata.resumen.total_registros) || '0';
-            $('#kpiIndicadores').textContent = formatNumber(metadata.resumen.total_indicadores) || '0';
-            $('#kpiLocalidades').textContent = formatNumber(metadata.resumen.localidades) || '0';
-            $('#kpiUpz').textContent = formatNumber(metadata.resumen.upz) || '0';
+
+        async function testMetadatos() {
+            try {
+                const data = await apiCall('/metadatos');
+                log(`Metadatos OK - Indicadores: ${data.indicadores?.todos?.length || 0}`, 'success');
+                
+                const resumen = data.resumen || {};
+                showResult('apiTestResult', `
+                    <strong>✅ Metadatos OK</strong><br>
+                    Total registros: ${resumen.total_registros || 0}<br>
+                    Indicadores: ${resumen.total_indicadores || 0}<br>
+                    Localidades: ${resumen.localidades || 0}<br>
+                    UPZ: ${resumen.upz || 0}
+                `, 'success');
+                
+                // Update status
+                updateStatus('statusRegistros', 'statusRegistrosIcon', resumen.total_registros || 0);
+                updateStatus('statusIndicadores', 'statusIndicadoresIcon', resumen.total_indicadores || 0);
+                updateStatus('statusLocalidades', 'statusLocalidadesIcon', resumen.localidades || 0);
+                updateStatus('statusUpz', 'statusUpzIcon', resumen.upz || 0);
+                
+                // Update metadata display
+                document.getElementById('metadataDisplay').innerHTML = `
+                    <div class="debug-success">✅ Metadatos cargados correctamente</div>
+                    <div class="debug-info">Total registros: ${resumen.total_registros || 0}</div>
+                    <div class="debug-info">Indicadores únicos: ${resumen.total_indicadores || 0}</div>
+                    <div class="debug-info">Localidades: ${resumen.localidades || 0}</div>
+                    <div class="debug-info">UPZ: ${resumen.upz || 0}</div>
+                    <div class="debug-info">Rango años: ${resumen.rango_años?.min || 'N/A'} - ${resumen.rango_años?.max || 'N/A'}</div>
+                `;
+                
+                // Populate selectors
+                if (data.indicadores?.todos) {
+                    populateSelect('caracIndicador', data.indicadores.todos);
+                    log(`Populated indicadores selector with ${data.indicadores.todos.length} items`, 'success');
+                }
+                
+                if (data.geografia?.localidades) {
+                    populateSelect('caracLocalidad', data.geografia.localidades);
+                    log(`Populated localidades selector with ${data.geografia.localidades.length} items`, 'success');
+                }
+                
+                currentData = data;
+                return data;
+            } catch (error) {
+                showResult('apiTestResult', `❌ Metadatos failed: ${error.message}`, 'error');
+                document.getElementById('metadataDisplay').innerHTML = `
+                    <div class="debug-error">❌ Error cargando metadatos: ${error.message}</div>
+                `;
+                return null;
+            }
         }
-        
-        function formatNumber(num) {
-            if (!num) return '0';
-            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-            return num.toLocaleString();
+
+        async function testData() {
+            try {
+                // Test a simple caracterización call
+                const data = await apiCall('/caracterizacion?indicador=test&nivel=UPZ');
+                if (data.mensaje) {
+                    log(`Caracterización test: ${data.mensaje}`, 'warning');
+                    showResult('apiTestResult', `⚠️ Caracterización: ${data.mensaje}`, 'warning');
+                } else {
+                    log(`Caracterización test OK - ${data.datos?.length || 0} UPZ`, 'success');
+                    showResult('apiTestResult', `✅ Caracterización OK - ${data.datos?.length || 0} UPZ encontradas`, 'success');
+                }
+                return data;
+            } catch (error) {
+                showResult('apiTestResult', `❌ Data test failed: ${error.message}`, 'error');
+                return null;
+            }
         }
-        
-        // Poblar todos los selectores
-        function populateAllSelectors() {
-            console.log('Populating selectors...');
-            
-            // Indicadores
-            populateSelect('caracIndicador', currentData.indicadores);
-            populateSelect('serieIndicador', currentData.indicadores);
-            populateSelect('asocIndicadorX', currentData.indicadores);
-            populateSelect('asocIndicadorY', currentData.indicadores);
-            populateSelect('theilIndicador', currentData.indicadores);
-            
-            // Localidades
-            populateSelect('caracLocalidad', currentData.localidades);
-            populateSelect('serieLocalidad', currentData.localidades);
-            populateSelect('asocLocalidad', currentData.localidades);
-            populateSelect('theilLocalidad', currentData.localidades);
-            
-            // Años
-            populateSelect('theilAno', currentData.años);
-            
-            console.log('Selectors populated successfully');
-        }
-        
+
         function populateSelect(selectId, options) {
-            const select = $(selectId);
+            const select = document.getElementById(selectId);
             if (!select || !options) {
-                console.warn(`Cannot populate select ${selectId}:`, { select, options });
+                log(`Cannot populate select ${selectId} - missing element or options`, 'error');
                 return;
             }
             
-            // Guardar la primera opción (placeholder)
+            // Keep first option
             const firstOption = select.children[0];
             select.innerHTML = '';
             if (firstOption) {
@@ -625,95 +471,65 @@
             options.forEach(option => {
                 const optionElement = document.createElement('option');
                 optionElement.value = option;
-                optionElement.textContent = option.length > 50 ? 
-                    option.substring(0, 47) + '...' : option;
+                optionElement.textContent = option.length > 60 ? option.substring(0, 57) + '...' : option;
                 optionElement.title = option;
                 select.appendChild(optionElement);
             });
             
-            console.log(`Populated ${selectId} with ${options.length} options`);
+            log(`Populated ${selectId} with ${options.length} options`, 'info');
         }
-        
-        // FILTROS CORREGIDOS: Función para actualizar UPZ según localidad
-        async function updateUpzByLocalidad(localidadSelectId, upzSelectId) {
-            const localidad = $(localidadSelectId).value;
-            const upzSelect = $(upzSelectId);
-            
-            console.log(`Updating UPZ for localidad: ${localidad}`);
-            
-            if (!localidad) {
-                // Si no hay localidad, mostrar todas las UPZ
-                populateSelect(upzSelectId, currentData.upz);
-                return;
-            }
-            
-            try {
-                const data = await apiCall(`/geografia/upz_por_localidad?localidad=${encodeURIComponent(localidad)}`);
-                console.log(`UPZ data for ${localidad}:`, data);
-                
-                populateSelect(upzSelectId, data.upz || []);
-                showToast(`${data.total || 0} UPZ encontradas para ${localidad}`, 'info');
-            } catch (error) {
-                console.error('Error updating UPZ:', error);
-                populateSelect(upzSelectId, []);
-                showToast('Error obteniendo UPZ de la localidad', 'error');
-            }
-        }
-        
+
         // Tab management
         function initTabs() {
-            $$('.tabs button').forEach(button => {
+            document.querySelectorAll('.tabs button').forEach(button => {
                 button.addEventListener('click', () => {
                     const tabId = button.dataset.tab;
-                    console.log(`Switching to tab: ${tabId}`);
                     
                     // Update buttons
-                    $$('.tabs button').forEach(b => b.setAttribute('aria-selected', 'false'));
+                    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', 'false'));
                     button.setAttribute('aria-selected', 'true');
                     
                     // Update content
-                    $$('[id^="tab-"]').forEach(tab => tab.classList.add('hidden'));
-                    const targetTab = $(`#tab-${tabId}`);
+                    document.querySelectorAll('[id^="tab-"]').forEach(tab => tab.classList.add('hidden'));
+                    const targetTab = document.getElementById(`tab-${tabId}`);
                     if (targetTab) {
                         targetTab.classList.remove('hidden');
-                        // Resize charts if needed
-                        setTimeout(() => {
-                            Object.values(charts).forEach(chart => {
-                                if (chart && typeof chart.resize === 'function') {
-                                    chart.resize();
-                                }
-                            });
-                        }, 100);
                     }
+                    
+                    log(`Switched to tab: ${tabId}`, 'info');
                 });
             });
         }
-        
-        // File upload
+
+        // Upload con debugging extensivo
         function initUpload() {
-            $('#btnUpload').addEventListener('click', async () => {
-                const fileInput = $('#fileInput');
+            document.getElementById('btnUpload').addEventListener('click', async () => {
+                const fileInput = document.getElementById('fileInput');
                 const file = fileInput.files[0];
                 
                 if (!file) {
-                    showToast('Seleccione un archivo Excel', 'error');
+                    log('No file selected for upload', 'error');
+                    showResult('uploadResult', 'Seleccione un archivo', 'error');
                     return;
                 }
                 
+                log(`File selected: ${file.name} (${file.size} bytes)`, 'info');
+                
                 if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
-                    showToast('Solo se permiten archivos .xlsx o .xls', 'error');
+                    log('Invalid file type selected', 'error');
+                    showResult('uploadResult', 'Solo se permiten archivos .xlsx o .xls', 'error');
                     return;
                 }
                 
                 const formData = new FormData();
                 formData.append('file', file);
                 
-                const btn = $('#btnUpload');
+                const btn = document.getElementById('btnUpload');
+                btn.disabled = true;
+                btn.innerHTML = '<div class="spinner"></div> Procesando...';
                 
                 try {
-                    btn.disabled = true;
-                    showSpinner('#uploadSpinner');
-                    showToast('Procesando archivo...', 'info');
+                    log('Starting file upload...', 'info');
                     
                     const response = await fetch('/upload/excel', {
                         method: 'POST',
@@ -724,96 +540,122 @@
                     
                     if (response.ok) {
                         const stats = result.estadisticas || {};
-                        $('#uploadResult').innerHTML = `
-                            <div class="alert alert-success">
-                                <strong>✅ Carga exitosa</strong><br>
-                                📂 Archivo: ${result.archivo}<br>
-                                📊 Registros cargados: ${formatNumber(stats.registros_cargados) || 0}<br>
-                                📄 Filas procesadas: ${formatNumber(stats.filas_procesadas) || 0}<br>
-                                ⚠️ Omitidos: ${formatNumber(stats.filas_omitidas_sin_valor) || 0}
-                            </div>
-                        `;
-                        showToast('Archivo cargado correctamente', 'success');
-                        await loadMetadata(); // Recargar metadatos
+                        log(`Upload successful - ${stats.registros_cargados || 0} records loaded`, 'success');
+                        
+                        showResult('uploadResult', `
+                            <strong>✅ Carga exitosa</strong><br>
+                            📂 Archivo: ${result.archivo}<br>
+                            📊 Registros cargados: ${stats.registros_cargados || 0}<br>
+                            📄 Filas procesadas: ${stats.filas_procesadas || 0}<br>
+                            ⚠️ Omitidos: ${stats.filas_omitidas_sin_valor || 0}<br>
+                            ❌ Errores: ${stats.errores || 0}<br>
+                            🎯 Indicadores únicos: ${stats.indicadores_unicos || 0}
+                        `, 'success');
+                        
+                        // Refresh metadata after upload
+                        setTimeout(async () => {
+                            await testMetadatos();
+                        }, 1000);
+                        
                     } else {
-                        $('#uploadResult').innerHTML = `
-                            <div class="alert alert-error">
-                                <strong>❌ Error en la carga</strong><br>
-                                ${result.detail || 'Error desconocido'}
-                            </div>
-                        `;
-                        showToast('Error subiendo archivo', 'error');
+                        log(`Upload failed: ${result.detail}`, 'error');
+                        showResult('uploadResult', `❌ Error: ${result.detail}`, 'error');
                     }
                 } catch (error) {
-                    $('#uploadResult').innerHTML = `
-                        <div class="alert alert-error">
-                            <strong>❌ Error de conexión</strong><br>
-                            ${error.message}
-                        </div>
-                    `;
-                    showToast('Error de conexión', 'error');
+                    log(`Upload error: ${error.message}`, 'error');
+                    showResult('uploadResult', `❌ Error de conexión: ${error.message}`, 'error');
                 } finally {
-                    hideSpinner('#uploadSpinner');
                     btn.disabled = false;
+                    btn.innerHTML = '<i class="ti ti-upload"></i> Subir y Analizar';
                 }
             });
         }
-        
+
         // Caracterización
         function initCaracterizacion() {
             // Event listener for localidad change
-            $('#caracLocalidad').addEventListener('change', () => {
-                updateUpzByLocalidad('#caracLocalidad', '#caracUpz');
-            });
-            
-            $('#btnCaracterizar').addEventListener('click', async () => {
-                const indicador = $('#caracIndicador').value;
-                const localidad = $('#caracLocalidad').value;
-                const upz = $('#caracUpz').value;
-                
-                if (!indicador) {
-                    showToast('Seleccione un indicador', 'error');
+            document.getElementById('caracLocalidad').addEventListener('change', async () => {
+                const localidad = document.getElementById('caracLocalidad').value;
+                if (!localidad) {
+                    populateSelect('caracUpz', currentData.geografia?.upz || []);
                     return;
                 }
                 
                 try {
-                    showLoading($('#tab-caracterizacion'));
-                    
+                    const data = await apiCall(`/geografia/upz_por_localidad?localidad=${encodeURIComponent(localidad)}`);
+                    populateSelect('caracUpz', data.upz || []);
+                    log(`Updated UPZ for localidad ${localidad}: ${data.total} UPZ found`, 'info');
+                } catch (error) {
+                    log(`Error updating UPZ for localidad ${localidad}: ${error.message}`, 'error');
+                }
+            });
+            
+            document.getElementById('btnCaracterizar').addEventListener('click', async () => {
+                const indicador = document.getElementById('caracIndicador').value;
+                const localidad = document.getElementById('caracLocalidad').value;
+                const upz = document.getElementById('caracUpz').value;
+                
+                if (!indicador) {
+                    log('No indicator selected for caracterización', 'error');
+                    showResult('caracResults', 'Seleccione un indicador', 'error');
+                    return;
+                }
+                
+                try {
                     const params = new URLSearchParams({
                         indicador,
-                        nivel: 'UPZ', // Siempre análisis por UPZ
+                        nivel: 'UPZ',
                         ...(localidad && { localidad }),
                         ...(upz && { upz })
                     });
                     
-                    console.log('Caracterización params:', params.toString());
+                    log(`Running caracterización: ${params.toString()}`, 'info');
                     const data = await apiCall(`/caracterizacion?${params}`);
                     
                     if (data.mensaje) {
-                        showToast(data.mensaje, 'warning');
-                        return;
+                        log(`Caracterización result: ${data.mensaje}`, 'warning');
+                        document.getElementById('caracResults').innerHTML = `
+                            <div class="debug-warning">${data.mensaje}</div>
+                        `;
+                    } else {
+                        log(`Caracterización successful: ${data.datos?.length || 0} UPZ analyzed`, 'success');
+                        
+                        document.getElementById('caracResults').innerHTML = `
+                            <div class="debug-success">✅ Análisis completado</div>
+                            <div class="debug-info">UPZ analizadas: ${data.total_upz || 0}</div>
+                            <div class="debug-info">Unidad: ${data.unidad_medida}</div>
+                            <div class="debug-info">Promedio general: ${data.resumen?.promedio_general || 'N/A'}</div>
+                            <div class="debug-info">Total observaciones: ${data.resumen?.n_total || 0}</div>
+                            <hr style="margin: 0.5rem 0;">
+                            <div class="debug-info">Top 5 UPZ:</div>
+                            ${(data.datos || []).slice(0, 5).map(d => `
+                                <div class="debug-info">• ${d.upz}: ${d.promedio} (n=${d.n})</div>
+                            `).join('')}
+                        `;
+                        
+                        // Create simple chart
+                        renderSimpleChart(data);
                     }
-                    
-                    renderCaracterizacionChart(data);
-                    renderCaracterizacionTable(data);
-                    showToast('Caracterización completada', 'success');
                 } catch (error) {
-                    showToast('Error en caracterización', 'error');
-                } finally {
-                    hideLoading($('#tab-caracterizacion'));
+                    log(`Caracterización error: ${error.message}`, 'error');
+                    document.getElementById('caracResults').innerHTML = `
+                        <div class="debug-error">❌ Error: ${error.message}</div>
+                    `;
                 }
             });
         }
-        
-        function renderCaracterizacionChart(data) {
-            if (charts['chartCaracterizacion']) {
-                charts['chartCaracterizacion'].destroy();
+
+        function renderSimpleChart(data) {
+            const canvas = document.getElementById('chartCaracterizacion');
+            const ctx = canvas.getContext('2d');
+            
+            if (charts['caracterizacion']) {
+                charts['caracterizacion'].destroy();
             }
             
-            const top10 = data.datos.slice(0, 10);
-            const ctx = $('#chartCaracterizacion').getContext('2d');
+            const top10 = (data.datos || []).slice(0, 10);
             
-            charts['chartCaracterizacion'] = new Chart(ctx, {
+            charts['caracterizacion'] = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: top10.map(d => d.upz.length > 15 ? d.upz.substring(0, 12) + '...' : d.upz),
@@ -831,13 +673,7 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: `${data.indicador.substring(0, 50)}${data.indicador.length > 50 ? '...' : ''}`
-                        },
-                        tooltip: {
-                            callbacks: {
-                                title: (context) => top10[context[0].dataIndex].upz,
-                                label: (context) => `${data.unidad_medida}: ${context.parsed.y}`
-                            }
+                            text: data.indicador.length > 40 ? data.indicador.substring(0, 37) + '...' : data.indicador
                         }
                     },
                     scales: {
@@ -848,341 +684,94 @@
                     }
                 }
             });
-        }
-        
-        function renderCaracterizacionTable(data) {
-            const tbody = $('#tableCaracterizacion tbody');
-            tbody.innerHTML = data.datos.map(d => `
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="p-2" title="${d.upz}">${d.upz.length > 25 ? d.upz.substring(0, 22) + '...' : d.upz}</td>
-                    <td class="p-2 text-center">${d.n}</td>
-                    <td class="p-2 text-right font-mono">${d.promedio}</td>
-                    <td class="p-2 text-right font-mono">${d.mediana}</td>
-                    <td class="p-2 text-right font-mono">${d.cv_pct}%</td>
-                </tr>
-            `).join('');
-        }
-        
-        // Series Temporales
-        function initSeries() {
-            $('#serieLocalidad').addEventListener('change', () => {
-                updateUpzByLocalidad('#serieLocalidad', '#serieUpz');
-            });
             
-            $('#btnSerie').addEventListener('click', async () => {
-                const indicador = $('#serieIndicador').value;
-                const upz = $('#serieUpz').value;
-                
-                if (!indicador || !upz) {
-                    showToast('Seleccione indicador y UPZ', 'error');
-                    return;
-                }
+            log('Chart rendered successfully', 'success');
+        }
+
+        // Raw data viewer
+        function initRawData() {
+            document.getElementById('btnGetRawData').addEventListener('click', async () => {
+                const limit = document.getElementById('limitInput').value || 50;
                 
                 try {
-                    showLoading($('#tab-series'));
+                    log(`Fetching raw data (limit: ${limit})...`, 'info');
                     
-                    const params = new URLSearchParams({
-                        indicador,
-                        upz,
-                        nivel: 'UPZ'
-                    });
+                    // Since we don't have a direct raw data endpoint, let's use debug/columns and a test query
+                    const columnsData = await apiCall('/debug/columns');
                     
-                    const data = await apiCall(`/datos/series?${params}`);
+                    document.getElementById('rawDataDisplay').innerHTML = `
+                        <div class="debug-success">✅ Estructura de columnas obtenida</div>
+                        <div class="debug-info">Columnas requeridas:</div>
+                        ${columnsData.columnas_requeridas.map(col => `<div class="debug-info">• ${col}</div>`).join('')}
+                        <div class="debug-info">Columnas opcionales (primeras 10):</div>
+                        ${columnsData.columnas_opcionales.slice(0, 10).map(col => `<div class="debug-info">• ${col}</div>`).join('')}
+                        <div class="debug-info">Ejemplo estructura:</div>
+                        <pre style="font-size: 0.7rem; background: #fff; padding: 0.5rem; border-radius: 0.25rem; margin: 0.5rem 0;">${JSON.stringify(columnsData.ejemplo_estructura, null, 2)}</pre>
+                    `;
                     
-                    if (data.mensaje) {
-                        showToast(data.mensaje, 'warning');
-                        return;
-                    }
+                    log('Raw data structure displayed', 'success');
                     
-                    renderSeriesChart(data);
-                    showToast('Serie temporal generada', 'success');
                 } catch (error) {
-                    showToast('Error generando serie temporal', 'error');
-                } finally {
-                    hideLoading($('#tab-series'));
+                    log(`Error getting raw data: ${error.message}`, 'error');
+                    document.getElementById('rawDataDisplay').innerHTML = `
+                        <div class="debug-error">❌ Error: ${error.message}</div>
+                    `;
                 }
             });
-        }
-        
-        function renderSeriesChart(data) {
-            if (charts['chartSeries']) {
-                charts['chartSeries'].destroy();
-            }
             
-            const serie = data.serie || [];
-            const ctx = $('#chartSeries').getContext('2d');
-            
-            charts['chartSeries'] = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: serie.map(s => s.año),
-                    datasets: [{
-                        label: data.unidad_medida,
-                        data: serie.map(s => s.valor),
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        tension: 0.3,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: `${data.indicador.substring(0, 40)}${data.indicador.length > 40 ? '...' : ''} - ${data.upz}`
-                        }
-                    },
-                    scales: {
-                        x: { title: { display: true, text: 'Año' }},
-                        y: { title: { display: true, text: data.unidad_medida }}
-                    }
-                }
-            });
-        }
-        
-        // Asociación
-        function initAsociacion() {
-            $('#asocLocalidad').addEventListener('change', () => {
-                updateUpzByLocalidad('#asocLocalidad', '#asocUpz');
-            });
-            
-            $('#btnAsociar').addEventListener('click', async () => {
-                const indicadorX = $('#asocIndicadorX').value;
-                const indicadorY = $('#asocIndicadorY').value;
-                const localidad = $('#asocLocalidad').value;
-                const upz = $('#asocUpz').value;
-                
-                if (!indicadorX || !indicadorY) {
-                    showToast('Seleccione ambos indicadores', 'error');
-                    return;
-                }
-                
+            document.getElementById('btnAnalyzeColumns').addEventListener('click', async () => {
                 try {
-                    showLoading($('#tab-asociacion'));
+                    log('Analyzing database structure...', 'info');
                     
-                    const params = new URLSearchParams({
-                        indicador_x: indicadorX,
-                        indicador_y: indicadorY,
-                        nivel: 'UPZ',
-                        ...(localidad && { localidad }),
-                        ...(upz && { upz })
-                    });
+                    const data = await apiCall('/debug/columns');
                     
-                    const data = await apiCall(`/analisis/asociacion?${params}`);
+                    document.getElementById('dbStructure').innerHTML = `
+                        <div class="debug-success">✅ Estructura analizada</div>
+                        <div class="debug-info">Columnas requeridas: ${data.columnas_requeridas?.length || 0}</div>
+                        <div class="debug-info">Columnas opcionales: ${data.columnas_opcionales?.length || 0}</div>
+                        ${data.mejoras_v431 ? `
+                            <div class="debug-success">Mejoras v4.3.1 detectadas:</div>
+                            ${data.mejoras_v431.map(mejora => `<div class="debug-info">• ${mejora}</div>`).join('')}
+                        ` : ''}
+                    `;
                     
-                    if (data.mensaje) {
-                        showToast(data.mensaje, 'warning');
-                        return;
-                    }
+                    log('Database structure analyzed', 'success');
                     
-                    renderAsociacionChart(data);
-                    renderAsociacionStats(data);
-                    showToast('Análisis de asociación completado', 'success');
                 } catch (error) {
-                    showToast('Error en análisis de asociación', 'error');
-                } finally {
-                    hideLoading($('#tab-asociacion'));
+                    log(`Error analyzing columns: ${error.message}`, 'error');
+                    document.getElementById('dbStructure').innerHTML = `
+                        <div class="debug-error">❌ Error: ${error.message}</div>
+                    `;
                 }
             });
         }
-        
-        function renderAsociacionChart(data) {
-            if (charts['chartAsociacion']) {
-                charts['chartAsociacion'].destroy();
-            }
-            
-            const ctx = $('#chartAsociacion').getContext('2d');
-            
-            charts['chartAsociacion'] = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: 'UPZ',
-                        data: data.datos.map(d => ({ x: d.x, y: d.y })),
-                        backgroundColor: '#f59e0b',
-                        borderColor: '#d97706',
-                        pointRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                title: (context) => data.datos[context[0].dataIndex].upz
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { title: { display: true, text: data.indicador_x.substring(0, 30) + '...' }},
-                        y: { title: { display: true, text: data.indicador_y.substring(0, 30) + '...' }}
-                    }
-                }
-            });
-        }
-        
-        function renderAsociacionStats(data) {
-            const corr = data.correlacion;
-            $('#resultadoAsociacion').innerHTML = `
-                <div class="space-y-3 text-sm">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-gray-50 p-3 rounded">
-                            <div class="font-semibold">Pearson</div>
-                            <div class="text-lg font-mono">${corr.pearson_r}</div>
-                            <div class="text-xs text-gray-500">p = ${corr.pearson_p}</div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded">
-                            <div class="font-semibold">Spearman</div>
-                            <div class="text-lg font-mono">${corr.spearman_rho}</div>
-                            <div class="text-xs text-gray-500">p = ${corr.spearman_p}</div>
-                        </div>
-                    </div>
-                    <div class="bg-blue-50 p-3 rounded">
-                        <div class="font-semibold">Interpretación</div>
-                        <div>Categoría: <span class="font-semibold">${corr.categoria}</span></div>
-                        <div>Significativa (p<0.05): <span class="${corr.significativa ? 'text-green-600' : 'text-red-600'} font-semibold">
-                            ${corr.significativa ? 'Sí' : 'No'}
-                        </span></div>
-                        <div class="text-sm text-gray-600 mt-1">UPZ analizadas: ${data.upz_comunes}</div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Índice de Theil
-        function initTheil() {
-            $('#theilLocalidad').addEventListener('change', () => {
-                updateUpzByLocalidad('#theilLocalidad', '#theilUpz');
-            });
-            
-            $('#btnTheil').addEventListener('click', async () => {
-                const indicador = $('#theilIndicador').value;
-                const localidad = $('#theilLocalidad').value;
-                const año = $('#theilAno').value;
-                
-                if (!indicador) {
-                    showToast('Seleccione un indicador', 'error');
-                    return;
-                }
-                
-                try {
-                    showLoading($('#tab-theil'));
-                    
-                    const params = new URLSearchParams({
-                        indicador,
-                        nivel: 'UPZ',
-                        ...(localidad && { localidad }),
-                        ...(año && { año })
-                    });
-                    
-                    const data = await apiCall(`/analisis/theil?${params}`);
-                    
-                    if (data.mensaje) {
-                        showToast(data.mensaje, 'warning');
-                        return;
-                    }
-                    
-                    renderTheilResults(data);
-                    renderTheilChart(data);
-                    showToast('Índice de Theil calculado', 'success');
-                } catch (error) {
-                    showToast('Error calculando índice de Theil', 'error');
-                } finally {
-                    hideLoading($('#tab-theil'));
-                }
-            });
-        }
-        
-        function renderTheilResults(data) {
-            $('#theilValor').textContent = data.indice_theil;
-            
-            const categoria = data.interpretacion.categoria;
-            const categoriaElement = $('#theilCategoria');
-            
-            categoriaElement.textContent = categoria;
-            categoriaElement.className = `px-3 py-1 rounded-full text-sm ${
-                categoria === 'Baja' ? 'bg-green-100 text-green-800' :
-                categoria === 'Moderada' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-red-100 text-red-800'
-            }`;
-        }
-        
-        function renderTheilChart(data) {
-            if (charts['chartTheil']) {
-                charts['chartTheil'].destroy();
-            }
-            
-            // MOSTRAR TODAS LAS UPZ (no solo top 10)
-            const allData = data.datos || [];
-            const ctx = $('#chartTheil').getContext('2d');
-            
-            // Calcular ancho dinámico
-            const minWidth = Math.max(800, allData.length * 40);
-            $('#chartTheil').style.width = minWidth + 'px';
-            
-            charts['chartTheil'] = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: allData.map(d => d.upz.length > 12 ? d.upz.substring(0, 9) + '...' : d.upz),
-                    datasets: [{
-                        label: data.unidad_medida,
-                        data: allData.map(d => d.valor),
-                        backgroundColor: '#8b5cf6',
-                        borderColor: '#7c3aed',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: false,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                title: (context) => allData[context[0].dataIndex].upz
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                maxRotation: 90,
-                                minRotation: 45,
-                                font: { size: 10 }
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: data.unidad_medida }
-                        }
-                    }
-                }
-            });
-        }
-        
+
         // Initialize everything
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('DOM loaded, initializing dashboard...');
+            log('DOM loaded, initializing debug dashboard...', 'info');
             
             initTabs();
             initUpload();
             initCaracterizacion();
-            initSeries();
-            initAsociacion();
-            initTheil();
+            initRawData();
             
-            // Refresh button
-            $('#btnRefresh').addEventListener('click', () => {
-                location.reload();
+            // Clear log button
+            document.getElementById('btnClearLog').addEventListener('click', () => {
+                debugLog = [];
+                document.getElementById('debugLog').innerHTML = '<div class="debug-info">Log cleared</div>';
             });
             
-            // Load initial data
-            await loadMetadata();
+            // API test buttons
+            document.getElementById('btnTestHealth').addEventListener('click', testHealth);
+            document.getElementById('btnTestMetadatos').addEventListener('click', testMetadatos);
+            document.getElementById('btnTestData').addEventListener('click', testData);
             
-            console.log('Dashboard initialized successfully');
+            // Auto-run initial tests
+            log('Running initial system tests...', 'info');
+            await testHealth();
+            await testMetadatos();
+            
+            log('Debug dashboard initialized successfully', 'success');
         });
     </script>
 </body>
