@@ -1,3 +1,3 @@
-web: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1 --log-level info
-worker: python -c "print('No worker processes defined')"
-release: python -c "from main import Base, engine; Base.metadata.create_all(bind=engine); print('Database tables created/verified')"
+web: bash start.sh
+worker: python -c "print('No worker processes defined for v4.3.1')"
+release: python -c "from main import Base, engine; Base.metadata.create_all(bind=engine); print('✅ Database tables created/verified for v4.3.1'); print('🆕 Features: Filtros corregidos, Theil mejorado, Dashboard responsive')"
