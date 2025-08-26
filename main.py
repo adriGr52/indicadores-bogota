@@ -10,9 +10,13 @@ import io, os, logging, re
 from datetime import datetime
 from scipy import stats
 
-# Configurar logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# Configurar logging MÁS DETALLADO
+logging.basicConfig(
+    level=logging.DEBUG,  # Cambiado a DEBUG
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 # Configuración de base de datos
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///fecundidad_temprana.db")
@@ -24,14 +28,14 @@ if DATABASE_URL.startswith("postgres://"):
 # Configuración del engine con fallback
 try:
     if "postgresql://" in DATABASE_URL:
-        engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300, connect_args={"connect_timeout": 10})
+        engine = create_engine(DATABASE_URL, echo=True, pool_pre_ping=True, pool_recycle=300, connect_args={"connect_timeout": 10})
     else:
-        engine = create_engine(DATABASE_URL, echo=False)
+        engine = create_engine(DATABASE_URL, echo=True)  # Echo=True para debugging
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     logger.info("Database engine created successfully")
 except Exception as e:
     logger.error(f"Database engine creation failed: {e}")
-    engine = create_engine("sqlite:///fallback.db", echo=False)
+    engine = create_engine("sqlite:///fallback.db", echo=True)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     logger.warning("Using fallback SQLite database")
 
@@ -80,9 +84,10 @@ def get_db():
 
 # Crear la aplicación FastAPI
 app = FastAPI(
-    title="Exploración Determinantes Fecundidad Temprana - Bogotá D.C.",
-    description="Análisis integral por UPZ v4.3.1 con filtros corregidos",
-    version="4.3.1"
+    title="Exploración Determinantes Fecundidad Temprana - DEBUG v4.3.1",
+    description="Análisis integral con debugging completo",
+    version="4.3.1",
+    debug=True  # Modo debug habilitado
 )
 
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -93,6 +98,15 @@ async def startup_event():
     try:
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created/verified successfully")
+        
+        # Log initial data count
+        db = SessionLocal()
+        try:
+            count = db.query(IndicadorFecundidad).count()
+            logger.info(f"Current records in database: {count}")
+        finally:
+            db.close()
+            
     except Exception as e:
         logger.warning(f"Could not create tables on startup: {e}")
 
@@ -164,12 +178,32 @@ async def health():
             result = db.execute(text("SELECT 1")).scalar()
             db_status = "connected" if result == 1 else "error"
             count = db.query(IndicadorFecundidad).count()
+            
+            # Información adicional de debugging
+            indicadores_count = db.query(IndicadorFecundidad.indicador_nombre).distinct().count()
+            localidades_count = db.query(IndicadorFecundidad.nombre_localidad).distinct().count()
+            
+            logger.info(f"Health check: {count} records, {indicadores_count} indicators, {localidades_count} localidades")
+            
         except Exception as e:
             db_status = f"error: {str(e)[:50]}"
             count = 0
+            indicadores_count = 0
+            localidades_count = 0
+            logger.error(f"Health check database error: {e}")
         finally:
             db.close()
-        return {"status": "healthy", "version": "4.3.1", "database": db_status, "registros": count, "timestamp": datetime.now().isoformat()}
+        
+        return {
+            "status": "healthy", 
+            "version": "4.3.1", 
+            "database": db_status, 
+            "registros": count,
+            "indicadores": indicadores_count,
+            "localidades": localidades_count,
+            "timestamp": datetime.now().isoformat(),
+            "debug_mode": True
+        }
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return JSONResponse(status_code=500, content={"status": "unhealthy", "error": str(e)})
@@ -180,37 +214,127 @@ async def home():
         with open("dashboard_compatible.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
+        logger.warning("Dashboard HTML file not found")
         return HTMLResponse("""
         <html><body style="font-family: Arial; padding: 2rem; text-align: center;">
-            <h1>🏛️ Fecundidad Temprana API v4.3.1</h1>
+            <h1>🛠️ Fecundidad Temprana API v4.3.1 - DEBUG MODE</h1>
             <p><a href="/docs" style="color: #2563eb;">📚 Ver Documentación API</a></p>
+            <p><a href="/health" style="color: #2563eb;">💚 Health Check</a></p>
+            <p><a href="/debug/database" style="color: #f59e0b;">🔍 Debug Database</a></p>
         </body></html>
         """)
 
+# NUEVOS ENDPOINTS DE DEBUGGING
+@app.get("/debug/database")
+async def debug_database(db: Session = Depends(get_db)):
+    """Endpoint de debugging para inspeccionar la base de datos"""
+    try:
+        logger.info("Debug database endpoint called")
+        
+        # Información básica
+        total_records = db.query(IndicadorFecundidad).count()
+        
+        # Muestras de datos
+        sample_records = db.query(IndicadorFecundidad).limit(5).all()
+        
+        # Estadísticas por columna
+        distinct_indicators = db.query(IndicadorFecundidad.indicador_nombre).distinct().count()
+        distinct_localidades = db.query(IndicadorFecundidad.nombre_localidad).distinct().count()
+        distinct_upz = db.query(IndicadorFecundidad.nombre_upz).filter(
+            IndicadorFecundidad.nombre_upz.isnot(None)
+        ).distinct().count()
+        
+        # Primeros 10 indicadores
+        sample_indicators = [r[0] for r in db.query(IndicadorFecundidad.indicador_nombre).distinct().limit(10).all()]
+        
+        # Primeras 10 localidades
+        sample_localidades = [r[0] for r in db.query(IndicadorFecundidad.nombre_localidad).distinct().limit(10).all()]
+        
+        return {
+            "database_status": "accessible",
+            "total_records": total_records,
+            "statistics": {
+                "distinct_indicators": distinct_indicators,
+                "distinct_localidades": distinct_localidades,
+                "distinct_upz": distinct_upz
+            },
+            "sample_data": [
+                {
+                    "id": r.id,
+                    "indicador_nombre": r.indicador_nombre,
+                    "valor": r.valor,
+                    "unidad_medida": r.unidad_medida,
+                    "nombre_localidad": r.nombre_localidad,
+                    "nombre_upz": r.nombre_upz,
+                    "año_inicio": r.año_inicio
+                } for r in sample_records
+            ],
+            "sample_indicators": sample_indicators,
+            "sample_localidades": sample_localidades
+        }
+    except Exception as e:
+        logger.error(f"Debug database error: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e), "database_accessible": False})
+
+@app.get("/debug/raw_data")
+async def debug_raw_data(limit: int = Query(50, ge=1, le=1000), db: Session = Depends(get_db)):
+    """Endpoint para obtener datos raw de la base de datos"""
+    try:
+        logger.info(f"Debug raw data endpoint called with limit {limit}")
+        
+        records = db.query(IndicadorFecundidad).limit(limit).all()
+        
+        return {
+            "total_requested": limit,
+            "total_returned": len(records),
+            "data": [
+                {
+                    "id": r.id,
+                    "indicador_nombre": r.indicador_nombre,
+                    "valor": r.valor,
+                    "unidad_medida": r.unidad_medida,
+                    "nivel_territorial": r.nivel_territorial,
+                    "nombre_localidad": r.nombre_localidad,
+                    "nombre_upz": r.nombre_upz,
+                    "año_inicio": r.año_inicio,
+                    "grupo_etario_asociado": r.grupo_etario_asociado,
+                    "fecha_carga": r.fecha_carga.isoformat() if r.fecha_carga else None
+                } for r in records
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Debug raw data error: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 @app.post("/upload/excel")
 async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    logger.info(f"Upload started for file: {file.filename}")
+    
     if not file.filename.endswith(('.xlsx', '.xls')):
+        logger.error(f"Invalid file type: {file.filename}")
         raise HTTPException(status_code=400, detail="Use archivos .xlsx o .xls")
     
     try:
         contents = await file.read()
         df = pd.read_excel(io.BytesIO(contents), sheet_name=0)
-        logger.info(f"Archivo cargado: {file.filename}, filas: {len(df)}")
-        
-        # Mapeo de columnas
-        column_mapping = {'Dimensión': 'dimension', 'Área Geográfica': 'area_geografica', 'Tipo de Unidad Observación': 'observacion', 'URL_Fuente (Opcional)': 'url_fuente'}
-        for old_col, new_col in column_mapping.items():
-            if old_col in df.columns:
-                df[new_col] = df[old_col]
+        logger.info(f"Excel file loaded: {len(df)} rows, {len(df.columns)} columns")
+        logger.info(f"Columns found: {list(df.columns)}")
         
         # Verificar columnas requeridas
         required_columns = ['Indicador_Nombre', 'Valor', 'Unidad_Medida']
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
+            logger.error(f"Missing required columns: {missing_columns}")
             raise HTTPException(status_code=400, detail=f"Columnas faltantes: {missing_columns}")
+        
+        # Log muestra de datos
+        logger.info("Sample data from Excel:")
+        for idx, row in df.head(3).iterrows():
+            logger.info(f"Row {idx}: Indicador='{row.get('Indicador_Nombre')}', Valor='{row.get('Valor')}', Localidad='{row.get('Nombre Localidad')}'")
         
         # Limpiar tabla y cargar datos
         deleted_count = db.query(IndicadorFecundidad).count()
+        logger.info(f"Deleting {deleted_count} existing records")
         db.query(IndicadorFecundidad).delete()
         
         registros, errores, omitidos_sin_valor = 0, 0, 0
@@ -232,15 +356,13 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
                 nombre_upz = clean_str(row.get('Nombre_UPZ'))
                 if nombre_upz and nombre_upz.upper() in ['ND', 'NO_DATA']:
                     nombre_upz = None
-                año_inicio = None
-                if 'Año_Inicio' in row:
-                    año_inicio = clean_int(row.get('Año_Inicio'))
+                año_inicio = clean_int(row.get('Año_Inicio')) if 'Año_Inicio' in row else None
                 
                 rec = IndicadorFecundidad(
                     origen_archivo=clean_str(row.get('origen_archivo')),
                     archivo_hash=clean_str(row.get('archivo_hash')),
                     indicador_nombre=limpiar_texto(indicador_nombre),
-                    dimension=clean_str(row.get('dimension')),
+                    dimension=clean_str(row.get('Dimensión')),
                     unidad_medida=unidad_medida,
                     tipo_medida=clean_str(row.get('Tipo_Medida')),
                     valor=valor,
@@ -249,7 +371,7 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
                     nombre_localidad=limpiar_texto(nombre_localidad),
                     id_upz=clean_int(row.get('ID_UPZ')),
                     nombre_upz=limpiar_texto(nombre_upz) if nombre_upz else None,
-                    area_geografica=clean_str(row.get('area_geografica')),
+                    area_geografica=clean_str(row.get('Área Geográfica')),
                     año_inicio=año_inicio,
                     periodicidad=clean_str(row.get('Periodicidad')),
                     poblacion_base=clean_str(row.get('Poblacion Base')),
@@ -257,24 +379,34 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
                     grupo_etario_asociado=clean_str(row.get('Grupo Etario Asociado')),
                     sexo=clean_str(row.get('Sexo')),
                     tipo_unidad=clean_str(row.get('Tipo de Unidad')),
-                    observacion=clean_str(row.get('observacion')),
+                    observacion=clean_str(row.get('Tipo de Unidad Observación')),
                     fuente=clean_str(row.get('Fuente')),
-                    url_fuente=clean_str(row.get('url_fuente'))
+                    url_fuente=clean_str(row.get('URL_Fuente (Opcional)'))
                 )
                 db.add(rec)
                 registros += 1
                 
-                if registros % 1000 == 0:
+                if registros % 500 == 0:
                     db.commit()
-                    logger.info(f"Procesados {registros} registros...")
+                    logger.info(f"Committed {registros} records...")
                 
             except Exception as e:
                 errores += 1
-                logger.warning(f"Error en fila {idx}: {e}")
+                if errores <= 5:  # Log only first 5 errors
+                    logger.warning(f"Error in row {idx}: {e}")
         
         db.commit()
+        
+        # Verificar datos cargados
+        final_count = db.query(IndicadorFecundidad).count()
         indicadores_unicos = db.query(IndicadorFecundidad.indicador_nombre).distinct().count()
         localidades_unicas = db.query(IndicadorFecundidad.nombre_localidad).distinct().count()
+        upz_unicas = db.query(IndicadorFecundidad.nombre_upz).filter(
+            IndicadorFecundidad.nombre_upz.isnot(None)
+        ).distinct().count()
+        
+        logger.info(f"Upload completed: {registros} records loaded, {final_count} total in DB")
+        logger.info(f"Unique indicators: {indicadores_unicos}, localidades: {localidades_unicas}, UPZ: {upz_unicas}")
         
         return {
             "status": "success",
@@ -287,7 +419,14 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
                 "errores": errores,
                 "filas_procesadas": len(df),
                 "indicadores_unicos": indicadores_unicos,
-                "localidades_unicas": localidades_unicas
+                "localidades_unicas": localidades_unicas,
+                "upz_unicas": upz_unicas,
+                "verificacion_final": final_count
+            },
+            "debug_info": {
+                "columns_found": list(df.columns),
+                "sample_indicators": df['Indicador_Nombre'].dropna().head(5).tolist(),
+                "sample_localidades": df['Nombre Localidad'].dropna().head(5).tolist() if 'Nombre Localidad' in df.columns else []
             }
         }
         
@@ -298,37 +437,75 @@ async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_d
 
 @app.get("/metadatos")
 async def metadatos(db: Session = Depends(get_db)):
-    total = db.query(IndicadorFecundidad).count()
+    logger.info("Metadatos endpoint called")
     
-    # Indicadores
-    todos_indicadores_raw = [r[0] for r in db.query(IndicadorFecundidad.indicador_nombre).distinct().all()]
-    todos_indicadores = [limpiar_texto(ind) for ind in todos_indicadores_raw if ind]
-    
-    # Geografía
-    localidades_raw = [r[0] for r in db.query(IndicadorFecundidad.nombre_localidad).distinct().all()]
-    localidades = [limpiar_texto(loc) for loc in localidades_raw if loc and loc != 'SIN LOCALIDAD']
-    
-    upzs_raw = [r[0] for r in db.query(IndicadorFecundidad.nombre_upz).filter(IndicadorFecundidad.nombre_upz.isnot(None)).distinct().all()]
-    upzs = [limpiar_texto(upz) for upz in upzs_raw if upz and upz not in ['ND', 'NO_DATA', 'SIN UPZ']]
-    
-    # Temporal
-    años = sorted([r[0] for r in db.query(IndicadorFecundidad.año_inicio).filter(IndicadorFecundidad.año_inicio.isnot(None)).distinct().all()])
-    
-    return {
-        "resumen": {
-            "total_registros": total,
-            "total_indicadores": len(todos_indicadores),
-            "localidades": len(localidades),
-            "upz": len(upzs),
-            "rango_años": {"min": min(años) if años else None, "max": max(años) if años else None}
-        },
-        "indicadores": {"todos": sorted(todos_indicadores)},
-        "geografia": {"localidades": sorted(localidades), "upz": sorted(upzs)},
-        "temporal": {"años": años, "cohortes": sorted(list(COHORTES_VALIDAS))}
-    }
+    try:
+        total = db.query(IndicadorFecundidad).count()
+        logger.info(f"Total records: {total}")
+        
+        if total == 0:
+            logger.warning("No records found in database")
+            return {
+                "resumen": {"total_registros": 0, "total_indicadores": 0, "localidades": 0, "upz": 0},
+                "indicadores": {"todos": []},
+                "geografia": {"localidades": [], "upz": []},
+                "temporal": {"años": [], "cohortes": sorted(list(COHORTES_VALIDAS))},
+                "debug_info": {"message": "No data in database", "total_records": 0}
+            }
+        
+        # Indicadores
+        todos_indicadores_raw = [r[0] for r in db.query(IndicadorFecundidad.indicador_nombre).distinct().all()]
+        todos_indicadores = [limpiar_texto(ind) for ind in todos_indicadores_raw if ind]
+        logger.info(f"Found {len(todos_indicadores)} unique indicators")
+        
+        # Geografía
+        localidades_raw = [r[0] for r in db.query(IndicadorFecundidad.nombre_localidad).distinct().all()]
+        localidades = [limpiar_texto(loc) for loc in localidades_raw if loc and loc != 'SIN LOCALIDAD']
+        logger.info(f"Found {len(localidades)} localidades")
+        
+        upzs_raw = [r[0] for r in db.query(IndicadorFecundidad.nombre_upz).filter(
+            IndicadorFecundidad.nombre_upz.isnot(None)
+        ).distinct().all()]
+        upzs = [limpiar_texto(upz) for upz in upzs_raw if upz and upz not in ['ND', 'NO_DATA', 'SIN UPZ']]
+        logger.info(f"Found {len(upzs)} UPZ")
+        
+        # Temporal
+        años = sorted([r[0] for r in db.query(IndicadorFecundidad.año_inicio).filter(
+            IndicadorFecundidad.año_inicio.isnot(None)
+        ).distinct().all()])
+        logger.info(f"Found years: {años}")
+        
+        result = {
+            "resumen": {
+                "total_registros": total,
+                "total_indicadores": len(todos_indicadores),
+                "localidades": len(localidades),
+                "upz": len(upzs),
+                "rango_años": {"min": min(años) if años else None, "max": max(años) if años else None}
+            },
+            "indicadores": {"todos": sorted(todos_indicadores)},
+            "geografia": {"localidades": sorted(localidades), "upz": sorted(upzs)},
+            "temporal": {"años": años, "cohortes": sorted(list(COHORTES_VALIDAS))},
+            "debug_info": {
+                "raw_indicators_count": len(todos_indicadores_raw),
+                "raw_localidades_count": len(localidades_raw),
+                "raw_upz_count": len(upzs_raw),
+                "sample_indicators": todos_indicadores[:5],
+                "sample_localidades": localidades[:5]
+            }
+        }
+        
+        logger.info("Metadatos response prepared successfully")
+        return result
+        
+    except Exception as e:
+        logger.exception("Error in metadatos endpoint")
+        raise HTTPException(status_code=500, detail=f"Error getting metadata: {str(e)}")
 
 @app.get("/geografia/upz_por_localidad")
 async def upz_por_localidad(localidad: str = Query(...), db: Session = Depends(get_db)):
+    logger.info(f"UPZ por localidad called for: {localidad}")
+    
     try:
         upzs = db.query(IndicadorFecundidad.nombre_upz).filter(
             IndicadorFecundidad.nombre_localidad == localidad,
@@ -341,12 +518,42 @@ async def upz_por_localidad(localidad: str = Query(...), db: Session = Depends(g
         upz_list = [limpiar_texto(upz[0]) for upz in upzs if upz[0]]
         upz_list = sorted(list(set(upz_list)))
         
+        logger.info(f"Found {len(upz_list)} UPZ for localidad {localidad}")
+        
         return {"localidad": localidad, "upz": upz_list, "total": len(upz_list)}
     except Exception as e:
         logger.error(f"Error getting UPZ for localidad {localidad}: {e}")
-        return {"localidad": localidad, "upz": [], "total": 0}
+        return {"localidad": localidad, "upz": [], "total": 0, "error": str(e)}
 
-# Endpoints de análisis con filtros corregidos
+@app.get("/debug/columns")
+async def debug_columns():
+    """Endpoint de debug mejorado"""
+    return {
+        "columnas_requeridas": ["Indicador_Nombre", "Valor", "Unidad_Medida"],
+        "columnas_opcionales": [
+            "origen_archivo", "archivo_hash", "Dimensión", "Tipo_Medida",
+            "Nivel_Territorial", "ID Localidad", "Nombre Localidad", 
+            "ID_UPZ", "Nombre_UPZ", "Área Geográfica", "Año_Inicio",
+            "Periodicidad", "Poblacion Base", "Semaforo", "Grupo Etario Asociado",
+            "Sexo", "Tipo de Unidad", "Tipo de Unidad Observación", 
+            "Fuente", "URL_Fuente (Opcional)"
+        ],
+        "ejemplo_estructura": {
+            "Indicador_Nombre": "Tasa Específica de Fecundidad en niñas de 10 a 14 años",
+            "Valor": 1.2,
+            "Unidad_Medida": "Por cada 1000 niñas",
+            "Nombre Localidad": "Usaquén",
+            "Año_Inicio": 2020
+        },
+        "mejoras_v431": [
+            "Dashboard con debugging completo",
+            "Logging detallado de todas las operaciones",
+            "Endpoints de debugging adicionales",
+            "Verificación paso a paso de datos"
+        ]
+    }
+
+# Endpoints de análisis simplificados para debugging
 @app.get("/caracterizacion")
 async def caracterizacion(
     indicador: str = Query(...),
@@ -356,303 +563,100 @@ async def caracterizacion(
     año: Optional[int] = Query(None),
     db: Session = Depends(get_db)
 ):
-    q = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
+    logger.info(f"Caracterizacion called: indicador='{indicador}', nivel='{nivel}', localidad='{localidad}', upz='{upz}'")
     
-    if año is not None:
-        q = q.filter(IndicadorFecundidad.año_inicio == año)
-    if localidad:
-        q = q.filter(IndicadorFecundidad.nombre_localidad == localidad)
-    if upz:
-        q = q.filter(IndicadorFecundidad.nombre_upz == upz)
-    
-    rows = q.all()
-    if not rows:
-        return {"mensaje": "Sin datos para los filtros especificados"}
-    
-    # Agrupar por UPZ
-    grupos = {}
-    unidad_medida = rows[0].unidad_medida if rows else "N/A"
-    
-    for r in rows:
-        if nivel.upper() == "LOCALIDAD":
-            k = limpiar_texto(r.nombre_localidad) if r.nombre_localidad else "SIN LOCALIDAD"
-        else:
-            upz_name = r.nombre_upz or "SIN UPZ"
-            k = limpiar_texto(upz_name) if upz_name not in ['ND', 'NO_DATA', ''] else "SIN UPZ"
-        grupos.setdefault(k, []).append(r.valor)
-    
-    # Calcular estadísticas
-    datos = []
-    for upz, valores in grupos.items():
-        if not valores: continue
-        arr = np.array(valores, dtype=float)
-        if arr.size == 0: continue
+    try:
+        # Verificar que el indicador existe
+        indicator_exists = db.query(IndicadorFecundidad).filter(
+            IndicadorFecundidad.indicador_nombre == indicador
+        ).first()
         
-        q1, mediana, q3 = np.percentile(arr, [25, 50, 75])
-        promedio = float(np.mean(arr))
-        std = float(np.std(arr, ddof=0))
-        cv = float((std/promedio)*100) if promedio != 0 else 0.0
+        if not indicator_exists:
+            logger.warning(f"Indicator '{indicador}' not found in database")
+            return {"mensaje": f"Indicador '{indicador}' no encontrado en la base de datos"}
         
-        datos.append({
-            "upz": upz,
-            "n": int(arr.size),
-            "promedio": round(promedio, 3),
-            "mediana": round(float(mediana), 3),
-            "q1": round(float(q1), 3),
-            "q3": round(float(q3), 3),
-            "min": round(float(np.min(arr)), 3),
-            "max": round(float(np.max(arr)), 3),
-            "desv_estandar": round(std, 3),
-            "cv_pct": round(cv, 2)
-        })
-    
-    datos.sort(key=lambda x: x["promedio"], reverse=True)
-    
-    return {
-        "indicador": limpiar_texto(indicador),
-        "nivel": nivel.upper(),
-        "año": año,
-        "localidad": localidad,
-        "upz": upz,
-        "unidad_medida": unidad_medida,
-        "total_upz": len(datos),
-        "resumen": {
-            "promedio_general": round(float(np.mean([d["promedio"] for d in datos])), 3) if datos else 0,
-            "n_total": int(sum(d["n"] for d in datos)) if datos else 0
-        },
-        "datos": datos
-    }
-
-@app.get("/analisis/theil")
-async def indice_theil(
-    indicador: str = Query(...),
-    nivel: str = Query("UPZ"),
-    año: Optional[int] = Query(None),
-    localidad: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
-):
-    q = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
-    
-    if año is not None:
-        q = q.filter(IndicadorFecundidad.año_inicio == año)
-    if localidad:
-        q = q.filter(IndicadorFecundidad.nombre_localidad == localidad)
-    
-    rows = q.all()
-    if not rows:
-        return {"mensaje": "Sin datos para los filtros especificados"}
-    
-    # Agrupar por UPZ
-    grupos = {}
-    unidad_medida = rows[0].unidad_medida if rows else "N/A"
-    
-    for r in rows:
-        if nivel.upper() == "LOCALIDAD":
-            k = limpiar_texto(r.nombre_localidad) if r.nombre_localidad else "SIN LOCALIDAD"
-        else:
-            upz_name = r.nombre_upz or "SIN UPZ"
-            k = limpiar_texto(upz_name) if upz_name not in ['ND', 'NO_DATA', ''] else "SIN UPZ"
-        grupos.setdefault(k, []).append(r.valor)
-    
-    # Calcular promedios por UPZ
-    upzs = []
-    valores = []
-    
-    for upz, vals in grupos.items():
-        if vals:
-            promedio = float(np.mean(vals))
-            upzs.append(upz)
-            valores.append(promedio)
-    
-    if len(valores) < 2:
-        return {"mensaje": "Insuficientes UPZ para calcular el índice de Theil"}
-    
-    # Calcular índice de Theil
-    theil = calcular_indice_theil(valores)
-    
-    # Estadísticas
-    mean_val = float(np.mean(valores))
-    std_val = float(np.std(valores))
-    cv = (std_val / mean_val * 100) if mean_val != 0 else 0
-    
-    # TODAS las UPZ (no solo top 10)
-    datos_upz = []
-    for i, upz in enumerate(upzs):
-        datos_upz.append({
-            "upz": upz,
-            "valor": round(valores[i], 3),
-            "desviacion_media": round(valores[i] - mean_val, 3),
-            "ratio_media": round(valores[i] / mean_val, 3) if mean_val != 0 else 0
-        })
-    
-    datos_upz.sort(key=lambda x: x["valor"], reverse=True)
-    
-    return {
-        "indicador": limpiar_texto(indicador),
-        "nivel": nivel.upper(),
-        "año": año,
-        "localidad": localidad,
-        "unidad_medida": unidad_medida,
-        "indice_theil": round(theil, 4),
-        "interpretacion": {
-            "valor": round(theil, 4),
-            "significado": "0 = igualdad perfecta, >0 = mayor desigualdad",
-            "categoria": "Baja" if theil < 0.1 else "Moderada" if theil < 0.3 else "Alta"
-        },
-        "estadisticas": {
-            "upz": len(upzs),
-            "promedio_general": round(mean_val, 3),
-            "desviacion_estandar": round(std_val, 3),
-            "coeficiente_variacion": round(cv, 2),
-            "min": round(min(valores), 3),
-            "max": round(max(valores), 3)
-        },
-        "datos": datos_upz  # TODAS las UPZ
-    }
-
-@app.get("/analisis/asociacion")
-async def asociacion_indicadores(
-    indicador_x: str = Query(...),
-    indicador_y: str = Query(...),
-    nivel: str = Query("UPZ"),
-    localidad: Optional[str] = Query(None),
-    upz: Optional[str] = Query(None),
-    año: Optional[int] = Query(None),
-    db: Session = Depends(get_db)
-):
-    qx = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador_x)
-    qy = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador_y)
-    
-    if año is not None:
-        qx = qx.filter(IndicadorFecundidad.año_inicio == año)
-        qy = qy.filter(IndicadorFecundidad.año_inicio == año)
-    
-    if localidad:
-        qx = qx.filter(IndicadorFecundidad.nombre_localidad == localidad)
-        qy = qy.filter(IndicadorFecundidad.nombre_localidad == localidad)
-    
-    if upz:
-        qx = qx.filter(IndicadorFecundidad.nombre_upz == upz)
-        qy = qy.filter(IndicadorFecundidad.nombre_upz == upz)
-    
-    x_rows = qx.all()
-    y_rows = qy.all()
-    
-    if not x_rows or not y_rows:
-        return {"mensaje": "No se encontraron datos para los indicadores seleccionados"}
-    
-    # Agrupar por UPZ
-    x_map = {}
-    y_map = {}
-    
-    for r in x_rows:
-        k = limpiar_texto(r.nombre_upz) if r.nombre_upz else "SIN UPZ"
-        x_map.setdefault(k, []).append(r.valor)
-    
-    for r in y_rows:
-        k = limpiar_texto(r.nombre_upz) if r.nombre_upz else "SIN UPZ"
-        y_map.setdefault(k, []).append(r.valor)
-    
-    # UPZ comunes
-    upz_comunes = set(x_map.keys()) & set(y_map.keys())
-    if len(upz_comunes) < 3:
-        return {"mensaje": "Insuficientes UPZ comunes para el análisis"}
-    
-    # Calcular promedios
-    x_mean = {k: float(np.mean(v)) for k, v in x_map.items() if k in upz_comunes}
-    y_mean = {k: float(np.mean(v)) for k, v in y_map.items() if k in upz_comunes}
-    
-    # Arrays para correlación
-    x_vals = [x_mean[t] for t in upz_comunes]
-    y_vals = [y_mean[t] for t in upz_comunes]
-    
-    if np.std(x_vals) == 0 or np.std(y_vals) == 0:
-        return {"mensaje": "Una de las variables no tiene variación"}
-    
-    # Correlaciones
-    r_p, p_p = stats.pearsonr(x_vals, y_vals)
-    r_s, p_s = stats.spearmanr(x_vals, y_vals)
-    
-    # Categorizar correlación
-    abs_r = abs(float(r_p))
-    if abs_r >= 0.7: categoria = "Fuerte"
-    elif abs_r >= 0.5: categoria = "Moderada"
-    elif abs_r >= 0.3: categoria = "Débil"
-    else: categoria = "Muy débil"
-    
-    # Datos para gráfico
-    datos_pares = []
-    for upz in upz_comunes:
-        datos_pares.append({"upz": upz, "x": round(x_mean[upz], 3), "y": round(y_mean[upz], 3)})
-    
-    return {
-        "indicador_x": limpiar_texto(indicador_x),
-        "indicador_y": limpiar_texto(indicador_y),
-        "nivel": nivel.upper(),
-        "año": año,
-        "localidad": localidad,
-        "upz": upz,
-        "upz_comunes": len(upz_comunes),
-        "correlacion": {
-            "pearson_r": round(float(r_p), 3),
-            "pearson_p": round(float(p_p), 4),
-            "spearman_rho": round(float(r_s), 3),
-            "spearman_p": round(float(p_s), 4),
-            "categoria": categoria,
-            "significativa": float(p_p) < 0.05
-        },
-        "datos": datos_pares
-    }
-
-@app.get("/datos/series")
-async def serie_temporal(
-    indicador: str = Query(...),
-    upz: str = Query(...),
-    nivel: str = Query("UPZ"),
-    db: Session = Depends(get_db)
-):
-    q = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
-    
-    if nivel.upper() == "LOCALIDAD":
-        q = q.filter(IndicadorFecundidad.nombre_localidad == upz)
-    else:
-        q = q.filter(IndicadorFecundidad.nombre_upz == upz)
-    
-    rows = q.filter(IndicadorFecundidad.año_inicio.isnot(None)).order_by(IndicadorFecundidad.año_inicio.asc()).all()
-    
-    if not rows:
-        return {"mensaje": "Sin datos para los filtros especificados"}
-    
-    # Agrupar por año
-    grupos_año = {}
-    unidad_medida = rows[0].unidad_medida if rows else "N/A"
-    
-    for r in rows:
-        grupos_año.setdefault(r.año_inicio, []).append(r.valor)
-    
-    # Calcular serie
-    serie_datos = []
-    for año in sorted(grupos_año.keys()):
-        valores = grupos_año[año]
-        serie_datos.append({
+        q = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
+        
+        if año is not None:
+            q = q.filter(IndicadorFecundidad.año_inicio == año)
+        if localidad:
+            q = q.filter(IndicadorFecundidad.nombre_localidad == localidad)
+        if upz:
+            q = q.filter(IndicadorFecundidad.nombre_upz == upz)
+        
+        rows = q.all()
+        logger.info(f"Query returned {len(rows)} rows")
+        
+        if not rows:
+            return {"mensaje": "Sin datos para los filtros especificados"}
+        
+        # Agrupar por UPZ
+        grupos = {}
+        unidad_medida = rows[0].unidad_medida if rows else "N/A"
+        
+        for r in rows:
+            if nivel.upper() == "LOCALIDAD":
+                k = limpiar_texto(r.nombre_localidad) if r.nombre_localidad else "SIN LOCALIDAD"
+            else:
+                upz_name = r.nombre_upz or "SIN UPZ"
+                k = limpiar_texto(upz_name) if upz_name not in ['ND', 'NO_DATA', ''] else "SIN UPZ"
+            grupos.setdefault(k, []).append(r.valor)
+        
+        logger.info(f"Grouped data into {len(grupos)} groups: {list(grupos.keys())}")
+        
+        # Calcular estadísticas
+        datos = []
+        for upz, valores in grupos.items():
+            if not valores: continue
+            arr = np.array(valores, dtype=float)
+            if arr.size == 0: continue
+            
+            q1, mediana, q3 = np.percentile(arr, [25, 50, 75])
+            promedio = float(np.mean(arr))
+            std = float(np.std(arr, ddof=0))
+            cv = float((std/promedio)*100) if promedio != 0 else 0.0
+            
+            datos.append({
+                "upz": upz,
+                "n": int(arr.size),
+                "promedio": round(promedio, 3),
+                "mediana": round(float(mediana), 3),
+                "q1": round(float(q1), 3),
+                "q3": round(float(q3), 3),
+                "min": round(float(np.min(arr)), 3),
+                "max": round(float(np.max(arr)), 3),
+                "desv_estandar": round(std, 3),
+                "cv_pct": round(cv, 2)
+            })
+        
+        datos.sort(key=lambda x: x["promedio"], reverse=True)
+        logger.info(f"Calculated statistics for {len(datos)} groups")
+        
+        return {
+            "indicador": limpiar_texto(indicador),
+            "nivel": nivel.upper(),
             "año": año,
-            "valor": round(float(np.mean(valores)), 3),
-            "n_observaciones": len(valores),
-            "min": round(float(np.min(valores)), 3),
-            "max": round(float(np.max(valores)), 3)
-        })
-    
-    return {
-        "indicador": limpiar_texto(indicador),
-        "nivel": nivel.upper(),
-        "upz": upz,
-        "unidad_medida": unidad_medida,
-        "periodo": {"inicio": min(grupos_año.keys()), "fin": max(grupos_año.keys()), "años": len(grupos_año)},
-        "serie": serie_datos
-    }
+            "localidad": localidad,
+            "upz": upz,
+            "unidad_medida": unidad_medida,
+            "total_upz": len(datos),
+            "resumen": {
+                "promedio_general": round(float(np.mean([d["promedio"] for d in datos])), 3) if datos else 0,
+                "n_total": int(sum(d["n"] for d in datos)) if datos else 0
+            },
+            "datos": datos,
+            "debug_info": {
+                "rows_found": len(rows),
+                "groups_created": len(grupos),
+                "filters_applied": {"año": año, "localidad": localidad, "upz": upz}
+            }
+        }
+    except Exception as e:
+        logger.exception(f"Error in caracterizacion: {e}")
+        raise HTTPException(status_code=500, detail=f"Error en caracterización: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
-    logger.info(f"Iniciando servidor v4.3.1 en puerto {port}")
-    uvicorn.run("main:app", host="0.0.0.0", port=port, log_level="info", access_log=True)
+    logger.info(f"Starting DEBUG server v4.3.1 on port {port}")
+    uvicorn.run("main:app", host="0.0.0.0", port=port, log_level="debug", access_log=True, reload=True)
