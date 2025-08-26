@@ -3,22 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Fecundidad Temprana Bogotá</title>
+    <title>Dashboard - Fecundidad Temprana Bogotá v4.3.1</title>
     
     <!-- TailwindCSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: { DEFAULT:'#1e3a8a', 50:'#eff6ff', 100:'#dbeafe', 200:'#bfdbfe', 300:'#93c5fd', 400:'#60a5fa', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 800:'#1e40af', 900:'#1e3a8a' },
-                        accent: { DEFAULT:'#06b6d4' }
-                    }
-                }
-            }
-        }
-    </script>
     
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
@@ -30,201 +18,149 @@
         .card { 
             background:#fff; 
             border-radius:1rem; 
-            box-shadow:0 10px 20px rgba(2, 6, 23, .04), 0 2px 6px rgba(2, 6, 23, .06); 
-            border:1px solid #e2e8f0; 
+            box-shadow:0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); 
+            border:1px solid #e5e7eb; 
         }
         .btn { 
             display:inline-flex; 
             align-items:center; 
             gap:.5rem; 
             padding:.75rem 1rem; 
-            border-radius:.75rem; 
-            border:1px solid #cbd5e1; 
+            border-radius:.5rem; 
+            border:1px solid #d1d5db; 
             background:#fff; 
             transition: all .2s; 
             cursor: pointer; 
-            text-align: left;
-            flex-direction: column;
-            min-height: 3.5rem;
+            text-align: center;
+            font-size: 0.875rem;
         }
-        .btn:hover { background:#f8fafc; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .btn:hover { background:#f9fafb; transform: translateY(-1px); }
         .btn-primary { background:#2563eb; border-color:#2563eb; color:#fff; }
         .btn-primary:hover { background:#1d4ed8; }
-        .btn-dark { background:#1f2937; border-color:#374151; color:#fff; }
-        .btn-dark:hover { background:#111827; }
-        .chip { display:inline-flex; align-items:center; gap:.25rem; border-radius:999px; padding:.125rem .5rem; font-size:.75rem; background:#e0f2fe; color:#075985; }
-        .pill { display:inline-flex; align-items:center; gap:.375rem; border-radius:999px; padding:.125rem .5rem; font-size:.75rem; background:#eef2ff; color:#3730a3; }
-        .muted { color:#64748b; }
-        .kpi { font-size:1.75rem; font-weight:700; }
-        .grad { background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 40%, #06b6d4 100%); }
-        .shadow-soft { box-shadow: 0 10px 20px rgba(2,6,23,.08), 0 3px 8px rgba(2,6,23,.1); }
-        .spinner { border:3px solid #e5e7eb; border-top-color:#2563eb; border-radius:999px; width:20px; height:20px; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
-        .tabs button[aria-selected="true"] { background:#1e40af; color:white; border-color:#1e40af; }
+        .btn-primary:disabled { background:#9ca3af; cursor: not-allowed; transform: none; }
+        
+        .tabs { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 0.5rem; 
+            margin-bottom: 2rem; 
+        }
+        .tabs button[aria-selected="true"] { 
+            background:#1e40af; 
+            color:white; 
+            border-color:#1e40af; 
+        }
         .tabs button { 
             background:#eff6ff; 
             color:#1e3a8a; 
             border:1px solid #bfdbfe; 
             padding: 1rem;
             text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-            min-height: 5rem;
-        }
-        .tabs button:hover {
-            background:#dbeafe;
-            border-color:#93c5fd;
-        }
-        .tab-title {
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
-        .tab-description {
-            font-size: 0.75rem;
-            opacity: 0.8;
-            line-height: 1.2;
-        }
-        .loading { opacity: 0.5; pointer-events: none; }
-        .alert { padding: 1rem; border-radius: 0.75rem; margin: 1rem 0; }
-        .alert-success { background: #dcfce7; border: 1px solid #16a34a; color: #15803d; }
-        .alert-error { background: #fef2f2; border: 1px solid #dc2626; color: #dc2626; }
-        .alert-info { background: #dbeafe; border: 1px solid #2563eb; color: #1d4ed8; }
-        
-        /* Chart container fixes */
-        .chart-container {
-            position: relative;
-            width: 100%;
-            height: 300px;
-            max-height: 400px;
-        }
-        
-        .chart-container-small {
-            position: relative;
-            width: 100%;
-            height: 250px;
-            max-height: 300px;
-        }
-        
-        .chart-container-large {
-            position: relative;
-            width: 100%;
-            height: 350px;
-            max-height: 450px;
-        }
-        
-        /* Scrollable chart container for Theil */
-        .chart-container-scrollable {
-            position: relative;
-            width: 100%;
-            height: 400px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            border: 1px solid #e5e7eb;
             border-radius: 0.5rem;
-            background: #fff;
-        }
-        
-        .chart-container-scrollable canvas {
-            min-width: 800px; /* Minimum width to show all bars */
-        }
-        
-        /* Compact theil indicator display */
-        .theil-compact {
-            text-align: center;
-            padding: 1.5rem;
-            min-height: 200px;
+            transition: all 0.2s;
+            min-height: 4rem;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .tabs button:hover { background:#dbeafe; border-color:#93c5fd; }
+        
+        .loading { opacity: 0.5; pointer-events: none; }
+        .spinner { 
+            border:3px solid #e5e7eb; 
+            border-top-color:#2563eb; 
+            border-radius:50%; 
+            width:20px; 
+            height:20px; 
+            animation: spin 1s linear infinite; 
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .alert { padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; }
+        .alert-success { background: #dcfce7; border: 1px solid #16a34a; color: #15803d; }
+        .alert-error { background: #fef2f2; border: 1px solid #dc2626; color: #dc2626; }
+        .alert-info { background: #dbeafe; border: 1px solid #2563eb; color: #1d4ed8; }
+        .alert-warning { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; }
+        
+        /* Chart containers específicos */
+        .chart-small { position: relative; height: 300px; }
+        .chart-medium { position: relative; height: 400px; }
+        .chart-scrollable { 
+            position: relative; 
+            height: 400px; 
+            overflow-x: auto; 
+            overflow-y: hidden;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+        }
+        .chart-scrollable canvas { min-width: 100%; }
+        
+        /* Form styles */
+        select, input { 
+            width: 100%; 
+            padding: 0.5rem 0.75rem; 
+            border: 1px solid #d1d5db; 
+            border-radius: 0.375rem; 
+            font-size: 0.875rem;
+            background: white;
+        }
+        select:focus, input:focus { 
+            outline: none; 
+            ring: 2px; 
+            ring-color: #2563eb; 
+            border-color: #2563eb; 
         }
         
-        /* Responsive select fixes */
-        select {
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .kpi-card {
+            text-align: center;
+            padding: 1rem;
+        }
+        .kpi-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1f2937;
+        }
+        .kpi-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
         }
         
-        /* Better table responsiveness */
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .table-responsive table {
-            min-width: 100%;
-            white-space: nowrap;
-        }
-        
-        /* Mobile optimizations */
+        /* Responsive */
         @media (max-width: 768px) {
-            .chart-container, .chart-container-small, .chart-container-large {
-                height: 250px;
-                max-height: 300px;
+            .tabs { 
+                grid-template-columns: repeat(2, 1fr); 
             }
-            
-            .chart-container-scrollable {
-                height: 300px;
-            }
-            
-            .tabs {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 0.5rem;
-            }
-            
-            .tabs button {
-                min-height: 4rem;
-                padding: 0.75rem 0.5rem;
-            }
-            
-            .tab-title {
-                font-size: 0.75rem;
-            }
-            
-            .tab-description {
-                font-size: 0.625rem;
-            }
-            
-            .grid {
-                grid-template-columns: 1fr;
-                gap: 0.75rem;
-            }
-            
-            .lg\:grid-cols-2 {
-                grid-template-columns: 1fr;
-            }
-            
-            .lg\:grid-cols-3 {
-                grid-template-columns: 1fr;
-            }
+            .chart-small, .chart-medium { height: 250px; }
+            .chart-scrollable { height: 300px; }
         }
         
         @media (max-width: 640px) {
-            .tabs {
-                grid-template-columns: 1fr;
+            .tabs { 
+                grid-template-columns: 1fr; 
             }
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-gray-50 text-gray-800">
     <!-- Header -->
-    <header class="grad text-white">
-        <div class="max-w-7xl mx-auto px-4 py-4 sm:py-6">
+    <header class="bg-gradient-to-r from-blue-800 to-blue-600 text-white">
+        <div class="max-w-7xl mx-auto px-4 py-6">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
+                    <h1 class="text-2xl md:text-3xl font-bold">
                         🏛️ Exploración Determinantes Fecundidad Temprana
                     </h1>
-                    <p class="mt-1 text-slate-100/90 text-sm sm:text-base">
-                        Bogotá D.C. • Análisis territorial por UPZ (10-14, 15-19)
+                    <p class="mt-1 text-blue-100">
+                        Bogotá D.C. • Análisis territorial por UPZ (Cohortes 10-14, 15-19 años) v4.3.1
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button id="btnRefresh" class="btn btn-dark shadow-soft text-sm">
+                    <button id="btnRefresh" class="btn bg-gray-700 text-white border-gray-600 hover:bg-gray-600">
                         <i class="ti ti-refresh"></i> Actualizar
                     </button>
                 </div>
@@ -232,147 +168,130 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 py-4 sm:py-6 space-y-6 sm:space-y-8">
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <!-- KPIs -->
-        <section class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-            <div class="card p-3 sm:p-4">
-                <div class="flex items-center justify-between">
-                    <span class="muted text-xs sm:text-sm">Registros</span>
-                    <span class="pill text-xs">Total</span>
-                </div>
-                <div id="kpiTotal" class="text-lg sm:text-xl lg:text-2xl font-bold mt-1">-</div>
-                <div class="muted text-xs">Datos cargados</div>
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="card kpi-card">
+                <div class="kpi-number" id="kpiTotal">-</div>
+                <div class="kpi-label">Registros Totales</div>
             </div>
-            <div class="card p-3 sm:p-4">
-                <div class="flex items-center justify-between">
-                    <span class="muted text-xs sm:text-sm">Indicadores</span>
-                    <span class="pill text-xs">Únicos</span>
-                </div>
-                <div id="kpiIndicadores" class="text-lg sm:text-xl lg:text-2xl font-bold mt-1">-</div>
-                <div class="muted text-xs">Variables disponibles</div>
+            <div class="card kpi-card">
+                <div class="kpi-number" id="kpiIndicadores">-</div>
+                <div class="kpi-label">Indicadores Únicos</div>
             </div>
-            <div class="card p-3 sm:p-4">
-                <div class="flex items-center justify-between">
-                    <span class="muted text-xs sm:text-sm">Localidades</span>
-                    <span class="pill text-xs">Cobertura</span>
-                </div>
-                <div id="kpiLocalidades" class="text-lg sm:text-xl lg:text-2xl font-bold mt-1">-</div>
-                <div class="muted text-xs">Unidades admin.</div>
+            <div class="card kpi-card">
+                <div class="kpi-number" id="kpiLocalidades">-</div>
+                <div class="kpi-label">Localidades</div>
             </div>
-            <div class="card p-3 sm:p-4">
-                <div class="flex items-center justify-between">
-                    <span class="muted text-xs sm:text-sm">UPZ</span>
-                    <span class="pill text-xs">Cobertura</span>
-                </div>
-                <div id="kpiUpz" class="text-lg sm:text-xl lg:text-2xl font-bold mt-1">-</div>
-                <div class="muted text-xs">Unidades territoriales</div>
+            <div class="card kpi-card">
+                <div class="kpi-number" id="kpiUpz">-</div>
+                <div class="kpi-label">UPZ</div>
             </div>
         </section>
 
         <!-- Upload Section -->
-        <section class="card p-4 sm:p-5">
+        <section class="card p-6">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="font-semibold text-primary-800 flex items-center gap-2 text-sm sm:text-base">
-                    <i class="ti ti-upload"></i> Carga de Datos
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="ti ti-upload"></i> Carga de Datos Excel
                 </h2>
-                <span class="chip text-xs">POST /upload/excel</span>
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">POST /upload/excel</span>
             </div>
-            <div class="grid md:grid-cols-2 gap-4">
-                <div>
+            <div class="grid md:grid-cols-3 gap-4 items-end">
+                <div class="md:col-span-2">
                     <label class="block text-sm font-medium mb-2">Archivo Excel (.xlsx, .xls)</label>
                     <input id="fileInput" type="file" accept=".xlsx,.xls" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
+                           class="w-full">
                 </div>
-                <div class="flex items-end gap-2">
-                    <button id="btnUpload" class="btn btn-primary text-sm">
+                <div class="flex gap-2">
+                    <button id="btnUpload" class="btn btn-primary">
                         <i class="ti ti-cloud-upload"></i> Subir Archivo
                     </button>
-                    <div id="uploadSpinner" class="hidden spinner"></div>
+                    <div id="uploadSpinner" class="spinner hidden"></div>
                 </div>
             </div>
             <div id="uploadResult" class="mt-4"></div>
         </section>
 
-        <!-- Analysis Tabs with Corrected Order -->
+        <!-- Analysis Tabs -->
         <section class="space-y-4">
             <div class="tabs">
                 <button class="btn" data-tab="caracterizacion" aria-selected="true">
                     <i class="ti ti-chart-bar text-xl"></i>
-                    <div class="tab-title">Caracterización</div>
-                    <div class="tab-description">Estadísticas por UPZ y localidad</div>
+                    <span class="text-sm font-medium">Caracterización</span>
+                    <span class="text-xs opacity-75">Estadísticas UPZ</span>
                 </button>
                 <button class="btn" data-tab="series">
                     <i class="ti ti-trending-up text-xl"></i>
-                    <div class="tab-title">Series</div>
-                    <div class="tab-description">Evolución temporal por UPZ</div>
+                    <span class="text-sm font-medium">Series</span>
+                    <span class="text-xs opacity-75">Evolución temporal</span>
                 </button>
                 <button class="btn" data-tab="asociacion">
                     <i class="ti ti-chart-dots text-xl"></i>
-                    <div class="tab-title">Asociación</div>
-                    <div class="tab-description">Correlaciones entre variables</div>
+                    <span class="text-sm font-medium">Asociación</span>
+                    <span class="text-xs opacity-75">Correlaciones</span>
                 </button>
                 <button class="btn" data-tab="theil">
                     <i class="ti ti-balance text-xl"></i>
-                    <div class="tab-title">Desigualdad</div>
-                    <div class="tab-description">Índice de Theil territorial</div>
+                    <span class="text-sm font-medium">Desigualdad</span>
+                    <span class="text-xs opacity-75">Índice Theil</span>
                 </button>
             </div>
 
             <!-- Caracterización -->
-            <div id="tab-caracterizacion" class="card p-4 sm:p-5 space-y-4">
-                <h3 class="text-lg font-semibold text-primary-800">Caracterización Territorial</h3>
-                <p class="text-sm text-gray-600">Analiza estadísticas descriptivas de indicadores por UPZ y localidad: promedios, medianas, desviaciones y coeficientes de variación.</p>
+            <div id="tab-caracterizacion" class="card p-6 space-y-4">
+                <h3 class="text-lg font-semibold text-gray-800">Caracterización Territorial</h3>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <!-- FILTROS CORREGIDOS: SEPARADOS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div class="lg:col-span-2">
-                        <label class="block text-sm font-medium mb-1">Indicador</label>
-                        <select id="caracIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Seleccionar...</option>
+                        <label class="block text-sm font-medium mb-2">Indicador *</label>
+                        <select id="caracIndicador">
+                            <option value="">Seleccionar indicador...</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Nivel</label>
-                        <select id="caracNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="LOCALIDAD">LOCALIDAD</option>
-                            <option value="UPZ">UPZ</option>
+                        <label class="block text-sm font-medium mb-2">Localidad</label>
+                        <select id="caracLocalidad">
+                            <option value="">Todas las localidades</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1" id="caracTerritorioLabel">Localidad</label>
-                        <select id="caracTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Todas</option>
+                        <label class="block text-sm font-medium mb-2">UPZ</label>
+                        <select id="caracUpz">
+                            <option value="">Todas las UPZ</option>
                         </select>
                     </div>
-                    <div class="sm:col-span-2 lg:col-span-1 flex items-end">
-                        <button id="btnCaracterizar" class="btn btn-primary w-full text-sm">
+                    <div class="flex items-end">
+                        <button id="btnCaracterizar" class="btn btn-primary w-full">
                             <i class="ti ti-chart-bar"></i> Analizar
                         </button>
                     </div>
                 </div>
 
-                <div class="grid lg:grid-cols-2 gap-4">
+                <div class="grid lg:grid-cols-2 gap-6">
                     <div class="card p-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="font-semibold text-sm sm:text-base">Top 10 UPZ</h4>
-                            <button id="btnDownloadCarac" class="btn text-xs">
-                                <i class="ti ti-download"></i> CSV
+                        <h4 class="font-semibold mb-4 flex items-center justify-between">
+                            Top 10 UPZ por Indicador
+                            <button id="btnDescargar" class="btn text-xs">
+                                <i class="ti ti-download"></i> Exportar
                             </button>
-                        </div>
-                        <div class="chart-container-small">
+                        </h4>
+                        <div class="chart-small">
                             <canvas id="chartCaracterizacion"></canvas>
                         </div>
                     </div>
                     <div class="card p-4">
-                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Estadísticas Descriptivas</h4>
-                        <div class="table-responsive max-h-64 overflow-auto">
-                            <table id="tableCaracterizacion" class="w-full text-xs sm:text-sm">
-                                <thead class="bg-primary-50 text-primary-900 sticky top-0">
+                        <h4 class="font-semibold mb-4">Estadísticas Descriptivas</h4>
+                        <div class="overflow-x-auto max-h-80 overflow-y-auto">
+                            <table id="tableCaracterizacion" class="w-full text-sm">
+                                <thead class="bg-gray-50 sticky top-0">
                                     <tr>
-                                        <th class="p-2 text-left">UPZ</th>
-                                        <th class="p-2 text-right">N</th>
-                                        <th class="p-2 text-right">Promedio</th>
-                                        <th class="p-2 text-right">Mediana</th>
-                                        <th class="p-2 text-right">CV%</th>
+                                        <th class="p-2 text-left border-b">UPZ</th>
+                                        <th class="p-2 text-center border-b">N</th>
+                                        <th class="p-2 text-right border-b">Promedio</th>
+                                        <th class="p-2 text-right border-b">Mediana</th>
+                                        <th class="p-2 text-right border-b">CV%</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -382,160 +301,152 @@
                 </div>
             </div>
 
-            <!-- Series Temporales - Moved after Caracterización -->
-            <div id="tab-series" class="card p-4 sm:p-5 space-y-4 hidden">
-                <h3 class="text-lg font-semibold text-primary-800">Series Temporales</h3>
-                <p class="text-sm text-gray-600">Muestra la evolución temporal de un indicador en una UPZ específica, identificando tendencias y patrones.</p>
+            <!-- Series Temporales -->
+            <div id="tab-series" class="card p-6 space-y-4 hidden">
+                <h3 class="text-lg font-semibold text-gray-800">Series Temporales por UPZ</h3>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
-                        <label class="block text-sm font-medium mb-1">Indicador</label>
-                        <select id="serieIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Seleccionar...</option>
+                        <label class="block text-sm font-medium mb-2">Indicador *</label>
+                        <select id="serieIndicador">
+                            <option value="">Seleccionar indicador...</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1" id="serieTerritorioLabel">Localidad</label>
-                        <select id="serieTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Seleccionar...</option>
+                        <label class="block text-sm font-medium mb-2">Localidad</label>
+                        <select id="serieLocalidad">
+                            <option value="">Todas las localidades</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Nivel</label>
-                        <select id="serieNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="LOCALIDAD">LOCALIDAD</option>
-                            <option value="UPZ">UPZ</option>
+                        <label class="block text-sm font-medium mb-2">UPZ *</label>
+                        <select id="serieUpz">
+                            <option value="">Seleccionar UPZ...</option>
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button id="btnSerie" class="btn btn-primary w-full text-sm">
-                            <i class="ti ti-trending-up"></i> Serie
+                        <button id="btnSerie" class="btn btn-primary w-full">
+                            <i class="ti ti-trending-up"></i> Generar Serie
                         </button>
                     </div>
                 </div>
 
                 <div class="card p-4">
-                    <h4 class="font-semibold mb-3 text-sm sm:text-base">Evolución Temporal por Cohortes</h4>
-                    <div class="chart-container">
+                    <h4 class="font-semibold mb-4">Evolución Temporal</h4>
+                    <div class="chart-medium">
                         <canvas id="chartSeries"></canvas>
                     </div>
                 </div>
             </div>
 
             <!-- Asociación -->
-            <div id="tab-asociacion" class="card p-4 sm:p-5 space-y-4 hidden">
-                <h3 class="text-lg font-semibold text-primary-800">Análisis de Asociación</h3>
-                <p class="text-sm text-gray-600">Calcula correlaciones de Pearson y Spearman entre dos indicadores para identificar posibles relaciones estadísticas.</p>
+            <div id="tab-asociacion" class="card p-6 space-y-4 hidden">
+                <h3 class="text-lg font-semibold text-gray-800">Análisis de Asociación entre Indicadores</h3>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div>
-                        <label class="block text-sm font-medium mb-1">Indicador X</label>
-                        <select id="asocIndicadorX" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <label class="block text-sm font-medium mb-2">Indicador X *</label>
+                        <select id="asocIndicadorX">
                             <option value="">Seleccionar...</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Indicador Y</label>
-                        <select id="asocIndicadorY" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <label class="block text-sm font-medium mb-2">Indicador Y *</label>
+                        <select id="asocIndicadorY">
                             <option value="">Seleccionar...</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Nivel</label>
-                        <select id="asocNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="LOCALIDAD">LOCALIDAD</option>
-                            <option value="UPZ">UPZ</option>
+                        <label class="block text-sm font-medium mb-2">Localidad</label>
+                        <select id="asocLocalidad">
+                            <option value="">Todas las localidades</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1" id="asocTerritorioLabel">Localidad</label>
-                        <select id="asocTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Todas</option>
+                        <label class="block text-sm font-medium mb-2">UPZ</label>
+                        <select id="asocUpz">
+                            <option value="">Todas las UPZ</option>
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button id="btnAsociar" class="btn btn-primary w-full text-sm">
+                        <button id="btnAsociar" class="btn btn-primary w-full">
                             <i class="ti ti-chart-dots"></i> Correlacionar
                         </button>
                     </div>
                 </div>
 
-                <div class="grid lg:grid-cols-2 gap-4">
+                <div class="grid lg:grid-cols-2 gap-6">
                     <div class="card p-4">
-                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Dispersión</h4>
-                        <div class="chart-container-small">
+                        <h4 class="font-semibold mb-4">Gráfico de Dispersión</h4>
+                        <div class="chart-small">
                             <canvas id="chartAsociacion"></canvas>
                         </div>
                     </div>
                     <div class="card p-4">
-                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Estadísticas de Correlación</h4>
-                        <div id="resultadoAsociacion" class="space-y-3 text-sm">
-                            <p class="text-gray-500">Seleccione dos indicadores para ver la correlación</p>
+                        <h4 class="font-semibold mb-4">Estadísticas de Correlación</h4>
+                        <div id="resultadoAsociacion" class="space-y-3">
+                            <p class="text-gray-500">Seleccione dos indicadores para analizar su correlación</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Theil - Improved Layout -->
-            <div id="tab-theil" class="card p-4 sm:p-5 space-y-4 hidden">
-                <h3 class="text-lg font-semibold text-primary-800">Índice de Theil - Desigualdad Territorial</h3>
-                <p class="text-sm text-gray-600">Mide el grado de desigualdad territorial de un indicador. Valores cercanos a 0 indican mayor igualdad entre UPZ.</p>
+            <!-- Índice de Theil -->
+            <div id="tab-theil" class="card p-6 space-y-4 hidden">
+                <h3 class="text-lg font-semibold text-gray-800">Índice de Theil - Desigualdad Territorial</h3>
+                <p class="text-sm text-gray-600">Valores cercanos a 0 indican mayor igualdad entre territorios.</p>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Indicador</label>
-                        <select id="theilIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Seleccionar...</option>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="lg:col-span-2">
+                        <label class="block text-sm font-medium mb-2">Indicador *</label>
+                        <select id="theilIndicador">
+                            <option value="">Seleccionar indicador...</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Nivel</label>
-                        <select id="theilNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="LOCALIDAD">LOCALIDAD</option>
-                            <option value="UPZ">UPZ</option>
+                        <label class="block text-sm font-medium mb-2">Localidad</label>
+                        <select id="theilLocalidad">
+                            <option value="">Todas las localidades</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Año</label>
-                        <select id="theilAno" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Todos</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1" id="theilTerritorioLabel">Localidad</label>
-                        <select id="theilTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Todas</option>
+                        <label class="block text-sm font-medium mb-2">Año</label>
+                        <select id="theilAno">
+                            <option value="">Todos los años</option>
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button id="btnTheil" class="btn btn-primary w-full text-sm">
+                        <button id="btnTheil" class="btn btn-primary w-full">
                             <i class="ti ti-balance"></i> Calcular
                         </button>
                     </div>
                 </div>
 
-                <!-- Improved Layout: Compact indicator + Full chart -->
-                <div class="grid lg:grid-cols-3 gap-4">
+                <!-- Layout mejorado: Compacto + Scrolleable -->
+                <div class="grid lg:grid-cols-4 gap-6">
                     <div class="card p-4">
-                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Índice de Desigualdad</h4>
-                        <div id="theilResultado" class="theil-compact">
-                            <div class="text-3xl sm:text-4xl font-bold text-gray-400" id="theilValor">-</div>
-                            <div class="text-sm text-gray-500 mt-2">Índice de Theil</div>
-                            <div class="mt-3">
+                        <h4 class="font-semibold mb-4 text-center">Índice Calculado</h4>
+                        <div class="text-center space-y-3">
+                            <div class="text-4xl font-bold text-blue-600" id="theilValor">-</div>
+                            <div class="text-sm text-gray-500">Índice de Theil</div>
+                            <div>
                                 <span id="theilCategoria" class="px-3 py-1 rounded-full text-sm bg-gray-100">
                                     Seleccionar indicador
                                 </span>
                             </div>
-                            <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-3">
-                                <strong>Interpretación:</strong> 0 = igualdad perfecta, >0 = mayor desigualdad
+                            <div class="text-xs text-gray-400 bg-gray-50 p-2 rounded">
+                                0 = igualdad perfecta<br>
+                                >0 = mayor desigualdad
                             </div>
                         </div>
                     </div>
-                    <div class="card p-4 lg:col-span-2">
-                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Distribución por UPZ (Todas las unidades)</h4>
-                        <div class="chart-container-scrollable">
+                    
+                    <div class="card p-4 lg:col-span-3">
+                        <h4 class="font-semibold mb-4">Distribución por TODAS las UPZ (Scrolleable)</h4>
+                        <div class="chart-scrollable">
                             <canvas id="chartTheil"></canvas>
                         </div>
+                        <p class="text-xs text-gray-500 mt-2">💡 Usa la barra de desplazamiento horizontal para ver todas las UPZ</p>
                     </div>
                 </div>
             </div>
@@ -546,134 +457,53 @@
     <div id="toastContainer" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
 
     <script>
-        // Utility functions
+        // Variables globales
         const $ = (selector) => document.querySelector(selector);
         const $$ = (selector) => document.querySelectorAll(selector);
         
         let charts = {};
         let metadata = {};
+        let currentData = {
+            localidades: [],
+            upz: [],
+            indicadores: [],
+            años: []
+        };
         
-        // Chart.js default configuration with responsive fixes
+        // Configuración Chart.js
         Chart.defaults.responsive = true;
         Chart.defaults.maintainAspectRatio = false;
         Chart.defaults.plugins.legend.display = true;
         Chart.defaults.plugins.legend.position = 'top';
-        Chart.defaults.plugins.legend.labels.usePointStyle = true;
-        Chart.defaults.plugins.legend.labels.padding = 15;
-        Chart.defaults.plugins.legend.labels.font = { size: 12 };
         
-        // Custom chart creation function with responsive settings
-        function createResponsiveChart(canvasId, config) {
-            const canvas = $(canvasId);
-            if (!canvas) return null;
-            
-            // Destroy existing chart
-            if (charts[canvasId]) {
-                charts[canvasId].destroy();
-                delete charts[canvasId];
-            }
-            
-            // Enhanced responsive configuration
-            const responsiveConfig = {
-                ...config,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
-                    scales: {
-                        ...config.options?.scales,
-                        x: {
-                            ...config.options?.scales?.x,
-                            ticks: {
-                                ...config.options?.scales?.x?.ticks,
-                                maxRotation: window.innerWidth < 768 ? 90 : 45,
-                                minRotation: window.innerWidth < 768 ? 45 : 0,
-                                font: {
-                                    size: window.innerWidth < 768 ? 10 : 12
-                                }
-                            }
-                        },
-                        y: {
-                            ...config.options?.scales?.y,
-                            ticks: {
-                                ...config.options?.scales?.y?.ticks,
-                                font: {
-                                    size: window.innerWidth < 768 ? 10 : 12
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-                        ...config.options?.plugins,
-                        legend: {
-                            display: true,
-                            position: window.innerWidth < 768 ? 'bottom' : 'top',
-                            labels: {
-                                usePointStyle: true,
-                                padding: window.innerWidth < 768 ? 10 : 15,
-                                font: {
-                                    size: window.innerWidth < 768 ? 10 : 12
-                                }
-                            }
-                        },
-                        tooltip: {
-                            enabled: true,
-                            titleFont: {
-                                size: window.innerWidth < 768 ? 12 : 14
-                            },
-                            bodyFont: {
-                                size: window.innerWidth < 768 ? 11 : 13
-                            }
-                        }
-                    },
-                    ...config.options
-                }
-            };
-            
-            try {
-                const chart = new Chart(canvas, responsiveConfig);
-                charts[canvasId] = chart;
-                return chart;
-            } catch (error) {
-                console.error('Error creating chart:', error);
-                showToast('Error creando gráfica', 'error');
-                return null;
-            }
+        // Utility functions
+        function showLoading(element) {
+            if (element) element.classList.add('loading');
         }
         
-        // Resize handler for charts
-        function handleResize() {
-            Object.values(charts).forEach(chart => {
-                if (chart && typeof chart.resize === 'function') {
-                    chart.resize();
-                }
-            });
+        function hideLoading(element) {
+            if (element) element.classList.remove('loading');
         }
         
-        // Add resize listener
-        window.addEventListener('resize', debounce(handleResize, 250));
-        
-        // Debounce function
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
+        function showSpinner(spinnerId) {
+            const spinner = $(spinnerId);
+            if (spinner) spinner.classList.remove('hidden');
         }
         
-        // Toast notifications
+        function hideSpinner(spinnerId) {
+            const spinner = $(spinnerId);
+            if (spinner) spinner.classList.add('hidden');
+        }
+        
         function showToast(message, type = 'info') {
             const toast = document.createElement('div');
-            toast.className = `alert alert-${type} shadow-lg max-w-sm animate-fade-in text-sm`;
-            toast.textContent = message;
+            toast.className = `alert alert-${type} shadow-lg max-w-sm text-sm`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <i class="ti ti-${type === 'error' ? 'alert-circle' : type === 'success' ? 'check' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
             
             $('#toastContainer').appendChild(toast);
             
@@ -685,6 +515,7 @@
         // API calls
         async function apiCall(endpoint, options = {}) {
             try {
+                console.log(`API Call: ${endpoint}`);
                 const response = await fetch(endpoint, {
                     headers: {
                         'Content-Type': 'application/json',
@@ -694,10 +525,13 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
                 
-                return await response.json();
+                const data = await response.json();
+                console.log(`API Response for ${endpoint}:`, data);
+                return data;
             } catch (error) {
                 console.error('API Error:', error);
                 showToast(`Error: ${error.message}`, 'error');
@@ -705,112 +539,124 @@
             }
         }
         
-        // Load metadata
+        // Cargar metadatos
         async function loadMetadata() {
             try {
+                console.log('Loading metadata...');
+                showToast('Cargando metadatos del sistema...', 'info');
+                
                 metadata = await apiCall('/metadatos');
-                updateKPIs();
-                populateSelectors();
-                showToast('Metadatos cargados correctamente', 'success');
+                console.log('Metadata loaded:', metadata);
+                
+                if (metadata && metadata.indicadores && metadata.geografia) {
+                    currentData.indicadores = metadata.indicadores.todos || [];
+                    currentData.localidades = metadata.geografia.localidades || [];
+                    currentData.upz = metadata.geografia.upz || [];
+                    currentData.años = metadata.temporal?.años || [];
+                    
+                    updateKPIs();
+                    populateAllSelectors();
+                    showToast('Metadatos cargados correctamente', 'success');
+                    
+                    console.log('Current data:', currentData);
+                } else {
+                    throw new Error('Estructura de metadatos inválida');
+                }
             } catch (error) {
-                showToast('Error cargando metadatos', 'error');
+                console.error('Error loading metadata:', error);
+                showToast('Error cargando metadatos del sistema', 'error');
             }
         }
         
-        // Update KPIs
+        // Actualizar KPIs
         function updateKPIs() {
-            $('#kpiTotal').textContent = formatNumber(metadata.resumen?.total_registros) || '-';
-            $('#kpiIndicadores').textContent = formatNumber(metadata.resumen?.total_indicadores) || '-';
-            $('#kpiLocalidades').textContent = formatNumber(metadata.resumen?.localidades) || '-';
-            $('#kpiUpz').textContent = formatNumber(metadata.resumen?.upz) || '-';
+            if (!metadata.resumen) return;
+            
+            $('#kpiTotal').textContent = formatNumber(metadata.resumen.total_registros) || '0';
+            $('#kpiIndicadores').textContent = formatNumber(metadata.resumen.total_indicadores) || '0';
+            $('#kpiLocalidades').textContent = formatNumber(metadata.resumen.localidades) || '0';
+            $('#kpiUpz').textContent = formatNumber(metadata.resumen.upz) || '0';
         }
         
-        // Format large numbers
         function formatNumber(num) {
-            if (!num) return '-';
+            if (!num) return '0';
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
             return num.toLocaleString();
         }
         
-        // Populate selectors with better text handling
-        function populateSelectors() {
-            const indicadores = metadata.indicadores?.todos || [];
-            const fecundidadIndicadores = metadata.indicadores?.fecundidad || [];
-            const años = metadata.temporal?.años || [];
-            const localidades = metadata.geografia?.localidades || [];
-            const upz = metadata.geografia?.upz || [];
+        // Poblar todos los selectores
+        function populateAllSelectors() {
+            console.log('Populating selectors...');
             
-            // Indicadores (todos)
-            populateSelect('caracIndicador', indicadores, true);
-            populateSelect('asocIndicadorX', indicadores, true);
-            populateSelect('asocIndicadorY', indicadores, true);
-            populateSelect('theilIndicador', indicadores, true);
-            populateSelect('serieIndicador', indicadores, true);
+            // Indicadores
+            populateSelect('caracIndicador', currentData.indicadores);
+            populateSelect('serieIndicador', currentData.indicadores);
+            populateSelect('asocIndicadorX', currentData.indicadores);
+            populateSelect('asocIndicadorY', currentData.indicadores);
+            populateSelect('theilIndicador', currentData.indicadores);
+            
+            // Localidades
+            populateSelect('caracLocalidad', currentData.localidades);
+            populateSelect('serieLocalidad', currentData.localidades);
+            populateSelect('asocLocalidad', currentData.localidades);
+            populateSelect('theilLocalidad', currentData.localidades);
             
             // Años
-            populateSelect('theilAno', años);
+            populateSelect('theilAno', currentData.años);
             
-            // Territorios iniciales (localidades por defecto)
-            populateSelect('caracTerritorio', localidades);
-            populateSelect('asocTerritorio', localidades);
-            populateSelect('theilTerritorio', localidades);
-            populateSelect('serieTerritorio', localidades);
+            console.log('Selectors populated successfully');
         }
         
-        function populateSelect(selectId, options, truncate = false) {
-            const select = $(`#${selectId}`);
-            if (!select) return;
+        function populateSelect(selectId, options) {
+            const select = $(selectId);
+            if (!select || !options) {
+                console.warn(`Cannot populate select ${selectId}:`, { select, options });
+                return;
+            }
             
-            // Keep first option (placeholder)
+            // Guardar la primera opción (placeholder)
             const firstOption = select.children[0];
             select.innerHTML = '';
-            select.appendChild(firstOption);
+            if (firstOption) {
+                select.appendChild(firstOption);
+            }
             
             options.forEach(option => {
                 const optionElement = document.createElement('option');
                 optionElement.value = option;
-                
-                // Truncate long text for better display
-                let displayText = option;
-                if (truncate && option.length > 50) {
-                    displayText = option.substring(0, 47) + '...';
-                }
-                
-                optionElement.textContent = displayText;
-                optionElement.title = option; // Full text in tooltip
+                optionElement.textContent = option.length > 50 ? 
+                    option.substring(0, 47) + '...' : option;
+                optionElement.title = option;
                 select.appendChild(optionElement);
             });
+            
+            console.log(`Populated ${selectId} with ${options.length} options`);
         }
         
-        // IMPROVED: Update UPZ/Localidad based on level selection
-        function updateTerritorioForLevel(levelSelectId, territorioSelectId, labelId) {
-            const nivel = $(`#${levelSelectId}`).value;
-            const label = $(`#${labelId}`);
+        // FILTROS CORREGIDOS: Función para actualizar UPZ según localidad
+        async function updateUpzByLocalidad(localidadSelectId, upzSelectId) {
+            const localidad = $(localidadSelectId).value;
+            const upzSelect = $(upzSelectId);
             
-            if (nivel === 'LOCALIDAD') {
-                label.textContent = 'Localidad';
-                populateSelect(territorioSelectId, metadata.geografia?.localidades || []);
-            } else {
-                label.textContent = 'UPZ';
-                populateSelect(territorioSelectId, metadata.geografia?.upz || []);
+            console.log(`Updating UPZ for localidad: ${localidad}`);
+            
+            if (!localidad) {
+                // Si no hay localidad, mostrar todas las UPZ
+                populateSelect(upzSelectId, currentData.upz);
+                return;
             }
-        }
-        
-        // IMPROVED: Filter UPZ by selected localidad when nivel is UPZ
-        async function filterTerritorioBySelection(levelSelectId, territorioSelectId) {
-            const nivel = $(`#${levelSelectId}`).value;
-            const territorio = $(`#${territorioSelectId}`).value;
             
-            // Si está en modo UPZ y se seleccionó una localidad específica, filtrar UPZ
-            if (nivel === 'UPZ' && territorio) {
-                try {
-                    const data = await apiCall(`/geografia/upz_por_localidad?localidad=${encodeURIComponent(territorio)}`);
-                    populateSelect(territorioSelectId, data.upz || []);
-                } catch (error) {
-                    console.error('Error filtering UPZ:', error);
-                    populateSelect(territorioSelectId, []);
-                }
+            try {
+                const data = await apiCall(`/geografia/upz_por_localidad?localidad=${encodeURIComponent(localidad)}`);
+                console.log(`UPZ data for ${localidad}:`, data);
+                
+                populateSelect(upzSelectId, data.upz || []);
+                showToast(`${data.total || 0} UPZ encontradas para ${localidad}`, 'info');
+            } catch (error) {
+                console.error('Error updating UPZ:', error);
+                populateSelect(upzSelectId, []);
+                showToast('Error obteniendo UPZ de la localidad', 'error');
             }
         }
         
@@ -819,6 +665,7 @@
             $$('.tabs button').forEach(button => {
                 button.addEventListener('click', () => {
                     const tabId = button.dataset.tab;
+                    console.log(`Switching to tab: ${tabId}`);
                     
                     // Update buttons
                     $$('.tabs button').forEach(b => b.setAttribute('aria-selected', 'false'));
@@ -829,25 +676,30 @@
                     const targetTab = $(`#tab-${tabId}`);
                     if (targetTab) {
                         targetTab.classList.remove('hidden');
-                        // Trigger resize for charts in the newly visible tab
-                        setTimeout(handleResize, 100);
+                        // Resize charts if needed
+                        setTimeout(() => {
+                            Object.values(charts).forEach(chart => {
+                                if (chart && typeof chart.resize === 'function') {
+                                    chart.resize();
+                                }
+                            });
+                        }, 100);
                     }
                 });
             });
         }
         
-        // File upload with better error handling
+        // File upload
         function initUpload() {
             $('#btnUpload').addEventListener('click', async () => {
                 const fileInput = $('#fileInput');
                 const file = fileInput.files[0];
                 
                 if (!file) {
-                    showToast('Seleccione un archivo', 'error');
+                    showToast('Seleccione un archivo Excel', 'error');
                     return;
                 }
                 
-                // Validate file type
                 if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
                     showToast('Solo se permiten archivos .xlsx o .xls', 'error');
                     return;
@@ -856,13 +708,11 @@
                 const formData = new FormData();
                 formData.append('file', file);
                 
-                const spinner = $('#uploadSpinner');
                 const btn = $('#btnUpload');
                 
                 try {
-                    spinner.classList.remove('hidden');
                     btn.disabled = true;
-                    
+                    showSpinner('#uploadSpinner');
                     showToast('Procesando archivo...', 'info');
                     
                     const response = await fetch('/upload/excel', {
@@ -880,19 +730,16 @@
                                 📂 Archivo: ${result.archivo}<br>
                                 📊 Registros cargados: ${formatNumber(stats.registros_cargados) || 0}<br>
                                 📄 Filas procesadas: ${formatNumber(stats.filas_procesadas) || 0}<br>
-                                ⚠️ Omitidos sin valor: ${formatNumber(stats.omitidos_sin_valor) || 0}<br>
-                                ❌ Errores: ${formatNumber(stats.errores) || 0}
+                                ⚠️ Omitidos: ${formatNumber(stats.filas_omitidas_sin_valor) || 0}
                             </div>
                         `;
                         showToast('Archivo cargado correctamente', 'success');
-                        await loadMetadata();
+                        await loadMetadata(); // Recargar metadatos
                     } else {
-                        const errorDetails = result.detail || 'Error desconocido';
                         $('#uploadResult').innerHTML = `
                             <div class="alert alert-error">
                                 <strong>❌ Error en la carga</strong><br>
-                                ${errorDetails}
-                                ${result.columnas_disponibles ? `<br><br><strong>Columnas encontradas:</strong><br>${result.columnas_disponibles.join(', ')}` : ''}
+                                ${result.detail || 'Error desconocido'}
                             </div>
                         `;
                         showToast('Error subiendo archivo', 'error');
@@ -906,23 +753,23 @@
                     `;
                     showToast('Error de conexión', 'error');
                 } finally {
-                    spinner.classList.add('hidden');
+                    hideSpinner('#uploadSpinner');
                     btn.disabled = false;
                 }
             });
         }
         
-        // FIXED: Caracterización with proper territory filtering
+        // Caracterización
         function initCaracterizacion() {
-            // Level change handler
-            $('#caracNivel').addEventListener('change', () => {
-                updateTerritorioForLevel('caracNivel', 'caracTerritorio', 'caracTerritorioLabel');
+            // Event listener for localidad change
+            $('#caracLocalidad').addEventListener('change', () => {
+                updateUpzByLocalidad('#caracLocalidad', '#caracUpz');
             });
             
             $('#btnCaracterizar').addEventListener('click', async () => {
                 const indicador = $('#caracIndicador').value;
-                const nivel = $('#caracNivel').value;
-                const territorio = $('#caracTerritorio').value;
+                const localidad = $('#caracLocalidad').value;
+                const upz = $('#caracUpz').value;
                 
                 if (!indicador) {
                     showToast('Seleccione un indicador', 'error');
@@ -930,16 +777,20 @@
                 }
                 
                 try {
+                    showLoading($('#tab-caracterizacion'));
+                    
                     const params = new URLSearchParams({
                         indicador,
-                        nivel,
-                        ...(territorio && { [nivel.toLowerCase()]: territorio })
+                        nivel: 'UPZ', // Siempre análisis por UPZ
+                        ...(localidad && { localidad }),
+                        ...(upz && { upz })
                     });
                     
+                    console.log('Caracterización params:', params.toString());
                     const data = await apiCall(`/caracterizacion?${params}`);
                     
                     if (data.mensaje) {
-                        showToast(data.mensaje, 'info');
+                        showToast(data.mensaje, 'warning');
                         return;
                     }
                     
@@ -948,24 +799,26 @@
                     showToast('Caracterización completada', 'success');
                 } catch (error) {
                     showToast('Error en caracterización', 'error');
+                } finally {
+                    hideLoading($('#tab-caracterizacion'));
                 }
             });
         }
         
         function renderCaracterizacionChart(data) {
-            const top10 = data.datos.slice(0, 10);
+            if (charts['chartCaracterizacion']) {
+                charts['chartCaracterizacion'].destroy();
+            }
             
-            const config = {
+            const top10 = data.datos.slice(0, 10);
+            const ctx = $('#chartCaracterizacion').getContext('2d');
+            
+            charts['chartCaracterizacion'] = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: top10.map(d => {
-                        // Truncate long UPZ names
-                        return d.upz.length > 15 ? 
-                            d.upz.substring(0, 12) + '...' : 
-                            d.upz;
-                    }),
+                    labels: top10.map(d => d.upz.length > 15 ? d.upz.substring(0, 12) + '...' : d.upz),
                     datasets: [{
-                        label: `${data.indicador.length > 30 ? data.indicador.substring(0, 27) + '...' : data.indicador}`,
+                        label: data.unidad_medida,
                         data: top10.map(d => d.promedio),
                         backgroundColor: '#3b82f6',
                         borderColor: '#1d4ed8',
@@ -973,150 +826,133 @@
                     }]
                 },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false },
+                        title: {
+                            display: true,
+                            text: `${data.indicador.substring(0, 50)}${data.indicador.length > 50 ? '...' : ''}`
+                        },
                         tooltip: {
                             callbacks: {
-                                title: (context) => {
-                                    // Show full UPZ name in tooltip
-                                    return top10[context[0].dataIndex].upz;
-                                },
-                                label: (context) => {
-                                    return `${data.unidad_medida}: ${context.parsed.y}`;
-                                }
+                                title: (context) => top10[context[0].dataIndex].upz,
+                                label: (context) => `${data.unidad_medida}: ${context.parsed.y}`
                             }
                         }
                     },
                     scales: {
                         y: { 
                             beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: data.unidad_medida
-                            }
+                            title: { display: true, text: data.unidad_medida }
                         }
                     }
                 }
-            };
-            
-            createResponsiveChart('#chartCaracterizacion', config);
+            });
         }
         
         function renderCaracterizacionTable(data) {
             const tbody = $('#tableCaracterizacion tbody');
             tbody.innerHTML = data.datos.map(d => `
                 <tr class="border-b hover:bg-gray-50">
-                    <td class="p-2" title="${d.upz}">${d.upz.length > 20 ? d.upz.substring(0, 17) + '...' : d.upz}</td>
-                    <td class="p-2 text-right">${d.n}</td>
-                    <td class="p-2 text-right">${d.promedio}</td>
-                    <td class="p-2 text-right">${d.mediana}</td>
-                    <td class="p-2 text-right">${d.cv_pct}%</td>
+                    <td class="p-2" title="${d.upz}">${d.upz.length > 25 ? d.upz.substring(0, 22) + '...' : d.upz}</td>
+                    <td class="p-2 text-center">${d.n}</td>
+                    <td class="p-2 text-right font-mono">${d.promedio}</td>
+                    <td class="p-2 text-right font-mono">${d.mediana}</td>
+                    <td class="p-2 text-right font-mono">${d.cv_pct}%</td>
                 </tr>
             `).join('');
         }
         
-        // FIXED: Series Temporales with proper territory filtering
+        // Series Temporales
         function initSeries() {
-            // Update territory based on level selection
-            $('#serieNivel').addEventListener('change', () => {
-                updateTerritorioForLevel('serieNivel', 'serieTerritorio', 'serieTerritorioLabel');
+            $('#serieLocalidad').addEventListener('change', () => {
+                updateUpzByLocalidad('#serieLocalidad', '#serieUpz');
             });
             
             $('#btnSerie').addEventListener('click', async () => {
                 const indicador = $('#serieIndicador').value;
-                const territorio = $('#serieTerritorio').value;
-                const nivel = $('#serieNivel').value;
+                const upz = $('#serieUpz').value;
                 
-                if (!indicador || !territorio) {
-                    showToast('Seleccione indicador y territorio', 'error');
+                if (!indicador || !upz) {
+                    showToast('Seleccione indicador y UPZ', 'error');
                     return;
                 }
                 
                 try {
+                    showLoading($('#tab-series'));
+                    
                     const params = new URLSearchParams({
                         indicador,
-                        upz: territorio,
-                        nivel
+                        upz,
+                        nivel: 'UPZ'
                     });
                     
                     const data = await apiCall(`/datos/series?${params}`);
                     
                     if (data.mensaje) {
-                        showToast(data.mensaje, 'info');
+                        showToast(data.mensaje, 'warning');
                         return;
                     }
                     
-                    renderSeriesChart(data, { indicador, territorio });
+                    renderSeriesChart(data);
                     showToast('Serie temporal generada', 'success');
                 } catch (error) {
                     showToast('Error generando serie temporal', 'error');
+                } finally {
+                    hideLoading($('#tab-series'));
                 }
             });
         }
         
-        function renderSeriesChart(data, metadata) {
-            const serie = data.serie || [];
+        function renderSeriesChart(data) {
+            if (charts['chartSeries']) {
+                charts['chartSeries'].destroy();
+            }
             
-            const config = {
+            const serie = data.serie || [];
+            const ctx = $('#chartSeries').getContext('2d');
+            
+            charts['chartSeries'] = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: serie.map(s => s.año),
                     datasets: [{
-                        label: metadata.indicador.length > 30 ? 
-                            metadata.indicador.substring(0, 27) + '...' : 
-                            metadata.indicador,
+                        label: data.unidad_medida,
                         data: serie.map(s => s.valor),
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
                         tension: 0.3,
-                        pointRadius: window.innerWidth < 768 ? 3 : 4,
-                        pointHoverRadius: window.innerWidth < 768 ? 5 : 6
+                        fill: true
                     }]
                 },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         title: {
                             display: true,
-                            text: window.innerWidth < 768 ? 
-                                `${metadata.territorio}` : 
-                                `${metadata.indicador} - ${metadata.territorio}`,
-                            font: {
-                                size: window.innerWidth < 768 ? 12 : 14
-                            }
+                            text: `${data.indicador.substring(0, 40)}${data.indicador.length > 40 ? '...' : ''} - ${data.upz}`
                         }
                     },
                     scales: {
-                        x: { 
-                            title: { 
-                                display: true, 
-                                text: 'Año' 
-                            }
-                        },
-                        y: { 
-                            title: { 
-                                display: true, 
-                                text: data.unidad_medida || 'Valor'
-                            }
-                        }
+                        x: { title: { display: true, text: 'Año' }},
+                        y: { title: { display: true, text: data.unidad_medida }}
                     }
                 }
-            };
-            
-            createResponsiveChart('#chartSeries', config);
+            });
         }
         
-        // FIXED: Asociación with proper territory filtering
+        // Asociación
         function initAsociacion() {
-            // Level change handler
-            $('#asocNivel').addEventListener('change', () => {
-                updateTerritorioForLevel('asocNivel', 'asocTerritorio', 'asocTerritorioLabel');
+            $('#asocLocalidad').addEventListener('change', () => {
+                updateUpzByLocalidad('#asocLocalidad', '#asocUpz');
             });
             
             $('#btnAsociar').addEventListener('click', async () => {
                 const indicadorX = $('#asocIndicadorX').value;
                 const indicadorY = $('#asocIndicadorY').value;
-                const nivel = $('#asocNivel').value;
-                const territorio = $('#asocTerritorio').value;
+                const localidad = $('#asocLocalidad').value;
+                const upz = $('#asocUpz').value;
                 
                 if (!indicadorX || !indicadorY) {
                     showToast('Seleccione ambos indicadores', 'error');
@@ -1124,17 +960,20 @@
                 }
                 
                 try {
+                    showLoading($('#tab-asociacion'));
+                    
                     const params = new URLSearchParams({
                         indicador_x: indicadorX,
                         indicador_y: indicadorY,
-                        nivel,
-                        ...(territorio && { [nivel.toLowerCase()]: territorio })
+                        nivel: 'UPZ',
+                        ...(localidad && { localidad }),
+                        ...(upz && { upz })
                     });
                     
                     const data = await apiCall(`/analisis/asociacion?${params}`);
                     
                     if (data.mensaje) {
-                        showToast(data.mensaje, 'info');
+                        showToast(data.mensaje, 'warning');
                         return;
                     }
                     
@@ -1143,102 +982,86 @@
                     showToast('Análisis de asociación completado', 'success');
                 } catch (error) {
                     showToast('Error en análisis de asociación', 'error');
+                } finally {
+                    hideLoading($('#tab-asociacion'));
                 }
             });
         }
         
         function renderAsociacionChart(data) {
-            const config = {
+            if (charts['chartAsociacion']) {
+                charts['chartAsociacion'].destroy();
+            }
+            
+            const ctx = $('#chartAsociacion').getContext('2d');
+            
+            charts['chartAsociacion'] = new Chart(ctx, {
                 type: 'scatter',
                 data: {
                     datasets: [{
                         label: 'UPZ',
                         data: data.datos.map(d => ({ x: d.x, y: d.y })),
-                        backgroundColor: '#06b6d4',
-                        borderColor: '#0891b2',
-                        pointRadius: window.innerWidth < 768 ? 4 : 5,
-                        pointHoverRadius: window.innerWidth < 768 ? 6 : 8
+                        backgroundColor: '#f59e0b',
+                        borderColor: '#d97706',
+                        pointRadius: 6
                     }]
                 },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                title: (context) => {
-                                    return data.datos[context[0].dataIndex].upz;
-                                }
+                                title: (context) => data.datos[context[0].dataIndex].upz
                             }
                         }
                     },
                     scales: {
-                        x: { 
-                            title: { 
-                                display: true, 
-                                text: data.indicador_x.length > 25 ? 
-                                    data.indicador_x.substring(0, 22) + '...' : 
-                                    data.indicador_x
-                            }
-                        },
-                        y: { 
-                            title: { 
-                                display: true, 
-                                text: data.indicador_y.length > 25 ? 
-                                    data.indicador_y.substring(0, 22) + '...' : 
-                                    data.indicador_y
-                            }
-                        }
+                        x: { title: { display: true, text: data.indicador_x.substring(0, 30) + '...' }},
+                        y: { title: { display: true, text: data.indicador_y.substring(0, 30) + '...' }}
                     }
                 }
-            };
-            
-            createResponsiveChart('#chartAsociacion', config);
+            });
         }
         
         function renderAsociacionStats(data) {
-            const container = $('#resultadoAsociacion');
             const corr = data.correlacion;
-            
-            container.innerHTML = `
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <span>Correlación de Pearson:</span>
-                        <span class="font-mono">${corr.pearson_r} (p=${corr.pearson_p})</span>
+            $('#resultadoAsociacion').innerHTML = `
+                <div class="space-y-3 text-sm">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 p-3 rounded">
+                            <div class="font-semibold">Pearson</div>
+                            <div class="text-lg font-mono">${corr.pearson_r}</div>
+                            <div class="text-xs text-gray-500">p = ${corr.pearson_p}</div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded">
+                            <div class="font-semibold">Spearman</div>
+                            <div class="text-lg font-mono">${corr.spearman_rho}</div>
+                            <div class="text-xs text-gray-500">p = ${corr.spearman_p}</div>
+                        </div>
                     </div>
-                    <div class="flex justify-between">
-                        <span>Correlación de Spearman:</span>
-                        <span class="font-mono">${corr.spearman_rho} (p=${corr.spearman_p})</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Categoría:</span>
-                        <span class="font-semibold">${corr.categoria}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Significativa (p<0.05):</span>
-                        <span class="${corr.significativa ? 'text-green-600' : 'text-red-600'} font-semibold">
+                    <div class="bg-blue-50 p-3 rounded">
+                        <div class="font-semibold">Interpretación</div>
+                        <div>Categoría: <span class="font-semibold">${corr.categoria}</span></div>
+                        <div>Significativa (p<0.05): <span class="${corr.significativa ? 'text-green-600' : 'text-red-600'} font-semibold">
                             ${corr.significativa ? 'Sí' : 'No'}
-                        </span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>UPZ comunes:</span>
-                        <span>${data.upz_comunes}</span>
+                        </span></div>
+                        <div class="text-sm text-gray-600 mt-1">UPZ analizadas: ${data.upz_comunes}</div>
                     </div>
                 </div>
             `;
         }
         
-        // IMPROVED: Theil Index with better layout and scrollable chart
+        // Índice de Theil
         function initTheil() {
-            // Level change handler
-            $('#theilNivel').addEventListener('change', () => {
-                updateTerritorioForLevel('theilNivel', 'theilTerritorio', 'theilTerritorioLabel');
+            $('#theilLocalidad').addEventListener('change', () => {
+                updateUpzByLocalidad('#theilLocalidad', '#theilUpz');
             });
             
             $('#btnTheil').addEventListener('click', async () => {
                 const indicador = $('#theilIndicador').value;
-                const nivel = $('#theilNivel').value;
+                const localidad = $('#theilLocalidad').value;
                 const año = $('#theilAno').value;
-                const territorio = $('#theilTerritorio').value;
                 
                 if (!indicador) {
                     showToast('Seleccione un indicador', 'error');
@@ -1246,17 +1069,19 @@
                 }
                 
                 try {
+                    showLoading($('#tab-theil'));
+                    
                     const params = new URLSearchParams({
                         indicador,
-                        nivel,
-                        ...(año && { año }),
-                        ...(territorio && { [nivel.toLowerCase()]: territorio })
+                        nivel: 'UPZ',
+                        ...(localidad && { localidad }),
+                        ...(año && { año })
                     });
                     
                     const data = await apiCall(`/analisis/theil?${params}`);
                     
                     if (data.mensaje) {
-                        showToast(data.mensaje, 'info');
+                        showToast(data.mensaje, 'warning');
                         return;
                     }
                     
@@ -1265,6 +1090,8 @@
                     showToast('Índice de Theil calculado', 'success');
                 } catch (error) {
                     showToast('Error calculando índice de Theil', 'error');
+                } finally {
+                    hideLoading($('#tab-theil'));
                 }
             });
         }
@@ -1284,19 +1111,24 @@
         }
         
         function renderTheilChart(data) {
-            // Show ALL UPZ instead of just top 10
-            const allData = data.datos || [];
+            if (charts['chartTheil']) {
+                charts['chartTheil'].destroy();
+            }
             
-            const config = {
+            // MOSTRAR TODAS LAS UPZ (no solo top 10)
+            const allData = data.datos || [];
+            const ctx = $('#chartTheil').getContext('2d');
+            
+            // Calcular ancho dinámico
+            const minWidth = Math.max(800, allData.length * 40);
+            $('#chartTheil').style.width = minWidth + 'px';
+            
+            charts['chartTheil'] = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: allData.map(d => {
-                        return d.upz.length > 12 ? 
-                            d.upz.substring(0, 9) + '...' : 
-                            d.upz;
-                    }),
+                    labels: allData.map(d => d.upz.length > 12 ? d.upz.substring(0, 9) + '...' : d.upz),
                     datasets: [{
-                        label: `Valor (${data.unidad_medida})`,
+                        label: data.unidad_medida,
                         data: allData.map(d => d.valor),
                         backgroundColor: '#8b5cf6',
                         borderColor: '#7c3aed',
@@ -1304,13 +1136,13 @@
                     }]
                 },
                 options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                title: (context) => {
-                                    return allData[context[0].dataIndex].upz;
-                                }
+                                title: (context) => allData[context[0].dataIndex].upz
                             }
                         }
                     },
@@ -1319,57 +1151,38 @@
                             ticks: {
                                 maxRotation: 90,
                                 minRotation: 45,
-                                font: {
-                                    size: 10
-                                }
+                                font: { size: 10 }
                             }
                         },
-                        y: { 
+                        y: {
                             beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: data.unidad_medida
-                            }
+                            title: { display: true, text: data.unidad_medida }
                         }
-                    },
-                    // Enable scrolling by setting a minimum width
-                    responsive: false,
-                    maintainAspectRatio: false
+                    }
                 }
-            };
-            
-            // Set dynamic width based on number of UPZ
-            const canvas = $('#chartTheil');
-            const container = canvas.parentElement;
-            const minWidth = Math.max(800, allData.length * 40); // 40px per bar minimum
-            canvas.style.width = `${minWidth}px`;
-            canvas.width = minWidth;
-            
-            createResponsiveChart('#chartTheil', config);
-        }
-        
-        // CSV Download placeholder
-        function initDownloads() {
-            $('#btnDownloadCarac').addEventListener('click', () => {
-                showToast('Función de descarga en desarrollo', 'info');
             });
         }
         
         // Initialize everything
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('DOM loaded, initializing dashboard...');
+            
             initTabs();
             initUpload();
             initCaracterizacion();
             initSeries();
             initAsociacion();
             initTheil();
-            initDownloads();
             
             // Refresh button
-            $('#btnRefresh').addEventListener('click', loadMetadata);
+            $('#btnRefresh').addEventListener('click', () => {
+                location.reload();
+            });
             
             // Load initial data
-            loadMetadata();
+            await loadMetadata();
+            
+            console.log('Dashboard initialized successfully');
         });
     </script>
 </body>
