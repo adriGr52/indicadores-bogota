@@ -115,6 +115,32 @@
             max-height: 450px;
         }
         
+        /* Scrollable chart container for Theil */
+        .chart-container-scrollable {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: #fff;
+        }
+        
+        .chart-container-scrollable canvas {
+            min-width: 800px; /* Minimum width to show all bars */
+        }
+        
+        /* Compact theil indicator display */
+        .theil-compact {
+            text-align: center;
+            padding: 1.5rem;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
         /* Responsive select fixes */
         select {
             max-width: 100%;
@@ -141,6 +167,10 @@
                 max-height: 300px;
             }
             
+            .chart-container-scrollable {
+                height: 300px;
+            }
+            
             .tabs {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 0.5rem;
@@ -165,6 +195,10 @@
             }
             
             .lg\:grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .lg\:grid-cols-3 {
                 grid-template-columns: 1fr;
             }
         }
@@ -259,13 +293,18 @@
             <div id="uploadResult" class="mt-4"></div>
         </section>
 
-        <!-- Analysis Tabs with Better Design -->
+        <!-- Analysis Tabs with Corrected Order -->
         <section class="space-y-4">
             <div class="tabs">
                 <button class="btn" data-tab="caracterizacion" aria-selected="true">
                     <i class="ti ti-chart-bar text-xl"></i>
                     <div class="tab-title">Caracterización</div>
                     <div class="tab-description">Estadísticas por UPZ y localidad</div>
+                </button>
+                <button class="btn" data-tab="series">
+                    <i class="ti ti-trending-up text-xl"></i>
+                    <div class="tab-title">Series</div>
+                    <div class="tab-description">Evolución temporal por UPZ</div>
                 </button>
                 <button class="btn" data-tab="asociacion">
                     <i class="ti ti-chart-dots text-xl"></i>
@@ -276,11 +315,6 @@
                     <i class="ti ti-balance text-xl"></i>
                     <div class="tab-title">Desigualdad</div>
                     <div class="tab-description">Índice de Theil territorial</div>
-                </button>
-                <button class="btn" data-tab="series">
-                    <i class="ti ti-trending-up text-xl"></i>
-                    <div class="tab-title">Series</div>
-                    <div class="tab-description">Evolución temporal por UPZ</div>
                 </button>
             </div>
 
@@ -304,7 +338,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">UPZ</label>
+                        <label class="block text-sm font-medium mb-1" id="caracTerritorioLabel">Localidad</label>
                         <select id="caracTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Todas</option>
                         </select>
@@ -348,6 +382,46 @@
                 </div>
             </div>
 
+            <!-- Series Temporales - Moved after Caracterización -->
+            <div id="tab-series" class="card p-4 sm:p-5 space-y-4 hidden">
+                <h3 class="text-lg font-semibold text-primary-800">Series Temporales</h3>
+                <p class="text-sm text-gray-600">Muestra la evolución temporal de un indicador en una UPZ específica, identificando tendencias y patrones.</p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Indicador</label>
+                        <select id="serieIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1" id="serieTerritorioLabel">Localidad</label>
+                        <select id="serieTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="">Seleccionar...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Nivel</label>
+                        <select id="serieNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="LOCALIDAD">LOCALIDAD</option>
+                            <option value="UPZ">UPZ</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="btnSerie" class="btn btn-primary w-full text-sm">
+                            <i class="ti ti-trending-up"></i> Serie
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card p-4">
+                    <h4 class="font-semibold mb-3 text-sm sm:text-base">Evolución Temporal por Cohortes</h4>
+                    <div class="chart-container">
+                        <canvas id="chartSeries"></canvas>
+                    </div>
+                </div>
+            </div>
+
             <!-- Asociación -->
             <div id="tab-asociacion" class="card p-4 sm:p-5 space-y-4 hidden">
                 <h3 class="text-lg font-semibold text-primary-800">Análisis de Asociación</h3>
@@ -374,7 +448,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">UPZ</label>
+                        <label class="block text-sm font-medium mb-1" id="asocTerritorioLabel">Localidad</label>
                         <select id="asocTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Todas</option>
                         </select>
@@ -402,7 +476,7 @@
                 </div>
             </div>
 
-            <!-- Theil -->
+            <!-- Theil - Improved Layout -->
             <div id="tab-theil" class="card p-4 sm:p-5 space-y-4 hidden">
                 <h3 class="text-lg font-semibold text-primary-800">Índice de Theil - Desigualdad Territorial</h3>
                 <p class="text-sm text-gray-600">Mide el grado de desigualdad territorial de un indicador. Valores cercanos a 0 indican mayor igualdad entre UPZ.</p>
@@ -428,7 +502,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">UPZ</label>
+                        <label class="block text-sm font-medium mb-1" id="theilTerritorioLabel">Localidad</label>
                         <select id="theilTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                             <option value="">Todas</option>
                         </select>
@@ -440,69 +514,28 @@
                     </div>
                 </div>
 
-                <div class="grid lg:grid-cols-2 gap-4">
+                <!-- Improved Layout: Compact indicator + Full chart -->
+                <div class="grid lg:grid-cols-3 gap-4">
                     <div class="card p-4">
                         <h4 class="font-semibold mb-3 text-sm sm:text-base">Índice de Desigualdad</h4>
-                        <div id="theilResultado" class="space-y-4">
-                            <div class="text-center">
-                                <div class="text-3xl sm:text-4xl font-bold text-gray-400" id="theilValor">-</div>
-                                <div class="text-sm text-gray-500">Índice de Theil</div>
-                                <div class="mt-2">
-                                    <span id="theilCategoria" class="px-3 py-1 rounded-full text-sm bg-gray-100">
-                                        Seleccionar indicador
-                                    </span>
-                                </div>
+                        <div id="theilResultado" class="theil-compact">
+                            <div class="text-3xl sm:text-4xl font-bold text-gray-400" id="theilValor">-</div>
+                            <div class="text-sm text-gray-500 mt-2">Índice de Theil</div>
+                            <div class="mt-3">
+                                <span id="theilCategoria" class="px-3 py-1 rounded-full text-sm bg-gray-100">
+                                    Seleccionar indicador
+                                </span>
                             </div>
-                            <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded">
+                            <div class="text-xs text-gray-500 bg-gray-50 p-2 rounded mt-3">
                                 <strong>Interpretación:</strong> 0 = igualdad perfecta, >0 = mayor desigualdad
                             </div>
                         </div>
                     </div>
-                    <div class="card p-4">
-                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Distribución por UPZ</h4>
-                        <div class="chart-container-small">
+                    <div class="card p-4 lg:col-span-2">
+                        <h4 class="font-semibold mb-3 text-sm sm:text-base">Distribución por UPZ (Todas las unidades)</h4>
+                        <div class="chart-container-scrollable">
                             <canvas id="chartTheil"></canvas>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Series -->
-            <div id="tab-series" class="card p-4 sm:p-5 space-y-4 hidden">
-                <h3 class="text-lg font-semibold text-primary-800">Series Temporales</h3>
-                <p class="text-sm text-gray-600">Muestra la evolución temporal de un indicador en una UPZ específica, identificando tendencias y patrones.</p>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Indicador</label>
-                        <select id="serieIndicador" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Seleccionar...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">UPZ</label>
-                        <select id="serieTerritorio" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Seleccionar...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Nivel</label>
-                        <select id="serieNivel" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="LOCALIDAD">LOCALIDAD</option>
-                            <option value="UPZ">UPZ</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button id="btnSerie" class="btn btn-primary w-full text-sm">
-                            <i class="ti ti-trending-up"></i> Serie
-                        </button>
-                    </div>
-                </div>
-
-                <div class="card p-4">
-                    <h4 class="font-semibold mb-3 text-sm sm:text-base">Evolución Temporal por Cohortes</h4>
-                    <div class="chart-container">
-                        <canvas id="chartSeries"></canvas>
                     </div>
                 </div>
             </div>
@@ -718,7 +751,7 @@
             // Años
             populateSelect('theilAno', años);
             
-            // UPZ iniciales (localidades)
+            // Territorios iniciales (localidades por defecto)
             populateSelect('caracTerritorio', localidades);
             populateSelect('asocTerritorio', localidades);
             populateSelect('theilTerritorio', localidades);
@@ -750,28 +783,34 @@
             });
         }
         
-        // Update UPZ based on level selection
-        function updateUpzForLevel(levelSelectId, upzSelectId) {
+        // IMPROVED: Update UPZ/Localidad based on level selection
+        function updateTerritorioForLevel(levelSelectId, territorioSelectId, labelId) {
             const nivel = $(`#${levelSelectId}`).value;
-            const upzs = nivel === 'LOCALIDAD' ? 
-                metadata.geografia?.localidades || [] : 
-                metadata.geografia?.upz || [];
-            populateSelect(upzSelectId, upzs);
+            const label = $(`#${labelId}`);
+            
+            if (nivel === 'LOCALIDAD') {
+                label.textContent = 'Localidad';
+                populateSelect(territorioSelectId, metadata.geografia?.localidades || []);
+            } else {
+                label.textContent = 'UPZ';
+                populateSelect(territorioSelectId, metadata.geografia?.upz || []);
+            }
         }
         
-        // Filter UPZ by selected localidad
-        async function filterUpzByLocalidad(localidad, upzSelectId) {
-            try {
-                if (!localidad) {
-                    populateSelect(upzSelectId, metadata.geografia?.upz || []);
-                    return;
+        // IMPROVED: Filter UPZ by selected localidad when nivel is UPZ
+        async function filterTerritorioBySelection(levelSelectId, territorioSelectId) {
+            const nivel = $(`#${levelSelectId}`).value;
+            const territorio = $(`#${territorioSelectId}`).value;
+            
+            // Si está en modo UPZ y se seleccionó una localidad específica, filtrar UPZ
+            if (nivel === 'UPZ' && territorio) {
+                try {
+                    const data = await apiCall(`/geografia/upz_por_localidad?localidad=${encodeURIComponent(territorio)}`);
+                    populateSelect(territorioSelectId, data.upz || []);
+                } catch (error) {
+                    console.error('Error filtering UPZ:', error);
+                    populateSelect(territorioSelectId, []);
                 }
-                
-                const data = await apiCall(`/geografia/upz_por_localidad?localidad=${encodeURIComponent(localidad)}`);
-                populateSelect(upzSelectId, data.upz || []);
-            } catch (error) {
-                console.error('Error filtering UPZ:', error);
-                populateSelect(upzSelectId, []);
             }
         }
         
@@ -873,17 +912,17 @@
             });
         }
         
-        // Caracterización with UPZ filtering
+        // FIXED: Caracterización with proper territory filtering
         function initCaracterizacion() {
             // Level change handler
             $('#caracNivel').addEventListener('change', () => {
-                updateUpzForLevel('caracNivel', 'caracTerritorio');
+                updateTerritorioForLevel('caracNivel', 'caracTerritorio', 'caracTerritorioLabel');
             });
             
             $('#btnCaracterizar').addEventListener('click', async () => {
                 const indicador = $('#caracIndicador').value;
                 const nivel = $('#caracNivel').value;
-                const upz = $('#caracTerritorio').value;
+                const territorio = $('#caracTerritorio').value;
                 
                 if (!indicador) {
                     showToast('Seleccione un indicador', 'error');
@@ -894,7 +933,7 @@
                     const params = new URLSearchParams({
                         indicador,
                         nivel,
-                        ...(upz && { [nivel.toLowerCase()]: upz })
+                        ...(territorio && { [nivel.toLowerCase()]: territorio })
                     });
                     
                     const data = await apiCall(`/caracterizacion?${params}`);
@@ -976,18 +1015,108 @@
             `).join('');
         }
         
-        // Asociación
+        // FIXED: Series Temporales with proper territory filtering
+        function initSeries() {
+            // Update territory based on level selection
+            $('#serieNivel').addEventListener('change', () => {
+                updateTerritorioForLevel('serieNivel', 'serieTerritorio', 'serieTerritorioLabel');
+            });
+            
+            $('#btnSerie').addEventListener('click', async () => {
+                const indicador = $('#serieIndicador').value;
+                const territorio = $('#serieTerritorio').value;
+                const nivel = $('#serieNivel').value;
+                
+                if (!indicador || !territorio) {
+                    showToast('Seleccione indicador y territorio', 'error');
+                    return;
+                }
+                
+                try {
+                    const params = new URLSearchParams({
+                        indicador,
+                        upz: territorio,
+                        nivel
+                    });
+                    
+                    const data = await apiCall(`/datos/series?${params}`);
+                    
+                    if (data.mensaje) {
+                        showToast(data.mensaje, 'info');
+                        return;
+                    }
+                    
+                    renderSeriesChart(data, { indicador, territorio });
+                    showToast('Serie temporal generada', 'success');
+                } catch (error) {
+                    showToast('Error generando serie temporal', 'error');
+                }
+            });
+        }
+        
+        function renderSeriesChart(data, metadata) {
+            const serie = data.serie || [];
+            
+            const config = {
+                type: 'line',
+                data: {
+                    labels: serie.map(s => s.año),
+                    datasets: [{
+                        label: metadata.indicador.length > 30 ? 
+                            metadata.indicador.substring(0, 27) + '...' : 
+                            metadata.indicador,
+                        data: serie.map(s => s.valor),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.3,
+                        pointRadius: window.innerWidth < 768 ? 3 : 4,
+                        pointHoverRadius: window.innerWidth < 768 ? 5 : 6
+                    }]
+                },
+                options: {
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: window.innerWidth < 768 ? 
+                                `${metadata.territorio}` : 
+                                `${metadata.indicador} - ${metadata.territorio}`,
+                            font: {
+                                size: window.innerWidth < 768 ? 12 : 14
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { 
+                            title: { 
+                                display: true, 
+                                text: 'Año' 
+                            }
+                        },
+                        y: { 
+                            title: { 
+                                display: true, 
+                                text: data.unidad_medida || 'Valor'
+                            }
+                        }
+                    }
+                }
+            };
+            
+            createResponsiveChart('#chartSeries', config);
+        }
+        
+        // FIXED: Asociación with proper territory filtering
         function initAsociacion() {
             // Level change handler
             $('#asocNivel').addEventListener('change', () => {
-                updateUpzForLevel('asocNivel', 'asocTerritorio');
+                updateTerritorioForLevel('asocNivel', 'asocTerritorio', 'asocTerritorioLabel');
             });
             
             $('#btnAsociar').addEventListener('click', async () => {
                 const indicadorX = $('#asocIndicadorX').value;
                 const indicadorY = $('#asocIndicadorY').value;
                 const nivel = $('#asocNivel').value;
-                const upz = $('#asocTerritorio').value;
+                const territorio = $('#asocTerritorio').value;
                 
                 if (!indicadorX || !indicadorY) {
                     showToast('Seleccione ambos indicadores', 'error');
@@ -999,7 +1128,7 @@
                         indicador_x: indicadorX,
                         indicador_y: indicadorY,
                         nivel,
-                        ...(upz && { [nivel.toLowerCase()]: upz })
+                        ...(territorio && { [nivel.toLowerCase()]: territorio })
                     });
                     
                     const data = await apiCall(`/analisis/asociacion?${params}`);
@@ -1098,18 +1227,18 @@
             `;
         }
         
-        // Theil Index with year filtering
+        // IMPROVED: Theil Index with better layout and scrollable chart
         function initTheil() {
             // Level change handler
             $('#theilNivel').addEventListener('change', () => {
-                updateUpzForLevel('theilNivel', 'theilTerritorio');
+                updateTerritorioForLevel('theilNivel', 'theilTerritorio', 'theilTerritorioLabel');
             });
             
             $('#btnTheil').addEventListener('click', async () => {
                 const indicador = $('#theilIndicador').value;
                 const nivel = $('#theilNivel').value;
                 const año = $('#theilAno').value;
-                const upz = $('#theilTerritorio').value;
+                const territorio = $('#theilTerritorio').value;
                 
                 if (!indicador) {
                     showToast('Seleccione un indicador', 'error');
@@ -1121,7 +1250,7 @@
                         indicador,
                         nivel,
                         ...(año && { año }),
-                        ...(upz && { [nivel.toLowerCase()]: upz })
+                        ...(territorio && { [nivel.toLowerCase()]: territorio })
                     });
                     
                     const data = await apiCall(`/analisis/theil?${params}`);
@@ -1155,19 +1284,20 @@
         }
         
         function renderTheilChart(data) {
-            const top10 = data.datos.slice(0, 10);
+            // Show ALL UPZ instead of just top 10
+            const allData = data.datos || [];
             
             const config = {
                 type: 'bar',
                 data: {
-                    labels: top10.map(d => {
-                        return d.upz.length > 15 ? 
-                            d.upz.substring(0, 12) + '...' : 
+                    labels: allData.map(d => {
+                        return d.upz.length > 12 ? 
+                            d.upz.substring(0, 9) + '...' : 
                             d.upz;
                     }),
                     datasets: [{
                         label: `Valor (${data.unidad_medida})`,
-                        data: top10.map(d => d.valor),
+                        data: allData.map(d => d.valor),
                         backgroundColor: '#8b5cf6',
                         borderColor: '#7c3aed',
                         borderWidth: 1
@@ -1179,12 +1309,21 @@
                         tooltip: {
                             callbacks: {
                                 title: (context) => {
-                                    return top10[context[0].dataIndex].upz;
+                                    return allData[context[0].dataIndex].upz;
                                 }
                             }
                         }
                     },
                     scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 90,
+                                minRotation: 45,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
                         y: { 
                             beginAtZero: true,
                             title: {
@@ -1192,101 +1331,21 @@
                                 text: data.unidad_medida
                             }
                         }
-                    }
+                    },
+                    // Enable scrolling by setting a minimum width
+                    responsive: false,
+                    maintainAspectRatio: false
                 }
             };
+            
+            // Set dynamic width based on number of UPZ
+            const canvas = $('#chartTheil');
+            const container = canvas.parentElement;
+            const minWidth = Math.max(800, allData.length * 40); // 40px per bar minimum
+            canvas.style.width = `${minWidth}px`;
+            canvas.width = minWidth;
             
             createResponsiveChart('#chartTheil', config);
-        }
-        
-        // Series Temporales with UPZ selection
-        function initSeries() {
-            // Update UPZ based on level selection
-            $('#serieNivel').addEventListener('change', () => {
-                updateUpzForLevel('serieNivel', 'serieTerritorio');
-            });
-            
-            $('#btnSerie').addEventListener('click', async () => {
-                const indicador = $('#serieIndicador').value;
-                const upz = $('#serieTerritorio').value;
-                const nivel = $('#serieNivel').value;
-                
-                if (!indicador || !upz) {
-                    showToast('Seleccione indicador y UPZ', 'error');
-                    return;
-                }
-                
-                try {
-                    const params = new URLSearchParams({
-                        indicador,
-                        upz: upz,
-                        nivel
-                    });
-                    
-                    const data = await apiCall(`/datos/series?${params}`);
-                    
-                    if (data.mensaje) {
-                        showToast(data.mensaje, 'info');
-                        return;
-                    }
-                    
-                    renderSeriesChart(data, { indicador, upz });
-                    showToast('Serie temporal generada', 'success');
-                } catch (error) {
-                    showToast('Error generando serie temporal', 'error');
-                }
-            });
-        }
-        
-        function renderSeriesChart(data, metadata) {
-            const serie = data.serie || [];
-            
-            const config = {
-                type: 'line',
-                data: {
-                    labels: serie.map(s => s.año),
-                    datasets: [{
-                        label: metadata.indicador.length > 30 ? 
-                            metadata.indicador.substring(0, 27) + '...' : 
-                            metadata.indicador,
-                        data: serie.map(s => s.valor),
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.3,
-                        pointRadius: window.innerWidth < 768 ? 3 : 4,
-                        pointHoverRadius: window.innerWidth < 768 ? 5 : 6
-                    }]
-                },
-                options: {
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: window.innerWidth < 768 ? 
-                                `${metadata.upz}` : 
-                                `${metadata.indicador} - ${metadata.upz}`,
-                            font: {
-                                size: window.innerWidth < 768 ? 12 : 14
-                            }
-                        }
-                    },
-                    scales: {
-                        x: { 
-                            title: { 
-                                display: true, 
-                                text: 'Año' 
-                            }
-                        },
-                        y: { 
-                            title: { 
-                                display: true, 
-                                text: data.unidad_medida || 'Valor'
-                            }
-                        }
-                    }
-                }
-            };
-            
-            createResponsiveChart('#chartSeries', config);
         }
         
         // CSV Download placeholder
@@ -1301,9 +1360,9 @@
             initTabs();
             initUpload();
             initCaracterizacion();
+            initSeries();
             initAsociacion();
             initTheil();
-            initSeries();
             initDownloads();
             
             // Refresh button
