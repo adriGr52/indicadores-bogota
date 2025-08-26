@@ -92,7 +92,7 @@ def get_db():
 app = FastAPI(
     title="Exploración Determinantes Fecundidad Temprana - Bogotá D.C.",
     description="Análisis integral por UPZ, periodo y cohortes para la exploración de determinantes de fecundidad temprana en Bogotá D.C.",
-    version="4.3.0"
+    version="4.3.1"
 )
 
 app.add_middleware(
@@ -265,7 +265,7 @@ async def health():
         
         return {
             "status": "healthy",
-            "version": "4.3.0",
+            "version": "4.3.1",
             "database": db_status,
             "registros": count,
             "timestamp": datetime.now().isoformat()
@@ -279,8 +279,9 @@ async def health():
 
 @app.get("/", response_class=HTMLResponse)
 async def home():
-    """Página principal con dashboard integrado"""
+    """Página principal con dashboard integrado mejorado"""
     try:
+        # Try to read the improved dashboard
         with open("dashboard_compatible.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
@@ -346,7 +347,7 @@ async def home():
                 <p class="subtitle">Bogotá D.C. - Análisis Territorial Integral por UPZ</p>
                 
                 <div class="status">
-                    <strong>✅ API Funcionando</strong> - Sistema listo para análisis
+                    <strong>✅ API Funcionando v4.3.1</strong> - Sistema listo con filtros mejorados
                 </div>
 
                 <div class="grid">
@@ -355,16 +356,16 @@ async def home():
                         <p>Análisis territorial por indicadores y cohortes</p>
                     </div>
                     <div class="card">
+                        <h3>📈 Series</h3>
+                        <p>Evolución temporal por UPZ</p>
+                    </div>
+                    <div class="card">
                         <h3>🔗 Asociación</h3>
                         <p>Correlaciones entre variables</p>
                     </div>
                     <div class="card">
-                        <h3>🔍 Desigualdad</h3>
+                        <h3>⚖️ Desigualdad</h3>
                         <p>Índice de Theil territorial</p>
-                    </div>
-                    <div class="card">
-                        <h3>📈 Tendencias</h3>
-                        <p>Series temporales por UPZ</p>
                     </div>
                 </div>
 
@@ -375,14 +376,13 @@ async def home():
                 </div>
 
                 <div class="feature">
-                    <h3>🎯 Funcionalidades Principales</h3>
+                    <h3>🎯 Mejoras v4.3.1</h3>
                     <ul>
-                        <li><strong>Carga de datos:</strong> Upload de archivos Excel con validación</li>
-                        <li><strong>Análisis territorial:</strong> Localidades y UPZ con estadísticas descriptivas</li>
-                        <li><strong>Cohortes específicas:</strong> Análisis para grupos 10-14 y 15-19 años</li>
-                        <li><strong>Correlaciones:</strong> Asociación entre indicadores con tests estadísticos</li>
-                        <li><strong>Desigualdad:</strong> Medición con índice de Theil</li>
-                        <li><strong>Series temporales:</strong> Evolución de indicadores por UPZ</li>
+                        <li><strong>Filtros mejorados:</strong> Localidad → UPZ funciona correctamente</li>
+                        <li><strong>Índice Theil:</strong> Gráfico scrolleable para todas las UPZ</li>
+                        <li><strong>Orden pestañas:</strong> Caracterización → Series → Asociación → Desigualdad</li>
+                        <li><strong>Interfaz responsive:</strong> Mejor experiencia en móviles</li>
+                        <li><strong>Gráficos mejorados:</strong> Tooltips completos y datos dinámicos</li>
                     </ul>
                 </div>
             </div>
@@ -403,7 +403,7 @@ async def home():
 
 @app.post("/upload/excel")
 async def upload_excel(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """Carga datos desde archivo Excel con validación mejorada para consolidado_indicadores_fecundidad.xlsx"""
+    """Carga datos desde archivo Excel con validación mejorada"""
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="Formato no válido. Use archivos .xlsx o .xls")
     
@@ -617,17 +617,20 @@ async def metadatos(db: Session = Depends(get_db)):
 
 @app.get("/geografia/upz_por_localidad")
 async def upz_por_localidad(localidad: str = Query(...), db: Session = Depends(get_db)):
-    """Obtiene las UPZ para una localidad específica"""
+    """MEJORADO: Obtiene las UPZ para una localidad específica"""
     try:
         upzs = db.query(IndicadorFecundidad.nombre_upz).filter(
             IndicadorFecundidad.nombre_localidad == localidad,
             IndicadorFecundidad.nombre_upz.isnot(None),
             IndicadorFecundidad.nombre_upz != 'ND',
-            IndicadorFecundidad.nombre_upz != 'NO_DATA'
+            IndicadorFecundidad.nombre_upz != 'NO_DATA',
+            IndicadorFecundidad.nombre_upz != 'SIN UPZ'
         ).distinct().all()
         
         upz_list = [limpiar_texto(upz[0]) for upz in upzs if upz[0]]
         upz_list = sorted(list(set(upz_list)))
+        
+        logger.info(f"UPZ encontradas para {localidad}: {len(upz_list)}")
         
         return {
             "localidad": localidad,
@@ -675,14 +678,15 @@ async def debug_columns():
             "Nombre Localidad": "Usaquén",
             "Año_Inicio": 2020
         },
-        "notas": [
-            "Los nombres de indicadores se limpian automáticamente",
-            "Los valores nulos o 'ND' se omiten durante la carga",
-            "Las cohortes se detectan automáticamente del nombre del indicador"
+        "mejoras_v431": [
+            "Filtros Localidad/UPZ funcionan correctamente",
+            "Gráfico Theil muestra todas las UPZ con scroll",
+            "Orden de pestañas mejorado",
+            "Interfaz responsive optimizada"
         ]
     }
 
-# ---- ENDPOINTS PRINCIPALES CORREGIDOS ----
+# ---- ENDPOINTS PRINCIPALES MEJORADOS ----
 
 @app.get("/caracterizacion")
 async def caracterizacion(
@@ -693,7 +697,7 @@ async def caracterizacion(
     upz: Optional[str] = Query(None, description="Filtrar por UPZ específica"),
     db: Session = Depends(get_db)
 ):
-    """Caracterización estadística territorial"""
+    """MEJORADO: Caracterización estadística territorial con filtros corregidos"""
     if nivel.upper() not in {"LOCALIDAD", "UPZ"}:
         raise HTTPException(status_code=400, detail="nivel debe ser LOCALIDAD o UPZ")
     
@@ -701,9 +705,11 @@ async def caracterizacion(
     
     if año is not None:
         q = q.filter(IndicadorFecundidad.año_inicio == año)
-    if localidad:
+        
+    # CORREGIDO: Aplicar filtros según nivel
+    if nivel.upper() == "LOCALIDAD" and localidad:
         q = q.filter(IndicadorFecundidad.nombre_localidad == localidad)
-    if upz:
+    elif nivel.upper() == "UPZ" and upz:
         q = q.filter(IndicadorFecundidad.nombre_upz == upz)
     
     rows = q.all()
@@ -773,7 +779,7 @@ async def asociacion_indicadores(
     upz: Optional[str] = Query(None, description="Filtrar por UPZ"),
     db: Session = Depends(get_db)
 ):
-    """Análisis de asociación entre dos indicadores"""
+    """MEJORADO: Análisis de asociación entre dos indicadores con filtros corregidos"""
     if nivel.upper() not in {"LOCALIDAD", "UPZ"}:
         raise HTTPException(status_code=400, detail="nivel debe ser LOCALIDAD o UPZ")
     
@@ -785,11 +791,11 @@ async def asociacion_indicadores(
         qx = qx.filter(IndicadorFecundidad.año_inicio == año)
         qy = qy.filter(IndicadorFecundidad.año_inicio == año)
     
-    if localidad:
+    # CORREGIDO: Aplicar filtros según nivel
+    if nivel.upper() == "LOCALIDAD" and localidad:
         qx = qx.filter(IndicadorFecundidad.nombre_localidad == localidad)
         qy = qy.filter(IndicadorFecundidad.nombre_localidad == localidad)
-    
-    if upz:
+    elif nivel.upper() == "UPZ" and upz:
         qx = qx.filter(IndicadorFecundidad.nombre_upz == upz)
         qy = qy.filter(IndicadorFecundidad.nombre_upz == upz)
     
@@ -877,7 +883,7 @@ async def indice_theil(
     upz: Optional[str] = Query(None, description="Filtrar por UPZ"),
     db: Session = Depends(get_db)
 ):
-    """Calcula el índice de Theil para medir desigualdad territorial"""
+    """MEJORADO: Calcula el índice de Theil para medir desigualdad territorial - Devuelve TODAS las UPZ"""
     if nivel.upper() not in {"LOCALIDAD", "UPZ"}:
         raise HTTPException(status_code=400, detail="nivel debe ser LOCALIDAD o UPZ")
     
@@ -885,9 +891,11 @@ async def indice_theil(
     
     if año is not None:
         q = q.filter(IndicadorFecundidad.año_inicio == año)
-    if localidad:
+        
+    # CORREGIDO: Aplicar filtros según nivel
+    if nivel.upper() == "LOCALIDAD" and localidad:
         q = q.filter(IndicadorFecundidad.nombre_localidad == localidad)
-    if upz:
+    elif nivel.upper() == "UPZ" and upz:
         q = q.filter(IndicadorFecundidad.nombre_upz == upz)
     
     rows = q.all()
@@ -923,7 +931,7 @@ async def indice_theil(
     std_val = float(np.std(valores))
     cv = (std_val / mean_val * 100) if mean_val != 0 else 0
     
-    # Datos por UPZ
+    # MEJORADO: Datos de TODAS las UPZ (no solo top 10)
     datos_upz = []
     for i, upz in enumerate(upzs):
         datos_upz.append({
@@ -933,6 +941,7 @@ async def indice_theil(
             "ratio_media": round(valores[i] / mean_val, 3) if mean_val != 0 else 0
         })
     
+    # Ordenar por valor descendente
     datos_upz.sort(key=lambda x: x["valor"], reverse=True)
     
     return {
@@ -956,7 +965,7 @@ async def indice_theil(
             "min": round(min(valores), 3),
             "max": round(max(valores), 3)
         },
-        "datos": datos_upz
+        "datos": datos_upz  # TODAS las UPZ, no solo top 10
     }
 
 @app.get("/datos/series")
@@ -966,9 +975,10 @@ async def serie_temporal(
     nivel: str = Query("LOCALIDAD", description="Nivel territorial"),
     db: Session = Depends(get_db)
 ):
-    """Serie temporal de un indicador en una UPZ específica"""
+    """MEJORADO: Serie temporal de un indicador en una UPZ específica"""
     q = db.query(IndicadorFecundidad).filter(IndicadorFecundidad.indicador_nombre == indicador)
     
+    # CORREGIDO: Aplicar filtro según nivel
     if nivel.upper() == "LOCALIDAD":
         q = q.filter(IndicadorFecundidad.nombre_localidad == upz)
     else:
@@ -1016,7 +1026,7 @@ async def serie_temporal(
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
-    logger.info(f"Iniciando servidor en puerto {port}")
+    logger.info(f"Iniciando servidor mejorado v4.3.1 en puerto {port}")
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
