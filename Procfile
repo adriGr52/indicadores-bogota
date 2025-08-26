@@ -1,3 +1,21 @@
-web: bash start.sh
-worker: python -c "print('No worker processes defined for v4.3.1')"
-release: python -c "from main import Base, engine; Base.metadata.create_all(bind=engine); print('✅ Database tables created/verified for v4.3.1'); print('🆕 Features: Filtros corregidos, Theil mejorado, Dashboard responsive')"
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pip install --upgrade pip && pip install -r requirements.txt"
+  },
+  "deploy": {
+    "startCommand": "bash start.sh",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 120,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "environment": {
+    "PYTHONPATH": "/app",
+    "PYTHONUNBUFFERED": "1",
+    "PORT": "8000"
+  },
+  "regions": ["us-west1"],
+  "plugins": ["postgresql"]
+}
