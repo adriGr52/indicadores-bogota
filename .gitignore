@@ -45,11 +45,18 @@ venv.bak/
 *.sqlite3
 fallback.db
 fecundidad_temprana.db
+# v4.3.1 - Nuevas bases de datos de prueba
+test_*.db
+*.db-journal
 
 # Logs
 *.log
 logs/
 *.log.*
+# v4.3.1 - Logs específicos
+access.log
+error.log
+uvicorn.log
 
 # OS
 .DS_Store
@@ -65,11 +72,17 @@ Thumbs.db
 .coverage
 htmlcov/
 .tox/
+# v4.3.1 - Archivos de test
+test_results/
+coverage_reports/
 
 # Temporary files
 *.tmp
 *.temp
 .cache/
+# v4.3.1 - Archivos temporales específicos
+uploads_temp/
+export_temp/
 
 # Railway specific
 .railway/
@@ -79,6 +92,8 @@ htmlcov/
 .env.development
 .env.test
 .env.production
+# v4.3.1 - Variables de entorno específicas
+.env.v431
 
 # Node modules (if using any frontend tools)
 node_modules/
@@ -123,6 +138,9 @@ dmypy.json
 # Backup files
 *.bak
 *~
+# v4.3.1 - Backups específicos
+*_backup_*
+*.backup
 
 # Excel temporary files
 ~$*.xlsx
@@ -134,6 +152,28 @@ dmypy.json
 # Chart.js and dashboard assets (if generated)
 static/charts/
 static/temp/
+# v4.3.1 - Assets generados
+static/exports/
+static/cache/
+
+# v4.3.1 - Archivos de configuración temporal
+config_temp/
+settings_backup/
+
+# v4.3.1 - Archivos de desarrollo y testing
+dev_data/
+sample_data/
+test_uploads/
 
 # Keep only standard deployment files
 *.final.*
+# v4.3.1 - Mantener archivos importantes
+!README.md
+!requirements.txt
+!runtime.txt
+!railway.json
+!Procfile
+!start.sh
+!main.py
+!test.py
+!dashboard_compatible.html
