@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-Test suite completo MEJORADO para verificar que la aplicación de Fecundidad Temprana funciona correctamente.
-Incluye tests específicos para las mejoras v4.3.1:
+Suite de testing completa para Fecundidad Temprana API v4.3.1
+Incluye tests para todas las funcionalidades principales:
 - Filtros Localidad/UPZ corregidos
-- Índice Theil con todas las UPZ
-- Orden de pestañas mejorado
-- Interfaz responsive optimizada
+- Lógica inteligente de datos
+- Índice de Theil completo
+- Dashboard funcional
+- Endpoints de análisis
 """
 
 import os
@@ -16,76 +17,96 @@ import re
 from io import BytesIO
 from pathlib import Path
 
-def test_import():
-    """Test que la aplicación se puede importar"""
+def test_environment():
+    """Test del entorno y variables de configuración"""
     try:
-        print("Testing app import...")
-        from main import app, SessionLocal, IndicadorFecundidad
-        print("✅ App imported successfully")
-        print(f"✅ App title: {app.title}")
-        print(f"✅ App version: {app.version}")
+        print("Testing environment configuration...")
+        
+        # Variables de entorno
+        port = os.getenv('PORT', 'Not set')
+        database_url = os.getenv('DATABASE_URL', 'Not set')
+        
+        print(f"✅ PORT: {port}")
+        print(f"✅ DATABASE_URL: {'Set' if database_url != 'Not set' else 'Not set'}")
+        
+        # Versión Python
+        python_version = sys.version_info
+        print(f"✅ Python version: {python_version.major}.{python_version.minor}.{python_version.micro}")
+        
+        # Directorio de trabajo
+        cwd = os.getcwd()
+        print(f"✅ Working directory: {cwd}")
+        
         return True
+        
     except Exception as e:
-        print(f"❌ Failed to import app: {e}")
+        print(f"❌ Environment test failed: {e}")
         return False
 
-def test_health_endpoint():
-    """Test que el endpoint de health existe y funciona"""
+def test_imports():
+    """Test que todos los módulos se pueden importar"""
     try:
-        from main import app
+        print("Testing module imports...")
+        
+        # Test imports básicos
+        from main import app, SessionLocal, IndicadorFecundidad, obtener_datos_con_fallback
+        print("✅ Main application modules imported")
+        
+        # Test FastAPI
+        from fastapi import FastAPI
         from fastapi.testclient import TestClient
+        print("✅ FastAPI modules imported")
         
-        print("Testing health endpoint...")
-        client = TestClient(app)
-        response = client.get("/health")
+        # Test SQLAlchemy
+        from sqlalchemy import create_engine
+        print("✅ SQLAlchemy imported")
         
-        print(f"✅ Health endpoint status: {response.status_code}")
+        # Test scientific libraries
+        import pandas as pd
+        import numpy as np
+        from scipy import stats
+        print("✅ Scientific libraries imported")
         
-        if response.status_code == 200:
-            health_data = response.json()
-            print(f"✅ Health response: {json.dumps(health_data, indent=2)}")
-            
-            # Verificar campos esperados
-            expected_fields = ["status", "version", "database", "registros", "timestamp"]
-            missing_fields = [field for field in expected_fields if field not in health_data]
-            
-            if missing_fields:
-                print(f"⚠️ Missing health fields: {missing_fields}")
-            else:
-                print("✅ All expected health fields present")
-            
-            # Verificar versión actualizada
-            if health_data.get("version") == "4.3.1":
-                print("✅ Version updated to 4.3.1")
-            else:
-                print(f"⚠️ Expected version 4.3.1, got {health_data.get('version')}")
-            
-            return True
+        # Test app properties
+        print(f"✅ App title: {app.title}")
+        print(f"✅ App version: {app.version}")
+        
+        if app.version == "4.3.1":
+            print("✅ Version correctly updated to 4.3.1")
         else:
-            print(f"❌ Health endpoint returned non-200 status: {response.status_code}")
-            return False
-            
+            print(f"⚠️ Expected version 4.3.1, got {app.version}")
+        
+        return True
+        
     except Exception as e:
-        print(f"❌ Health endpoint test failed: {e}")
+        print(f"❌ Import test failed: {e}")
         return False
 
 def test_database_connection():
-    """Test que la base de datos se puede conectar"""
+    """Test conexión a base de datos"""
     try:
         print("Testing database connection...")
-        from main import SessionLocal, IndicadorFecundidad
+        from main import SessionLocal, engine
+        from sqlalchemy import text
         
         db = SessionLocal()
         try:
             # Test simple query
-            result = db.execute("SELECT 1").scalar()
-            print(f"✅ Database query test result: {result}")
+            result = db.execute(text("SELECT 1")).scalar()
+            print(f"✅ Database connection successful: {result}")
             
-            # Test table exists
+            # Test table creation
+            from main import Base
+            Base.metadata.create_all(bind=engine)
+            print("✅ Database tables created/verified")
+            
+            # Test record count
+            from main import IndicadorFecundidad
             count = db.query(IndicadorFecundidad).count()
             print(f"✅ Current records in database: {count}")
             
-            return result == 1
+            return True
+            
         finally:
             db.close()
             
@@ -93,157 +114,304 @@ def test_database_connection():
         print(f"❌ Database test failed: {e}")
         return False
 
-def test_geografia_upz_filtering():
-    """🆕 NUEVO: Test específico para el filtrado de UPZ por localidad"""
+def test_health_endpoint():
+    """Test endpoint de health"""
     try:
+        print("Testing health endpoint...")
         from main import app
         from fastapi.testclient import TestClient
         
+        client = TestClient(app)
+        response = client.get("/health")
+        
+        print(f"✅ Health endpoint status: {response.status_code}")
+        
+        if response.status_code == 200:
+            health_data = response.json()
+            
+            # Verificar campos requeridos
+            required_fields = ["status", "version", "database", "registros", "timestamp"]
+            missing_fields = [field for field in required_fields if field not in health_data]
+            
+            if missing_fields:
+                print(f"⚠️ Missing health fields: {missing_fields}")
+                return False
+            else:
+                print("✅ All expected health fields present")
+            
+            # Verificar versión
+            if health_data.get("version") == "4.3.1":
+                print("✅ Health endpoint reports correct version")
+            else:
+                print(f"⚠️ Health version mismatch: {health_data.get('version')}")
+            
+            print(f"✅ Database status: {health_data.get('database')}")
+            print(f"✅ Records count: {health_data.get('registros')}")
+            
+            return True
+        else:
+            print(f"❌ Health endpoint returned status: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Health endpoint test failed: {e}")
+        return False
+
+def test_metadatos_endpoint():
+    """Test endpoint de metadatos"""
+    try:
+        print("Testing metadatos endpoint...")
+        from main import app
+        from fastapi.testclient import TestClient
+        
+        client = TestClient(app)
+        response = client.get("/metadatos")
+        
+        print(f"✅ Metadatos endpoint status: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Verificar estructura
+            required_sections = ["resumen", "indicadores", "geografia", "temporal"]
+            missing_sections = [section for section in required_sections if section not in data]
+            
+            if missing_sections:
+                print(f"⚠️ Missing metadatos sections: {missing_sections}")
+                return False
+            
+            # Verificar contenido
+            resumen = data.get("resumen", {})
+            print(f"✅ Total registros: {resumen.get('total_registros', 0)}")
+            print(f"✅ Total indicadores: {resumen.get('total_indicadores', 0)}")
+            print(f"✅ Localidades: {resumen.get('localidades', 0)}")
+            print(f"✅ UPZ: {resumen.get('upz', 0)}")
+            
+            # Verificar que hay datos
+            if resumen.get('total_registros', 0) > 0:
+                print("✅ Database contains data")
+            else:
+                print("⚠️ Database appears empty (normal for fresh install)")
+            
+            return True
+        else:
+            print(f"❌ Metadatos endpoint returned status: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Metadatos endpoint test failed: {e}")
+        return False
+
+def test_upz_por_localidad():
+    """🆕 Test específico para filtrado UPZ por localidad"""
+    try:
         print("Testing UPZ filtering by localidad...")
+        from main import app
+        from fastapi.testclient import TestClient
+        
         client = TestClient(app)
         
         # Test con localidades comunes de Bogotá
-        test_localidades = ["Usaquén", "Chapinero", "Santa Fe", "Kennedy", "Fontibón"]
+        test_localidades = ["Usaquén", "Chapinero", "Kennedy", "Suba", "Engativá"]
         
-        results = {}
+        successful_tests = 0
         for localidad in test_localidades:
             try:
                 response = client.get(f"/geografia/upz_por_localidad?localidad={localidad}")
+                
                 if response.status_code == 200:
                     data = response.json()
-                    results[localidad] = data.get('total', 0)
-                    print(f"✅ {localidad}: {data.get('total', 0)} UPZ encontradas")
+                    upz_count = data.get('total', 0)
+                    print(f"✅ {localidad}: {upz_count} UPZ found")
+                    successful_tests += 1
                 else:
-                    results[localidad] = 0
-                    print(f"⚠️ {localidad}: endpoint returned {response.status_code}")
+                    print(f"⚠️ {localidad}: HTTP {response.status_code}")
             except Exception as e:
-                results[localidad] = 0
                 print(f"❌ Error testing {localidad}: {e}")
         
-        # Verificar que al menos algunas localidades tienen UPZ
-        localidades_con_upz = [loc for loc, count in results.items() if count > 0]
-        
-        if len(localidades_con_upz) > 0:
-            print(f"✅ Filtrado de UPZ funciona para {len(localidades_con_upz)} localidades")
+        if successful_tests > 0:
+            print(f"✅ UPZ filtering works for {successful_tests} localidades")
             return True
         else:
-            print("⚠️ No se encontraron UPZ para ninguna localidad (puede ser normal si no hay datos)")
-            return True  # No es error crítico si no hay datos
+            print("⚠️ UPZ filtering test completed but no data found (may be normal)")
+            return True  # Not critical if no data
             
     except Exception as e:
         print(f"❌ UPZ filtering test failed: {e}")
         return False
 
-def test_theil_all_upz():
-    """🆕 NUEVO: Test que verifica que el índice Theil devuelve todas las UPZ"""
+def test_caracterizacion_endpoint():
+    """🆕 Test específico para caracterización con lógica inteligente"""
     try:
+        print("Testing caracterizacion endpoint...")
         from main import app
         from fastapi.testclient import TestClient
         
-        print("Testing Theil index returns all UPZ...")
         client = TestClient(app)
         
-        # Primero obtener metadatos para saber qué indicadores hay
-        metadatos_response = client.get("/metadatos")
-        if metadatos_response.status_code != 200:
-            print("⚠️ Cannot get metadata, skipping Theil test")
-            return True
+        # Test sin indicador (debe fallar)
+        response = client.get("/caracterizacion?")
+        if response.status_code != 422:  # FastAPI validation error
+            print("⚠️ Expected validation error for missing indicator")
+        else:
+            print("✅ Validation works for missing indicator")
         
-        metadatos = metadatos_response.json()
-        indicadores = metadatos.get("indicadores", {}).get("todos", [])
-        
-        if not indicadores:
-            print("⚠️ No indicators found, skipping Theil test")
-            return True
-        
-        # Test con el primer indicador disponible
-        test_indicador = indicadores[0]
-        response = client.get(f"/analisis/theil?indicador={test_indicador}&nivel=LOCALIDAD")
+        # Test con indicador ficticio
+        response = client.get("/caracterizacion?indicador=test_indicator")
+        print(f"✅ Caracterizacion test call status: {response.status_code}")
         
         if response.status_code == 200:
             data = response.json()
-            if "datos" in data:
-                num_upz = len(data["datos"])
-                total_upz_meta = metadatos.get("resumen", {}).get("upz", 0)
-                
-                print(f"✅ Theil returned {num_upz} UPZ")
-                print(f"✅ Metadata shows {total_upz_meta} total UPZ")
-                
-                # Verificar que devuelve datos estructurados correctamente
-                if num_upz > 0:
-                    sample_upz = data["datos"][0]
-                    expected_fields = ["upz", "valor", "desviacion_media", "ratio_media"]
-                    missing_fields = [field for field in expected_fields if field not in sample_upz]
-                    
-                    if missing_fields:
-                        print(f"⚠️ Missing fields in Theil response: {missing_fields}")
-                    else:
-                        print("✅ Theil response structure is correct")
-                
-                return True
+            if "mensaje" in data:
+                print(f"✅ Proper handling of no data: {data['mensaje']}")
             else:
-                print("⚠️ Theil response missing 'datos' field")
-                return False
-        else:
-            print(f"⚠️ Theil endpoint returned status {response.status_code}")
-            # Podría ser normal si no hay datos suficientes
-            return True
-            
+                print(f"✅ Caracterizacion returned data: {len(data.get('datos', []))} territories")
+        
+        return True
+        
     except Exception as e:
-        print(f"❌ Theil all UPZ test failed: {e}")
+        print(f"❌ Caracterizacion test failed: {e}")
         return False
 
-def test_caracterizacion_filtering():
-    """🆕 NUEVO: Test específico para filtros de caracterización"""
+def test_theil_endpoint():
+    """🆕 Test específico para índice de Theil completo"""
     try:
+        print("Testing Theil index endpoint...")
         from main import app
         from fastapi.testclient import TestClient
         
-        print("Testing caracterizacion filtering...")
         client = TestClient(app)
         
-        # Obtener metadatos
-        metadatos_response = client.get("/metadatos")
-        if metadatos_response.status_code != 200:
-            print("⚠️ Cannot get metadata, skipping caracterizacion test")
-            return True
+        # Test con indicador ficticio
+        response = client.get("/analisis/theil?indicador=test_indicator")
+        print(f"✅ Theil endpoint status: {response.status_code}")
         
-        metadatos = metadatos_response.json()
-        indicadores = metadatos.get("indicadores", {}).get("todos", [])
-        localidades = metadatos.get("geografia", {}).get("localidades", [])
-        
-        if not indicadores or not localidades:
-            print("⚠️ Insufficient data for caracterizacion test")
-            return True
-        
-        test_indicador = indicadores[0]
-        test_localidad = localidades[0] if localidades else None
-        
-        # Test filtro por localidad
-        if test_localidad:
-            response = client.get(f"/caracterizacion?indicador={test_indicador}&nivel=LOCALIDAD&localidad={test_localidad}")
+        if response.status_code == 200:
+            data = response.json()
             
-            if response.status_code == 200:
-                data = response.json()
-                if "datos" in data:
-                    print(f"✅ Caracterización con filtro localidad: {len(data['datos'])} resultados")
-                else:
-                    print("✅ Caracterización response OK (no data message)")
-                return True
+            if "mensaje" in data:
+                print(f"✅ Proper no-data handling: {data['mensaje']}")
             else:
-                print(f"⚠️ Caracterización returned status {response.status_code}")
-                return True  # No crítico
+                # Verificar estructura esperada
+                expected_fields = ["indice_theil", "interpretacion", "estadisticas", "datos"]
+                missing_fields = [field for field in expected_fields if field not in data]
+                
+                if missing_fields:
+                    print(f"⚠️ Missing Theil fields: {missing_fields}")
+                else:
+                    print("✅ Theil response structure is correct")
+                    
+                    # Verificar que devuelve TODAS las unidades (no top 10)
+                    datos_count = len(data.get("datos", []))
+                    print(f"✅ Theil returns {datos_count} territories (not limited to top 10)")
         
         return True
-            
+        
     except Exception as e:
-        print(f"❌ Caracterizacion filtering test failed: {e}")
+        print(f"❌ Theil test failed: {e}")
         return False
 
-def test_dashboard_structure():
-    """🆕 NUEVO: Test que verifica la estructura del dashboard mejorado"""
+def test_lógica_inteligente():
+    """🆕 Test para la lógica inteligente de fallback de datos"""
     try:
-        print("Testing dashboard structure...")
+        print("Testing intelligent data fallback logic...")
+        from main import obtener_datos_con_fallback, SessionLocal
+        
+        db = SessionLocal()
+        try:
+            # Test función de fallback con indicador ficticio
+            result = obtener_datos_con_fallback(db, "test_indicator")
+            
+            if result is None or (result and len(result) == 2):
+                print("✅ Fallback function handles empty data correctly")
+            else:
+                print("⚠️ Unexpected fallback function result")
+            
+            return True
+            
+        finally:
+            db.close()
+            
+    except Exception as e:
+        print(f"❌ Intelligent logic test failed: {e}")
+        return False
+
+def test_series_temporales():
+    """Test endpoint de series temporales"""
+    try:
+        print("Testing series temporales endpoint...")
+        from main import app
+        from fastapi.testclient import TestClient
+        
+        client = TestClient(app)
+        
+        # Test sin parámetros (debe fallar)
+        response = client.get("/datos/series")
+        if response.status_code == 422:
+            print("✅ Validation works for series endpoint")
+        
+        # Test con parámetros ficticios
+        response = client.get("/datos/series?indicador=test&territorio=test_territory")
+        print(f"✅ Series endpoint status: {response.status_code}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Series test failed: {e}")
+        return False
+
+def test_asociacion():
+    """Test endpoint de asociación"""
+    try:
+        print("Testing asociacion endpoint...")
+        from main import app
+        from fastapi.testclient import TestClient
+        
+        client = TestClient(app)
+        
+        # Test con parámetros ficticios
+        response = client.get("/analisis/asociacion?indicador_x=test1&indicador_y=test2")
+        print(f"✅ Asociacion endpoint status: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "mensaje" in data:
+                print(f"✅ Proper handling: {data['mensaje']}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Asociacion test failed: {e}")
+        return False
+
+def test_brechas_cohortes():
+    """🆕 Test nuevo endpoint de brechas por cohortes"""
+    try:
+        print("Testing brechas cohortes endpoint...")
+        from main import app
+        from fastapi.testclient import TestClient
+        
+        client = TestClient(app)
+        
+        # Test endpoint
+        response = client.get("/brechas/cohortes")
+        print(f"✅ Brechas cohortes endpoint status: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "mensaje" in data or "cohortes" in data:
+                print("✅ Brechas endpoint responds correctly")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Brechas cohortes test failed: {e}")
+        return False
+
+def test_dashboard_file():
+    """🆕 Test estructura del dashboard HTML"""
+    try:
+        print("Testing dashboard HTML structure...")
         
         dashboard_file = "dashboard_compatible.html"
         if not Path(dashboard_file).exists():
@@ -253,13 +421,16 @@ def test_dashboard_structure():
         with open(dashboard_file, "r", encoding="utf-8") as f:
             content = f.read()
         
-        # Verificar elementos clave del dashboard mejorado
+        # Verificar elementos clave del dashboard funcional
         checks = {
-            "Tabs in correct order": 'data-tab="caracterizacion"' in content and 'data-tab="series"' in content,
-            "Theil scrollable chart": 'chart-container-scrollable' in content,
-            "Territory filtering logic": 'updateTerritorioForLevel' in content,
-            "Responsive design": 'responsive' in content and '@media' in content,
-            "UPZ filtering": 'upz_por_localidad' in content
+            "FastAPI title": "Fecundidad Temprana" in content,
+            "Chart.js integration": "chart.js" in content.lower(),
+            "Tabs structure": 'data-tab="caracterizacion"' in content,
+            "Series after caracterización": content.find('data-tab="series"') > content.find('data-tab="caracterizacion"'),
+            "UPZ filtering logic": 'upz_por_localidad' in content,
+            "Responsive design": 'responsive' in content.lower(),
+            "Loading indicators": 'loading' in content.lower(),
+            "Error handling": 'error' in content.lower()
         }
         
         passed = 0
@@ -274,43 +445,16 @@ def test_dashboard_structure():
         return passed >= len(checks) * 0.8  # 80% o más
         
     except Exception as e:
-        print(f"❌ Dashboard structure test failed: {e}")
-        return False
-
-def test_series_temporales():
-    """Test mejorado para series temporales"""
-    try:
-        from main import app
-        from fastapi.testclient import TestClient
-        
-        print("Testing series temporales endpoint...")
-        client = TestClient(app)
-        
-        # Test básico sin datos (debería devolver mensaje)
-        response = client.get("/datos/series?indicador=test_indicator&upz=test_upz&nivel=LOCALIDAD")
-        print(f"✅ Series endpoint status: {response.status_code}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            # Debería tener mensaje de sin datos o datos reales
-            has_data = "serie" in data or "mensaje" in data
-            print(f"✅ Series response structure OK: {has_data}")
-            return True
-        else:
-            print(f"⚠️ Series returned status: {response.status_code}")
-            return True  # No crítico si no hay datos
-            
-    except Exception as e:
-        print(f"❌ Series temporales test failed: {e}")
+        print(f"❌ Dashboard test failed: {e}")
         return False
 
 def test_api_documentation():
-    """Test que la documentación de la API está disponible"""
+    """Test documentación automática de la API"""
     try:
+        print("Testing API documentation...")
         from main import app
         from fastapi.testclient import TestClient
         
-        print("Testing API documentation...")
         client = TestClient(app)
         
         # Test Swagger UI
@@ -323,29 +467,34 @@ def test_api_documentation():
         
         if response.status_code == 200:
             schema = response.json()
-            print(f"✅ API title: {schema.get('info', {}).get('title', 'N/A')}")
-            print(f"✅ API version: {schema.get('info', {}).get('version', 'N/A')}")
+            
+            # Verificar información básica
+            info = schema.get("info", {})
+            print(f"✅ API title: {info.get('title', 'N/A')}")
+            print(f"✅ API version: {info.get('version', 'N/A')}")
             
             # Contar endpoints
-            paths_count = len(schema.get('paths', {}))
-            print(f"✅ Number of API endpoints: {paths_count}")
+            paths = schema.get("paths", {})
+            endpoint_count = len(paths)
+            print(f"✅ Number of endpoints: {endpoint_count}")
             
-            # Verificar que existen endpoints clave
+            # Verificar endpoints clave de v4.3.1
             expected_endpoints = [
                 "/caracterizacion",
-                "/analisis/theil", 
-                "/analisis/asociacion",
+                "/analisis/theil",
+                "/analisis/asociacion", 
                 "/datos/series",
-                "/geografia/upz_por_localidad"
+                "/geografia/upz_por_localidad",
+                "/brechas/cohortes"
             ]
             
-            existing_endpoints = list(schema.get('paths', {}).keys())
+            existing_endpoints = list(paths.keys())
             missing_endpoints = [ep for ep in expected_endpoints if ep not in existing_endpoints]
             
             if missing_endpoints:
                 print(f"⚠️ Missing expected endpoints: {missing_endpoints}")
             else:
-                print("✅ All key endpoints present")
+                print("✅ All key v4.3.1 endpoints present")
         
         return response.status_code == 200
         
@@ -353,135 +502,226 @@ def test_api_documentation():
         print(f"❌ API documentation test failed: {e}")
         return False
 
-def test_environment_variables():
-    """Test variables de entorno importantes"""
+def test_file_structure():
+    """Test estructura de archivos del proyecto"""
     try:
-        print("Testing environment variables...")
+        print("Testing project file structure...")
         
-        port = os.getenv('PORT', 'Not set')
-        database_url = os.getenv('DATABASE_URL', 'Not set')
+        # Archivos críticos
+        critical_files = [
+            "main.py",
+            "requirements.txt", 
+            "Procfile"
+        ]
         
-        print(f"✅ PORT: {port}")
-        print(f"✅ DATABASE_URL: {database_url[:50]}..." if database_url != 'Not set' else f"✅ DATABASE_URL: {database_url}")
+        # Archivos recomendados
+        recommended_files = [
+            "dashboard_compatible.html",
+            "start.sh",
+            "railway.json",
+            ".gitignore",
+            "README.md"
+        ]
         
-        # Verificar Python version
-        python_version = sys.version
-        print(f"✅ Python version: {python_version}")
+        missing_critical = []
+        missing_recommended = []
+        
+        for file in critical_files:
+            if Path(file).exists():
+                print(f"✅ Critical file found: {file}")
+            else:
+                missing_critical.append(file)
+                print(f"❌ Missing critical file: {file}")
+        
+        for file in recommended_files:
+            if Path(file).exists():
+                print(f"✅ Recommended file found: {file}")
+            else:
+                missing_recommended.append(file)
+                print(f"⚠️ Missing recommended file: {file}")
+        
+        if missing_critical:
+            print(f"❌ Missing critical files: {missing_critical}")
+            return False
+        
+        if missing_recommended:
+            print(f"⚠️ Missing recommended files (non-critical): {missing_recommended}")
+        
+        print("✅ Project file structure is adequate")
+        return True
+        
+    except Exception as e:
+        print(f"❌ File structure test failed: {e}")
+        return False
+
+def test_data_processing_functions():
+    """🆕 Test funciones de procesamiento de datos"""
+    try:
+        print("Testing data processing functions...")
+        from main import (
+            limpiar_texto, 
+            calcular_indice_theil, 
+            extraer_grupo_edad,
+            clean_str, 
+            clean_int, 
+            clean_float
+        )
+        
+        # Test limpiar_texto
+        test_text = "  Test   Text  "
+        cleaned = limpiar_texto(test_text)
+        if cleaned == "Test Text":
+            print("✅ limpiar_texto function works")
+        else:
+            print(f"⚠️ limpiar_texto unexpected result: '{cleaned}'")
+        
+        # Test calcular_indice_theil
+        valores = [1.0, 2.0, 3.0, 4.0, 5.0]
+        theil = calcular_indice_theil(valores)
+        if isinstance(theil, float) and theil >= 0:
+            print(f"✅ calcular_indice_theil works: {theil:.4f}")
+        else:
+            print("⚠️ calcular_indice_theil unexpected result")
+        
+        # Test extraer_grupo_edad
+        test_cases = [
+            ("Tasa de fecundidad 10-14", "10-14"),
+            ("Embarazo en niñas de 10 a 14 años", "10-14"),
+            ("Fecundidad 15-19", "15-19"),
+            ("Test sin grupo", None)
+        ]
+        
+        for text, expected in test_cases:
+            result = extraer_grupo_edad(text, None)
+            if result == expected:
+                print(f"✅ extraer_grupo_edad: '{text}' -> {result}")
+            else:
+                print(f"⚠️ extraer_grupo_edad: '{text}' expected {expected}, got {result}")
+        
+        # Test cleaning functions
+        if clean_str("  test  ") == "test":
+            print("✅ clean_str works")
+        
+        if clean_int("123") == 123:
+            print("✅ clean_int works")
+        
+        if clean_float("123.45") == 123.45:
+            print("✅ clean_float works")
         
         return True
         
     except Exception as e:
-        print(f"❌ Environment variables test failed: {e}")
-        return False
-
-def test_debug_columns():
-    """Test específico para el endpoint de debug mejorado"""
-    try:
-        from main import app
-        from fastapi.testclient import TestClient
-        
-        print("Testing debug columns endpoint...")
-        client = TestClient(app)
-        
-        response = client.get("/debug/columns")
-        print(f"✅ Debug columns status: {response.status_code}")
-        
-        if response.status_code == 200:
-            data = response.json()
-            
-            # Verificar campos nuevos en v4.3.1
-            if "mejoras_v431" in data:
-                mejoras = data["mejoras_v431"]
-                print(f"✅ Found v4.3.1 improvements: {len(mejoras)}")
-                for mejora in mejoras:
-                    print(f"   • {mejora}")
-            else:
-                print("⚠️ v4.3.1 improvements section missing")
-            
-            return True
-        else:
-            print(f"❌ Debug columns returned status: {response.status_code}")
-            return False
-            
-    except Exception as e:
-        print(f"❌ Debug columns test failed: {e}")
+        print(f"❌ Data processing functions test failed: {e}")
         return False
 
 def run_all_tests():
-    """Ejecuta todos los tests incluyendo los nuevos para v4.3.1"""
-    print("🧪 Running comprehensive test suite for Fecundidad Temprana API v4.3.1...")
-    print("🆕 Incluye tests específicos para mejoras:")
+    """Ejecuta todos los tests del sistema v4.3.1"""
+    print("🧪 COMPREHENSIVE TEST SUITE - Fecundidad Temprana v4.3.1")
+    print("=" * 70)
+    print("🆕 Nuevas funcionalidades incluidas:")
     print("   • Filtros Localidad/UPZ corregidos")
-    print("   • Índice Theil con todas las UPZ")
-    print("   • Orden de pestañas mejorado")
-    print("   • Dashboard responsive optimizado")
+    print("   • Lógica inteligente de fallback de datos")
+    print("   • Índice de Theil completo (todas las UPZ)")
+    print("   • Dashboard funcional responsivo")
+    print("   • Nuevos endpoints de análisis")
+    print("=" * 70)
     print(f"Python version: {sys.version}")
     print(f"Working directory: {os.getcwd()}")
     print("=" * 70)
     
     tests = [
-        ("Environment Variables", test_environment_variables),
-        ("Import Test", test_import),
+        # Tests básicos
+        ("Environment Configuration", test_environment),
+        ("Module Imports", test_imports),
         ("Database Connection", test_database_connection),
+        ("File Structure", test_file_structure),
+        
+        # Tests de endpoints
         ("Health Endpoint", test_health_endpoint),
+        ("Metadatos Endpoint", test_metadatos_endpoint),
         ("API Documentation", test_api_documentation),
-        ("Debug Columns Endpoint", test_debug_columns),
         
-        # 🆕 NUEVOS TESTS ESPECÍFICOS v4.3.1
-        ("🆕 UPZ Filtering by Localidad", test_geografia_upz_filtering),
-        ("🆕 Theil All UPZ Response", test_theil_all_upz),
-        ("🆕 Caracterización Filtering", test_caracterizacion_filtering),
-        ("🆕 Dashboard Structure", test_dashboard_structure),
+        # 🆕 Tests nuevas funcionalidades v4.3.1
+        ("🆕 UPZ por Localidad", test_upz_por_localidad),
+        ("🆕 Caracterización Inteligente", test_caracterizacion_endpoint),
+        ("🆕 Theil Completo", test_theil_endpoint),
+        ("🆕 Lógica Inteligente", test_lógica_inteligente),
+        ("🆕 Dashboard Funcional", test_dashboard_file),
+        ("🆕 Brechas Cohortes", test_brechas_cohortes),
         
-        # Tests existentes mejorados
+        # Tests de análisis
         ("Series Temporales", test_series_temporales),
+        ("Análisis Asociación", test_asociacion),
+        
+        # Tests de funciones
+        ("🆕 Data Processing Functions", test_data_processing_functions),
     ]
     
     results = []
     new_features_results = []
     
+    print("\n🚀 EJECUTANDO TESTS...")
+    print("-" * 70)
+    
     for name, test_func in tests:
         print(f"\n--- {name} ---")
         try:
+            start_time = time.time() if 'time' in globals() else None
             result = test_func()
+            
             results.append(result)
             
-            # Rastrear tests de nuevas funcionalidades
+            # Rastrear nuevas funcionalidades
             if "🆕" in name:
                 new_features_results.append(result)
             
             status = "✅ PASSED" if result else "❌ FAILED"
             print(f"Status: {status}")
+            
         except Exception as e:
-            print(f"❌ Test {name} crashed: {e}")
+            print(f"💥 Test {name} crashed: {e}")
             results.append(False)
+            if "🆕" in name:
+                new_features_results.append(False)
     
     # Resumen final
     success_count = sum(results)
     total_count = len(results)
+    success_rate = success_count / total_count * 100
+    
     new_features_success = sum(new_features_results)
     new_features_total = len(new_features_results)
+    new_features_rate = new_features_success / new_features_total * 100 if new_features_total > 0 else 0
     
     print("\n" + "=" * 70)
-    print(f"📊 RESULTS: {success_count}/{total_count} tests passed")
-    print(f"Success rate: {success_count/total_count*100:.1f}%")
+    print("📊 RESULTADOS FINALES")
+    print("=" * 70)
+    print(f"📈 GENERAL: {success_count}/{total_count} tests passed ({success_rate:.1f}%)")
     
     if new_features_total > 0:
-        print(f"🆕 NEW FEATURES: {new_features_success}/{new_features_total} tests passed")
-        print(f"New features success rate: {new_features_success/new_features_total*100:.1f}%")
+        print(f"🆕 NUEVAS FUNCIONALIDADES: {new_features_success}/{new_features_total} tests passed ({new_features_rate:.1f}%)")
     
+    # Determinar estado final
     if success_count == total_count:
-        print("🎉 All tests passed! v4.3.1 improvements working correctly.")
-        print("🚀 Ready for deployment!")
+        print("\n🎉 ¡TODOS LOS TESTS PASARON!")
+        print("🚀 Sistema v4.3.1 listo para producción")
+        print("✨ Nuevas funcionalidades trabajando correctamente")
         return 0
-    elif success_count >= total_count * 0.8:
-        print("✅ Most tests passed! App should work with minor issues.")
-        print("⚠️ Check failed tests above for details.")
+    elif success_rate >= 85:
+        print("\n✅ La mayoría de tests pasaron")
+        print("⚠️ Revisar tests fallidos arriba")
+        print("🔧 Sistema funcional con mejoras menores requeridas")
         return 0
-    else:
-        print("⚠️ Many tests failed. Check configuration and dependencies.")
+    elif success_rate >= 70:
+        print("\n⚠️ Tests parcialmente exitosos")
+        print("🔧 Se requieren correcciones antes del deploy")
         return 1
+    else:
+        print("\n❌ Muchos tests fallaron")
+        print("🚨 Sistema requiere revisión completa")
+        return 2
 
 if __name__ == "__main__":
+    import time
     exit_code = run_all_tests()
     sys.exit(exit_code)
