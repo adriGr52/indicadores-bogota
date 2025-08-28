@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard DEBUG - Fecundidad Temprana v4.3.1</title>
+    <title>Fecundidad Temprana - Bogotá D.C.</title>
     
     <!-- TailwindCSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
-    
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
     
     <style>
         .card { 
@@ -20,8 +20,10 @@
             border-radius: 0.5rem; 
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
             border: 1px solid #e5e7eb; 
-            padding: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
         }
+        
         .btn { 
             display: inline-flex; 
             align-items: center; 
@@ -33,306 +35,599 @@
             cursor: pointer; 
             font-size: 0.875rem;
             transition: all 0.2s;
+            font-weight: 500;
         }
-        .btn:hover { background: #f9fafb; }
+        .btn:hover { background: #f9fafb; border-color: #9ca3af; }
         .btn-primary { background: #2563eb; border-color: #2563eb; color: #fff; }
-        .btn-primary:hover { background: #1d4ed8; }
-        .btn-primary:disabled { background: #9ca3af; cursor: not-allowed; }
+        .btn-primary:hover { background: #1d4ed8; border-color: #1e40af; }
+        .btn-secondary { background: #64748b; border-color: #64748b; color: #fff; }
+        .btn-secondary:hover { background: #475569; }
+        .btn:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
         
-        .alert { padding: 1rem; border-radius: 0.5rem; margin: 0.5rem 0; font-size: 0.875rem; }
-        .alert-success { background: #dcfce7; border: 1px solid #16a34a; color: #15803d; }
-        .alert-error { background: #fef2f2; border: 1px solid #dc2626; color: #dc2626; }
-        .alert-info { background: #dbeafe; border: 1px solid #2563eb; color: #1d4ed8; }
-        .alert-warning { background: #fef3c7; border: 1px solid #f59e0b; color: #92400e; }
-        
-        .debug-panel {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            font-family: monospace;
-            font-size: 0.75rem;
-            max-height: 300px;
-            overflow-y: auto;
+        .alert { 
+            padding: 1rem; 
+            border-radius: 0.5rem; 
+            margin: 0.5rem 0; 
+            font-size: 0.875rem;
+            border-left: 4px solid;
         }
-        
-        .debug-log {
-            margin: 0.25rem 0;
-            padding: 0.25rem;
-        }
-        .debug-info { color: #3b82f6; }
-        .debug-success { color: #10b981; }
-        .debug-error { color: #ef4444; }
-        .debug-warning { color: #f59e0b; }
+        .alert-success { background: #dcfce7; border-color: #16a34a; color: #15803d; }
+        .alert-error { background: #fef2f2; border-color: #dc2626; color: #dc2626; }
+        .alert-info { background: #dbeafe; border-color: #2563eb; color: #1d4ed8; }
+        .alert-warning { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
         
         select, input { 
             width: 100%; 
-            padding: 0.5rem; 
+            padding: 0.75rem; 
             border: 1px solid #d1d5db; 
             border-radius: 0.375rem; 
             font-size: 0.875rem;
+            background: #fff;
         }
         select:focus, input:focus { 
             outline: none; 
-            ring: 2px; 
-            ring-color: #2563eb; 
             border-color: #2563eb; 
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
         }
         
         .spinner { 
             border: 2px solid #e5e7eb; 
             border-top-color: #2563eb; 
             border-radius: 50%; 
-            width: 16px; 
-            height: 16px; 
+            width: 20px; 
+            height: 20px; 
             animation: spin 1s linear infinite; 
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         
         .tabs {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.5rem;
-            margin-bottom: 1rem;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.25rem;
+            margin-bottom: 1.5rem;
+            background: #f8fafc;
+            padding: 0.25rem;
+            border-radius: 0.5rem;
         }
         
-        .tabs button {
-            background: #eff6ff;
-            color: #1e3a8a;
-            border: 1px solid #bfdbfe;
-            padding: 0.75rem;
+        .tab-button {
+            background: transparent;
+            color: #64748b;
+            border: none;
+            padding: 0.75rem 1rem;
             text-align: center;
             border-radius: 0.375rem;
             font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
         }
         
-        .tabs button[aria-selected="true"] {
-            background: #1e40af;
+        .tab-button:hover {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        
+        .tab-button.active {
+            background: #2563eb;
             color: white;
-            border-color: #1e40af;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
         }
         
         .chart-container {
             position: relative;
-            height: 300px;
+            height: 400px;
             width: 100%;
+        }
+        
+        .chart-container-scrollable {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .stat-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            z-index: 10;
+        }
+        
+        @media (max-width: 768px) {
+            .tabs {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: #1f2937;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.2s;
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 font-sans">
     <!-- Header -->
-    <header class="bg-blue-800 text-white p-4">
-        <div class="max-w-7xl mx-auto">
-            <h1 class="text-xl font-bold">🛠️ Dashboard DEBUG - Fecundidad Temprana v4.3.1</h1>
-            <p class="text-sm text-blue-200">Modo debugging para identificar problemas de datos</p>
+    <header class="bg-gradient-to-r from-blue-800 to-blue-900 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <h1 class="text-2xl font-bold">Exploración Determinantes Fecundidad Temprana</h1>
+            <p class="text-blue-200 text-sm mt-1">Análisis territorial por UPZ - Bogotá D.C. | v4.3.1</p>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto p-4 space-y-4">
-        <!-- Debug Panel -->
+    <main class="max-w-7xl mx-auto p-4">
+        <!-- Upload Section -->
         <div class="card">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="font-semibold">🐛 Panel de Debugging</h2>
-                <button id="btnClearLog" class="btn text-xs">Limpiar Log</button>
-            </div>
-            <div id="debugLog" class="debug-panel">
-                <div class="debug-info">Sistema iniciado - Modo debugging activado</div>
-            </div>
-        </div>
-
-        <!-- System Status -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="card text-center">
-                <div class="text-2xl font-bold" id="statusRegistros">-</div>
-                <div class="text-sm text-gray-500">Registros BD</div>
-                <div id="statusRegistrosIcon" class="mt-1">⏳</div>
-            </div>
-            <div class="card text-center">
-                <div class="text-2xl font-bold" id="statusIndicadores">-</div>
-                <div class="text-sm text-gray-500">Indicadores</div>
-                <div id="statusIndicadoresIcon" class="mt-1">⏳</div>
-            </div>
-            <div class="card text-center">
-                <div class="text-2xl font-bold" id="statusLocalidades">-</div>
-                <div class="text-sm text-gray-500">Localidades</div>
-                <div id="statusLocalidadesIcon" class="mt-1">⏳</div>
-            </div>
-            <div class="card text-center">
-                <div class="text-2xl font-bold" id="statusUpz">-</div>
-                <div class="text-sm text-gray-500">UPZ</div>
-                <div id="statusUpzIcon" class="mt-1">⏳</div>
-            </div>
-        </div>
-
-        <!-- Upload Section con más debugging -->
-        <div class="card">
-            <h3 class="font-semibold mb-4">📂 Carga de Datos Excel</h3>
-            <div class="grid md:grid-cols-3 gap-4 items-end">
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium mb-2">Archivo Excel</label>
-                    <input id="fileInput" type="file" accept=".xlsx,.xls">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i class="ti ti-upload text-blue-600"></i>
+                Carga de Datos Excel
+            </h2>
+            <div class="grid md:grid-cols-4 gap-4 items-end">
+                <div class="md:col-span-3">
+                    <label class="form-label">Archivo consolidado de indicadores (.xlsx/.xls)</label>
+                    <input id="fileInput" type="file" accept=".xlsx,.xls" class="block">
                 </div>
                 <div>
                     <button id="btnUpload" class="btn btn-primary w-full">
-                        <i class="ti ti-upload"></i> Subir y Analizar
+                        <i class="ti ti-upload"></i> Cargar Datos
                     </button>
                 </div>
             </div>
             <div id="uploadResult" class="mt-4"></div>
         </div>
 
-        <!-- API Testing -->
-        <div class="card">
-            <h3 class="font-semibold mb-4">🔬 Pruebas de API</h3>
-            <div class="grid md:grid-cols-3 gap-2">
-                <button id="btnTestHealth" class="btn">Test Health</button>
-                <button id="btnTestMetadatos" class="btn">Test Metadatos</button>
-                <button id="btnTestData" class="btn">Test Datos</button>
+        <!-- System Status -->
+        <div class="stats-grid" id="systemStats">
+            <div class="stat-card">
+                <div class="stat-value" id="statRegistros">-</div>
+                <div class="stat-label">Registros</div>
             </div>
-            <div id="apiTestResult" class="mt-4"></div>
+            <div class="stat-card">
+                <div class="stat-value" id="statIndicadores">-</div>
+                <div class="stat-label">Indicadores</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statLocalidades">-</div>
+                <div class="stat-label">Localidades</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statUpz">-</div>
+                <div class="stat-label">UPZ</div>
+            </div>
         </div>
 
-        <!-- Tabs simplificadas -->
-        <div class="tabs">
-            <button data-tab="debug" aria-selected="true">🔍 Debug Completo</button>
-            <button data-tab="caracterizacion">📊 Caracterización</button>
-            <button data-tab="datos">📋 Ver Datos Raw</button>
-        </div>
-
-        <!-- Debug Tab -->
-        <div id="tab-debug" class="card">
-            <h3 class="font-semibold mb-4">🔍 Análisis Completo de Datos</h3>
-            
-            <!-- Metadata Display -->
-            <div class="space-y-4">
-                <div>
-                    <h4 class="font-semibold mb-2">Metadatos del Sistema:</h4>
-                    <div id="metadataDisplay" class="debug-panel">
-                        <div class="debug-info">Cargando metadatos...</div>
-                    </div>
-                </div>
-                
-                <div>
-                    <h4 class="font-semibold mb-2">Estructura de Base de Datos:</h4>
-                    <div id="dbStructure" class="debug-panel">
-                        <div class="debug-info">Analizando estructura...</div>
-                    </div>
-                </div>
-                
-                <div>
-                    <h4 class="font-semibold mb-2">Muestras de Datos:</h4>
-                    <div id="dataSamples" class="debug-panel">
-                        <div class="debug-info">Obteniendo muestras...</div>
-                    </div>
-                </div>
-            </div>
+        <!-- Navigation Tabs -->
+        <div class="tabs" id="mainTabs">
+            <button class="tab-button active" data-tab="caracterizacion">
+                <i class="ti ti-chart-bar"></i> Caracterización
+            </button>
+            <button class="tab-button" data-tab="series">
+                <i class="ti ti-chart-line"></i> Series Temporales
+            </button>
+            <button class="tab-button" data-tab="asociacion">
+                <i class="ti ti-chart-dots"></i> Asociación
+            </button>
+            <button class="tab-button" data-tab="desigualdad">
+                <i class="ti ti-chart-pie"></i> Desigualdad
+            </button>
         </div>
 
         <!-- Caracterización Tab -->
-        <div id="tab-caracterizacion" class="card hidden">
-            <h3 class="font-semibold mb-4">📊 Caracterización (Modo Debug)</h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div>
-                    <label class="block text-sm font-medium mb-2">Indicador</label>
-                    <select id="caracIndicador">
-                        <option value="">Cargando...</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-2">Localidad</label>
-                    <select id="caracLocalidad">
-                        <option value="">Todas</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-2">UPZ</label>
-                    <select id="caracUpz">
-                        <option value="">Todas</option>
-                    </select>
-                </div>
-                <div class="flex items-end">
-                    <button id="btnCaracterizar" class="btn btn-primary w-full">Analizar</button>
-                </div>
-            </div>
-
-            <div class="grid lg:grid-cols-2 gap-4">
-                <div>
-                    <h4 class="font-semibold mb-2">Gráfico</h4>
-                    <div class="chart-container">
-                        <canvas id="chartCaracterizacion"></canvas>
+        <div id="tab-caracterizacion" class="tab-content">
+            <div class="card">
+                <h3 class="text-lg font-semibold mb-4">📊 Caracterización Territorial</h3>
+                
+                <!-- Filtros Separados -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                    <div class="form-group">
+                        <label class="form-label">Indicador *</label>
+                        <select id="caracIndicador">
+                            <option value="">Seleccione indicador...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Localidad</label>
+                        <select id="caracLocalidad">
+                            <option value="">Todas las localidades</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">UPZ</label>
+                        <select id="caracUpz">
+                            <option value="">Todas las UPZ</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Año</label>
+                        <select id="caracAño">
+                            <option value="">Todos los años</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <button id="btnCaracterizar" class="btn btn-primary w-full">
+                            <i class="ti ti-search"></i> Analizar
+                        </button>
                     </div>
                 </div>
-                <div>
-                    <h4 class="font-semibold mb-2">Resultados Debug</h4>
-                    <div id="caracResults" class="debug-panel">
-                        <div class="debug-info">Selecciona un indicador para analizar</div>
+
+                <!-- Results -->
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <div class="relative">
+                        <h4 class="font-semibold mb-3">Visualización</h4>
+                        <div class="chart-container">
+                            <canvas id="chartCaracterizacion"></canvas>
+                            <div id="loadingCarac" class="loading-overlay hidden">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-3">Estadísticas Descriptivas</h4>
+                        <div id="caracResults" class="bg-gray-50 p-4 rounded-lg min-h-[300px]">
+                            <p class="text-gray-500 text-sm">Seleccione un indicador y presione "Analizar" para ver las estadísticas.</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Datos Raw Tab -->
-        <div id="tab-datos" class="card hidden">
-            <h3 class="font-semibold mb-4">📋 Datos Raw de la Base de Datos</h3>
-            <div class="space-y-4">
-                <div class="flex gap-2">
-                    <button id="btnGetRawData" class="btn btn-primary">Obtener Datos Raw</button>
-                    <button id="btnAnalyzeColumns" class="btn">Analizar Columnas</button>
-                    <input id="limitInput" type="number" placeholder="Límite (ej: 100)" class="w-32" value="50">
+        <!-- Series Temporales Tab -->
+        <div id="tab-series" class="tab-content hidden">
+            <div class="card">
+                <h3 class="text-lg font-semibold mb-4">📈 Series Temporales</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="form-group">
+                        <label class="form-label">Indicador *</label>
+                        <select id="seriesIndicador">
+                            <option value="">Seleccione indicador...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Territorio *</label>
+                        <select id="seriesTerritorio">
+                            <option value="">Seleccione territorio...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Filtrar por Localidad</label>
+                        <select id="seriesLocalidad">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <button id="btnSeries" class="btn btn-primary w-full">
+                            <i class="ti ti-chart-line"></i> Generar Serie
+                        </button>
+                    </div>
                 </div>
-                <div id="rawDataDisplay" class="debug-panel">
-                    <div class="debug-info">Haz click en "Obtener Datos Raw" para ver los datos</div>
+
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 relative">
+                        <h4 class="font-semibold mb-3">Evolución Temporal</h4>
+                        <div class="chart-container">
+                            <canvas id="chartSeries"></canvas>
+                            <div id="loadingSeries" class="loading-overlay hidden">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-3">Análisis Temporal</h4>
+                        <div id="seriesResults" class="bg-gray-50 p-4 rounded-lg min-h-[300px]">
+                            <p class="text-gray-500 text-sm">Configure los filtros y genere la serie para ver el análisis.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asociación Tab -->
+        <div id="tab-asociacion" class="tab-content hidden">
+            <div class="card">
+                <h3 class="text-lg font-semibold mb-4">🎯 Análisis de Asociación</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+                    <div class="form-group">
+                        <label class="form-label">Indicador X *</label>
+                        <select id="asociacionIndicadorX">
+                            <option value="">Seleccione...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Indicador Y *</label>
+                        <select id="asociacionIndicadorY">
+                            <option value="">Seleccione...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Localidad</label>
+                        <select id="asociacionLocalidad">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">UPZ</label>
+                        <select id="asociacionUpz">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Año</label>
+                        <select id="asociacionAño">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <button id="btnAsociacion" class="btn btn-primary w-full">
+                            <i class="ti ti-chart-dots"></i> Correlacionar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-6">
+                    <div class="relative">
+                        <h4 class="font-semibold mb-3">Diagrama de Dispersión</h4>
+                        <div class="chart-container">
+                            <canvas id="chartAsociacion"></canvas>
+                            <div id="loadingAsociacion" class="loading-overlay hidden">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-3">Coeficientes de Correlación</h4>
+                        <div id="asociacionResults" class="bg-gray-50 p-4 rounded-lg min-h-[300px]">
+                            <p class="text-gray-500 text-sm">Seleccione dos indicadores y presione "Correlacionar" para ver los resultados.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desigualdad Tab -->
+        <div id="tab-desigualdad" class="tab-content hidden">
+            <div class="card">
+                <h3 class="text-lg font-semibold mb-4">⚖️ Índice de Desigualdad de Theil</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                    <div class="form-group">
+                        <label class="form-label">Indicador *</label>
+                        <select id="theilIndicador">
+                            <option value="">Seleccione indicador...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Localidad</label>
+                        <select id="theilLocalidad">
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Año</label>
+                        <select id="theilAño">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <button id="btnTheil" class="btn btn-primary w-full">
+                            <i class="ti ti-chart-pie"></i> Calcular
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <button id="btnExportTheil" class="btn btn-secondary w-full" disabled>
+                            <i class="ti ti-download"></i> Exportar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Theil Results -->
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2">
+                        <div class="grid grid-cols-3 gap-4 mb-4">
+                            <div class="stat-card">
+                                <div class="stat-value text-blue-600" id="theilValue">-</div>
+                                <div class="stat-label">Índice de Theil</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value text-green-600" id="theilCategory">-</div>
+                                <div class="stat-label">Categoría</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value text-purple-600" id="theilTerritorios">-</div>
+                                <div class="stat-label">Territorios</div>
+                            </div>
+                        </div>
+                        
+                        <h4 class="font-semibold mb-3">Distribución por Territorio (Scrolleable)</h4>
+                        <div class="chart-container-scrollable relative">
+                            <canvas id="chartTheil"></canvas>
+                            <div id="loadingTheil" class="loading-overlay hidden">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-3">Interpretación</h4>
+                        <div id="theilInterpretation" class="bg-blue-50 p-4 rounded-lg mb-4">
+                            <p class="text-sm text-blue-700">El índice de Theil mide la desigualdad territorial:</p>
+                            <ul class="text-xs text-blue-600 mt-2 space-y-1">
+                                <li>• 0 = Igualdad perfecta</li>
+                                <li>• 0-0.1 = Desigualdad baja</li>
+                                <li>• 0.1-0.3 = Desigualdad moderada</li>
+                                <li>• >0.3 = Desigualdad alta</li>
+                            </ul>
+                        </div>
+                        
+                        <h4 class="font-semibold mb-3">Estadísticas</h4>
+                        <div id="theilStats" class="bg-gray-50 p-4 rounded-lg min-h-[200px]">
+                            <p class="text-gray-500 text-sm">Seleccione un indicador y calcule el índice para ver las estadísticas.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-12">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="text-center">
+                <p class="text-sm">Sistema de Análisis de Fecundidad Temprana - Bogotá D.C. v4.3.1</p>
+                <p class="text-xs text-gray-400 mt-1">
+                    <a href="/docs" class="hover:text-white">Documentación API</a> | 
+                    <a href="/health" class="hover:text-white">Estado del Sistema</a>
+                </p>
+            </div>
+        </div>
+    </footer>
+
     <script>
         // Variables globales
-        let debugLog = [];
         let charts = {};
         let currentData = {};
+        let systemData = {};
 
         // Utility functions
-        function log(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = `[${timestamp}] ${message}`;
-            debugLog.push({ timestamp, message, type });
-            
-            const logDiv = document.createElement('div');
-            logDiv.className = `debug-log debug-${type}`;
-            logDiv.textContent = logEntry;
-            
-            const container = document.getElementById('debugLog');
-            container.appendChild(logDiv);
-            container.scrollTop = container.scrollHeight;
-            
-            console.log(`[DEBUG-${type.toUpperCase()}]`, message);
-        }
-
-        function updateStatus(elementId, iconId, value, status = 'success') {
-            document.getElementById(elementId).textContent = value;
-            const icon = document.getElementById(iconId);
-            if (status === 'success') {
-                icon.textContent = '✅';
-            } else if (status === 'error') {
-                icon.textContent = '❌';
-            } else {
-                icon.textContent = '⏳';
+        function showLoading(elementId, show = true) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                if (show) {
+                    element.classList.remove('hidden');
+                } else {
+                    element.classList.add('hidden');
+                }
             }
         }
 
         function showResult(containerId, content, type = 'info') {
             const container = document.getElementById(containerId);
-            container.innerHTML = `<div class="alert alert-${type}">${content}</div>`;
+            if (!container) return;
+            
+            const alertClass = {
+                'success': 'alert-success',
+                'error': 'alert-error', 
+                'warning': 'alert-warning',
+                'info': 'alert-info'
+            };
+            
+            container.innerHTML = `<div class="alert ${alertClass[type] || 'alert-info'}">${content}</div>`;
         }
 
-        // API calls con logging detallado
+        function updateStatCard(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = value || '-';
+            }
+        }
+
+        function populateSelect(selectId, options, defaultText = 'Seleccione...') {
+            const select = document.getElementById(selectId);
+            if (!select || !options) return;
+            
+            // Guardar valor actual
+            const currentValue = select.value;
+            
+            // Mantener primera opción si existe
+            const firstOption = select.children[0];
+            select.innerHTML = '';
+            if (firstOption) {
+                select.appendChild(firstOption);
+            } else {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = defaultText;
+                select.appendChild(defaultOption);
+            }
+            
+            // Agregar opciones
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option.length > 50 ? option.substring(0, 47) + '...' : option;
+                optionElement.title = option;
+                select.appendChild(optionElement);
+            });
+            
+            // Restaurar valor si existe
+            if (currentValue && options.includes(currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        // API calls
         async function apiCall(endpoint, options = {}) {
             try {
-                log(`API Call: ${endpoint}`, 'info');
-                
                 const response = await fetch(endpoint, {
                     headers: {
                         'Content-Type': 'application/json',
@@ -341,183 +636,126 @@
                     ...options
                 });
                 
-                const responseText = await response.text();
-                log(`API Response Status: ${response.status}`, response.ok ? 'success' : 'error');
-                
                 if (!response.ok) {
-                    log(`API Error Response: ${responseText}`, 'error');
-                    throw new Error(`HTTP ${response.status}: ${responseText}`);
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
                 
-                let data;
-                try {
-                    data = JSON.parse(responseText);
-                    log(`API Data received: ${Object.keys(data).join(', ')}`, 'success');
-                } catch (e) {
-                    log(`Error parsing JSON response: ${e.message}`, 'error');
-                    throw new Error('Invalid JSON response');
-                }
-                
-                return data;
+                return await response.json();
             } catch (error) {
-                log(`API Call failed: ${error.message}`, 'error');
+                console.error('API Call Error:', error);
                 throw error;
             }
         }
 
-        // Test individual endpoints
-        async function testHealth() {
+        // Load system metadata
+        async function loadSystemData() {
             try {
-                const data = await apiCall('/health');
-                log(`Health check OK - Version: ${data.version}, DB: ${data.database}`, 'success');
-                showResult('apiTestResult', `
-                    <strong>✅ Health Check OK</strong><br>
-                    Version: ${data.version}<br>
-                    Database: ${data.database}<br>
-                    Registros: ${data.registros}<br>
-                    Timestamp: ${data.timestamp}
-                `, 'success');
-                return data;
-            } catch (error) {
-                showResult('apiTestResult', `❌ Health check failed: ${error.message}`, 'error');
-                return null;
-            }
-        }
-
-        async function testMetadatos() {
-            try {
-                const data = await apiCall('/metadatos');
-                log(`Metadatos OK - Indicadores: ${data.indicadores?.todos?.length || 0}`, 'success');
+                console.log('Loading system data...');
                 
-                const resumen = data.resumen || {};
-                showResult('apiTestResult', `
-                    <strong>✅ Metadatos OK</strong><br>
-                    Total registros: ${resumen.total_registros || 0}<br>
-                    Indicadores: ${resumen.total_indicadores || 0}<br>
-                    Localidades: ${resumen.localidades || 0}<br>
-                    UPZ: ${resumen.upz || 0}
-                `, 'success');
+                const [healthData, metadataData] = await Promise.all([
+                    apiCall('/health').catch(e => ({ registros: 0, indicadores: 0, localidades: 0 })),
+                    apiCall('/metadatos').catch(e => ({ 
+                        resumen: { total_registros: 0, total_indicadores: 0, localidades: 0, upz: 0 },
+                        indicadores: { todos: [] },
+                        geografia: { localidades: [], upz: [] },
+                        temporal: { años: [], cohortes: [] }
+                    }))
+                ]);
                 
-                // Update status
-                updateStatus('statusRegistros', 'statusRegistrosIcon', resumen.total_registros || 0);
-                updateStatus('statusIndicadores', 'statusIndicadoresIcon', resumen.total_indicadores || 0);
-                updateStatus('statusLocalidades', 'statusLocalidadesIcon', resumen.localidades || 0);
-                updateStatus('statusUpz', 'statusUpzIcon', resumen.upz || 0);
+                console.log('Health data:', healthData);
+                console.log('Metadata:', metadataData);
                 
-                // Update metadata display
-                document.getElementById('metadataDisplay').innerHTML = `
-                    <div class="debug-success">✅ Metadatos cargados correctamente</div>
-                    <div class="debug-info">Total registros: ${resumen.total_registros || 0}</div>
-                    <div class="debug-info">Indicadores únicos: ${resumen.total_indicadores || 0}</div>
-                    <div class="debug-info">Localidades: ${resumen.localidades || 0}</div>
-                    <div class="debug-info">UPZ: ${resumen.upz || 0}</div>
-                    <div class="debug-info">Rango años: ${resumen.rango_años?.min || 'N/A'} - ${resumen.rango_años?.max || 'N/A'}</div>
-                `;
+                // Update stats
+                updateStatCard('statRegistros', (healthData.registros || metadataData.resumen?.total_registros || 0).toLocaleString());
+                updateStatCard('statIndicadores', healthData.indicadores || metadataData.resumen?.total_indicadores || 0);
+                updateStatCard('statLocalidades', healthData.localidades || metadataData.resumen?.localidades || 0);
+                updateStatCard('statUpz', metadataData.resumen?.upz || 0);
                 
-                // Populate selectors
-                if (data.indicadores?.todos) {
-                    populateSelect('caracIndicador', data.indicadores.todos);
-                    log(`Populated indicadores selector with ${data.indicadores.todos.length} items`, 'success');
-                }
+                // Store data
+                systemData = metadataData;
                 
-                if (data.geografia?.localidades) {
-                    populateSelect('caracLocalidad', data.geografia.localidades);
-                    log(`Populated localidades selector with ${data.geografia.localidades.length} items`, 'success');
-                }
+                // Populate all selectors with error handling
+                const indicadores = metadataData.indicadores?.todos || [];
+                const localidades = metadataData.geografia?.localidades || [];
+                const upzs = metadataData.geografia?.upz || [];
+                const años = metadataData.temporal?.años || [];
                 
-                currentData = data;
-                return data;
-            } catch (error) {
-                showResult('apiTestResult', `❌ Metadatos failed: ${error.message}`, 'error');
-                document.getElementById('metadataDisplay').innerHTML = `
-                    <div class="debug-error">❌ Error cargando metadatos: ${error.message}</div>
-                `;
-                return null;
-            }
-        }
-
-        async function testData() {
-            try {
-                // Test a simple caracterización call
-                const data = await apiCall('/caracterizacion?indicador=test&nivel=UPZ');
-                if (data.mensaje) {
-                    log(`Caracterización test: ${data.mensaje}`, 'warning');
-                    showResult('apiTestResult', `⚠️ Caracterización: ${data.mensaje}`, 'warning');
+                console.log(`Found: ${indicadores.length} indicators, ${localidades.length} localities, ${upzs.length} UPZ`);
+                
+                // Populate caracterización selectors
+                populateSelect('caracIndicador', indicadores, 'Seleccione indicador...');
+                populateSelect('caracLocalidad', localidades, 'Todas las localidades');
+                populateSelect('caracUpz', upzs, 'Todas las UPZ');
+                populateSelect('caracAño', años.map(String), 'Todos los años');
+                
+                // Populate series selectors
+                populateSelect('seriesIndicador', indicadores, 'Seleccione indicador...');
+                const allTerritorios = [...localidades, ...upzs];
+                populateSelect('seriesTerritorio', allTerritorios, 'Seleccione territorio...');
+                populateSelect('seriesLocalidad', localidades, 'Todas');
+                
+                // Populate asociación selectors
+                populateSelect('asociacionIndicadorX', indicadores, 'Seleccione...');
+                populateSelect('asociacionIndicadorY', indicadores, 'Seleccione...');
+                populateSelect('asociacionLocalidad', localidades, 'Todas');
+                populateSelect('asociacionUpz', upzs, 'Todas');
+                populateSelect('asociacionAño', años.map(String), 'Todos');
+                
+                // Populate theil selectors
+                populateSelect('theilIndicador', indicadores, 'Seleccione indicador...');
+                populateSelect('theilLocalidad', localidades, 'Todas');
+                populateSelect('theilAño', años.map(String), 'Todos');
+                
+                // Show success message if data exists
+                if (metadataData.resumen?.total_registros > 0) {
+                    console.log('✅ System data loaded successfully with real data');
                 } else {
-                    log(`Caracterización test OK - ${data.datos?.length || 0} UPZ`, 'success');
-                    showResult('apiTestResult', `✅ Caracterización OK - ${data.datos?.length || 0} UPZ encontradas`, 'success');
+                    console.log('⚠️ System loaded but no data found - ready for upload');
                 }
-                return data;
+                
+                return true;
             } catch (error) {
-                showResult('apiTestResult', `❌ Data test failed: ${error.message}`, 'error');
-                return null;
+                console.error('Error loading system data:', error);
+                showResult('uploadResult', `⚠️ Sistema iniciado pero sin datos. Error: ${error.message}`, 'warning');
+                return false;
             }
-        }
-
-        function populateSelect(selectId, options) {
-            const select = document.getElementById(selectId);
-            if (!select || !options) {
-                log(`Cannot populate select ${selectId} - missing element or options`, 'error');
-                return;
-            }
-            
-            // Keep first option
-            const firstOption = select.children[0];
-            select.innerHTML = '';
-            if (firstOption) {
-                select.appendChild(firstOption);
-            }
-            
-            options.forEach(option => {
-                const optionElement = document.createElement('option');
-                optionElement.value = option;
-                optionElement.textContent = option.length > 60 ? option.substring(0, 57) + '...' : option;
-                optionElement.title = option;
-                select.appendChild(optionElement);
-            });
-            
-            log(`Populated ${selectId} with ${options.length} options`, 'info');
         }
 
         // Tab management
         function initTabs() {
-            document.querySelectorAll('.tabs button').forEach(button => {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     const tabId = button.dataset.tab;
                     
                     // Update buttons
-                    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', 'false'));
-                    button.setAttribute('aria-selected', 'true');
+                    tabButtons.forEach(b => b.classList.remove('active'));
+                    button.classList.add('active');
                     
                     // Update content
-                    document.querySelectorAll('[id^="tab-"]').forEach(tab => tab.classList.add('hidden'));
-                    const targetTab = document.getElementById(`tab-${tabId}`);
-                    if (targetTab) {
-                        targetTab.classList.remove('hidden');
-                    }
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
                     
-                    log(`Switched to tab: ${tabId}`, 'info');
+                    const targetContent = document.getElementById(`tab-${tabId}`);
+                    if (targetContent) {
+                        targetContent.classList.remove('hidden');
+                    }
                 });
             });
         }
 
-        // Upload con debugging extensivo
+        // Upload functionality
         function initUpload() {
             document.getElementById('btnUpload').addEventListener('click', async () => {
                 const fileInput = document.getElementById('fileInput');
                 const file = fileInput.files[0];
                 
                 if (!file) {
-                    log('No file selected for upload', 'error');
-                    showResult('uploadResult', 'Seleccione un archivo', 'error');
-                    return;
-                }
-                
-                log(`File selected: ${file.name} (${file.size} bytes)`, 'info');
-                
-                if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
-                    log('Invalid file type selected', 'error');
-                    showResult('uploadResult', 'Solo se permiten archivos .xlsx o .xls', 'error');
+                    showResult('uploadResult', 'Por favor seleccione un archivo', 'error');
                     return;
                 }
                 
@@ -529,8 +767,6 @@
                 btn.innerHTML = '<div class="spinner"></div> Procesando...';
                 
                 try {
-                    log('Starting file upload...', 'info');
-                    
                     const response = await fetch('/upload/excel', {
                         method: 'POST',
                         body: formData
@@ -540,128 +776,212 @@
                     
                     if (response.ok) {
                         const stats = result.estadisticas || {};
-                        log(`Upload successful - ${stats.registros_cargados || 0} records loaded`, 'success');
-                        
                         showResult('uploadResult', `
                             <strong>✅ Carga exitosa</strong><br>
-                            📂 Archivo: ${result.archivo}<br>
-                            📊 Registros cargados: ${stats.registros_cargados || 0}<br>
-                            📄 Filas procesadas: ${stats.filas_procesadas || 0}<br>
-                            ⚠️ Omitidos: ${stats.filas_omitidas_sin_valor || 0}<br>
-                            ❌ Errores: ${stats.errores || 0}<br>
-                            🎯 Indicadores únicos: ${stats.indicadores_unicos || 0}
+                            <div class="mt-2 text-sm">
+                                📂 <strong>Archivo:</strong> ${result.archivo}<br>
+                                📊 <strong>Registros cargados:</strong> ${(stats.registros_cargados || 0).toLocaleString()}<br>
+                                🎯 <strong>Indicadores únicos:</strong> ${stats.indicadores_unicos || 0}<br>
+                                📍 <strong>Localidades:</strong> ${stats.localidades_unicas || 0}
+                            </div>
                         `, 'success');
                         
-                        // Refresh metadata after upload
-                        setTimeout(async () => {
-                            await testMetadatos();
-                        }, 1000);
+                        // Reload system data
+                        setTimeout(loadSystemData, 1000);
                         
                     } else {
-                        log(`Upload failed: ${result.detail}`, 'error');
                         showResult('uploadResult', `❌ Error: ${result.detail}`, 'error');
                     }
                 } catch (error) {
-                    log(`Upload error: ${error.message}`, 'error');
                     showResult('uploadResult', `❌ Error de conexión: ${error.message}`, 'error');
                 } finally {
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="ti ti-upload"></i> Subir y Analizar';
+                    btn.innerHTML = '<i class="ti ti-upload"></i> Cargar Datos';
                 }
             });
+        }
+
+        // Filtros dinámicos: Localidad → UPZ
+        function initDynamicFilters() {
+            // Caracterización
+            document.getElementById('caracLocalidad').addEventListener('change', async () => {
+                const localidad = document.getElementById('caracLocalidad').value;
+                await updateUpzForLocalidad('caracUpz', localidad);
+            });
+            
+            // Asociación
+            document.getElementById('asociacionLocalidad').addEventListener('change', async () => {
+                const localidad = document.getElementById('asociacionLocalidad').value;
+                await updateUpzForLocalidad('asociacionUpz', localidad);
+            });
+            
+            // Series - filtrar territorios por localidad
+            document.getElementById('seriesLocalidad').addEventListener('change', () => {
+                const localidad = document.getElementById('seriesLocalidad').value;
+                updateTerritoriosForLocalidad(localidad);
+            });
+        }
+
+        async function updateUpzForLocalidad(upzSelectId, localidad) {
+            const upzSelect = document.getElementById(upzSelectId);
+            if (!upzSelect) {
+                console.error(`Select element ${upzSelectId} not found`);
+                return;
+            }
+            
+            if (!localidad) {
+                // Sin localidad específica, mostrar todas las UPZ
+                const upzs = systemData.geografia?.upz || [];
+                populateSelect(upzSelectId, upzs, 'Todas las UPZ');
+                return;
+            }
+            
+            try {
+                // Mostrar loading en el select
+                upzSelect.disabled = true;
+                upzSelect.innerHTML = '<option value="">Cargando UPZ...</option>';
+                
+                const data = await apiCall(`/geografia/upz_por_localidad?localidad=${encodeURIComponent(localidad)}`);
+                
+                const upzList = data.upz || [];
+                const defaultText = upzList.length > 0 ? 
+                    `Todas las UPZ de ${localidad}` : 
+                    `Sin UPZ para ${localidad}`;
+                
+                populateSelect(upzSelectId, upzList, defaultText);
+                
+                console.log(`Updated UPZ for ${localidad}: ${upzList.length} UPZ found`);
+                
+            } catch (error) {
+                console.error('Error updating UPZ:', error);
+                populateSelect(upzSelectId, [], `Error cargando UPZ de ${localidad}`);
+            } finally {
+                upzSelect.disabled = false;
+            }
+        }
+
+        function updateTerritoriosForLocalidad(localidad) {
+            const territorioSelect = document.getElementById('seriesTerritorio');
+            let territorios = [];
+            
+            if (!localidad) {
+                // Sin filtro, mostrar todas las localidades y UPZ
+                territorios = [
+                    ...(systemData.geografia?.localidades || []),
+                    ...(systemData.geografia?.upz || [])
+                ];
+            } else {
+                // Con localidad específica, incluir la localidad y sus UPZ
+                territorios = [localidad];
+                // Aquí podrías hacer una llamada API para obtener UPZ de esa localidad
+            }
+            
+            populateSelect('seriesTerritorio', territorios, 'Seleccione territorio...');
         }
 
         // Caracterización
         function initCaracterizacion() {
-            // Event listener for localidad change
-            document.getElementById('caracLocalidad').addEventListener('change', async () => {
-                const localidad = document.getElementById('caracLocalidad').value;
-                if (!localidad) {
-                    populateSelect('caracUpz', currentData.geografia?.upz || []);
-                    return;
-                }
-                
-                try {
-                    const data = await apiCall(`/geografia/upz_por_localidad?localidad=${encodeURIComponent(localidad)}`);
-                    populateSelect('caracUpz', data.upz || []);
-                    log(`Updated UPZ for localidad ${localidad}: ${data.total} UPZ found`, 'info');
-                } catch (error) {
-                    log(`Error updating UPZ for localidad ${localidad}: ${error.message}`, 'error');
-                }
-            });
-            
             document.getElementById('btnCaracterizar').addEventListener('click', async () => {
                 const indicador = document.getElementById('caracIndicador').value;
                 const localidad = document.getElementById('caracLocalidad').value;
                 const upz = document.getElementById('caracUpz').value;
+                const año = document.getElementById('caracAño').value;
                 
                 if (!indicador) {
-                    log('No indicator selected for caracterización', 'error');
-                    showResult('caracResults', 'Seleccione un indicador', 'error');
+                    showResult('caracResults', 'Por favor seleccione un indicador', 'error');
                     return;
                 }
                 
+                showLoading('loadingCarac', true);
+                
                 try {
-                    const params = new URLSearchParams({
-                        indicador,
-                        nivel: 'UPZ',
-                        ...(localidad && { localidad }),
-                        ...(upz && { upz })
-                    });
+                    const params = new URLSearchParams({ indicador });
+                    if (localidad) params.append('localidad', localidad);
+                    if (upz) params.append('upz', upz);
+                    if (año) params.append('año', año);
                     
-                    log(`Running caracterización: ${params.toString()}`, 'info');
                     const data = await apiCall(`/caracterizacion?${params}`);
                     
                     if (data.mensaje) {
-                        log(`Caracterización result: ${data.mensaje}`, 'warning');
-                        document.getElementById('caracResults').innerHTML = `
-                            <div class="debug-warning">${data.mensaje}</div>
-                        `;
+                        showResult('caracResults', data.mensaje, 'warning');
+                        destroyChart('caracterizacion');
                     } else {
-                        log(`Caracterización successful: ${data.datos?.length || 0} UPZ analyzed`, 'success');
-                        
-                        document.getElementById('caracResults').innerHTML = `
-                            <div class="debug-success">✅ Análisis completado</div>
-                            <div class="debug-info">UPZ analizadas: ${data.total_upz || 0}</div>
-                            <div class="debug-info">Unidad: ${data.unidad_medida}</div>
-                            <div class="debug-info">Promedio general: ${data.resumen?.promedio_general || 'N/A'}</div>
-                            <div class="debug-info">Total observaciones: ${data.resumen?.n_total || 0}</div>
-                            <hr style="margin: 0.5rem 0;">
-                            <div class="debug-info">Top 5 UPZ:</div>
-                            ${(data.datos || []).slice(0, 5).map(d => `
-                                <div class="debug-info">• ${d.upz}: ${d.promedio} (n=${d.n})</div>
-                            `).join('')}
-                        `;
-                        
-                        // Create simple chart
-                        renderSimpleChart(data);
+                        displayCaracterizacionResults(data);
+                        renderCaracterizacionChart(data);
                     }
                 } catch (error) {
-                    log(`Caracterización error: ${error.message}`, 'error');
-                    document.getElementById('caracResults').innerHTML = `
-                        <div class="debug-error">❌ Error: ${error.message}</div>
-                    `;
+                    showResult('caracResults', `Error: ${error.message}`, 'error');
+                    destroyChart('caracterizacion');
+                } finally {
+                    showLoading('loadingCarac', false);
                 }
             });
         }
 
-        function renderSimpleChart(data) {
-            const canvas = document.getElementById('chartCaracterizacion');
-            const ctx = canvas.getContext('2d');
+        function displayCaracterizacionResults(data) {
+            const html = `
+                <div class="space-y-3">
+                    <div class="bg-white p-3 rounded border-l-4 border-blue-500">
+                        <h5 class="font-semibold text-sm">Indicador: ${data.indicador || 'N/A'}</h5>
+                        <p class="text-xs text-gray-600">Unidad: ${data.unidad_medida || 'N/A'}</p>
+                        <p class="text-xs text-gray-600">Nivel de datos: ${data.nivel_datos || data.nivel || 'N/A'}</p>
+                    </div>
+                    
+                    <div class="bg-white p-3 rounded">
+                        <h5 class="font-semibold text-sm mb-2">Resumen General</h5>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>Territorios: <strong>${data.total_territorios || data.total_upz || 0}</strong></div>
+                            <div>Promedio: <strong>${data.resumen?.promedio_general || 'N/A'}</strong></div>
+                            <div>Observaciones: <strong>${data.resumen?.n_total || 0}</strong></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-3 rounded">
+                        <h5 class="font-semibold text-sm mb-2">Top 5 Territorios</h5>
+                        <div class="space-y-1">
+                            ${(data.datos || []).slice(0, 5).map(d => `
+                                <div class="flex justify-between text-xs">
+                                    <span class="truncate" title="${d.territorio || d.upz || 'N/A'}">${(d.territorio || d.upz || 'N/A').substring(0, 25)}${(d.territorio || d.upz || '').length > 25 ? '...' : ''}</span>
+                                    <span class="font-medium">${d.promedio || d.valor || 'N/A'}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
             
-            if (charts['caracterizacion']) {
-                charts['caracterizacion'].destroy();
+            document.getElementById('caracResults').innerHTML = html;
+        }
+
+        function renderCaracterizacionChart(data) {
+            destroyChart('caracterizacion');
+            
+            const canvas = document.getElementById('chartCaracterizacion');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const datos = data.datos || [];
+            
+            if (datos.length === 0) {
+                ctx.fillStyle = '#64748b';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('No hay datos para mostrar', canvas.width/2, canvas.height/2);
+                return;
             }
             
-            const top10 = (data.datos || []).slice(0, 10);
+            const top15 = datos.slice(0, 15);
             
             charts['caracterizacion'] = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: top10.map(d => d.upz.length > 15 ? d.upz.substring(0, 12) + '...' : d.upz),
+                    labels: top15.map(d => {
+                        const label = d.territorio || d.upz || 'Sin nombre';
+                        return label.length > 20 ? label.substring(0, 17) + '...' : label;
+                    }),
                     datasets: [{
-                        label: data.unidad_medida,
-                        data: top10.map(d => d.promedio),
+                        label: data.unidad_medida || 'Valor',
+                        data: top15.map(d => d.promedio || d.valor || 0),
                         backgroundColor: '#3b82f6',
                         borderColor: '#1d4ed8',
                         borderWidth: 1
@@ -673,105 +993,581 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: data.indicador.length > 40 ? data.indicador.substring(0, 37) + '...' : data.indicador
+                            text: (data.indicador || 'Indicador').length > 60 ? 
+                                (data.indicador || 'Indicador').substring(0, 57) + '...' : 
+                                (data.indicador || 'Indicador')
+                        },
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const index = context[0].dataIndex;
+                                    return top15[index]?.territorio || top15[index]?.upz || 'Sin nombre';
+                                },
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const item = top15[index];
+                                    return [
+                                        `Promedio: ${item?.promedio || item?.valor || 'N/A'}`,
+                                        `Observaciones: ${item?.n || 'N/A'}`,
+                                        `Rango: ${item?.min || 'N/A'} - ${item?.max || 'N/A'}`
+                                    ];
+                                }
+                            }
                         }
                     },
                     scales: {
                         y: { 
                             beginAtZero: true,
-                            title: { display: true, text: data.unidad_medida }
+                            title: { display: true, text: data.unidad_medida || 'Valor' }
+                        },
+                        x: {
+                            ticks: { maxRotation: 45 }
                         }
                     }
                 }
             });
-            
-            log('Chart rendered successfully', 'success');
         }
 
-        // Raw data viewer
-        function initRawData() {
-            document.getElementById('btnGetRawData').addEventListener('click', async () => {
-                const limit = document.getElementById('limitInput').value || 50;
+        // Series Temporales
+        function initSeries() {
+            document.getElementById('btnSeries').addEventListener('click', async () => {
+                const indicador = document.getElementById('seriesIndicador').value;
+                const territorio = document.getElementById('seriesTerritorio').value;
+                
+                if (!indicador || !territorio) {
+                    showResult('seriesResults', 'Por favor complete los campos requeridos', 'error');
+                    return;
+                }
+                
+                showLoading('loadingSeries', true);
                 
                 try {
-                    log(`Fetching raw data (limit: ${limit})...`, 'info');
+                    const data = await apiCall(`/datos/series?indicador=${encodeURIComponent(indicador)}&territorio=${encodeURIComponent(territorio)}`);
                     
-                    // Since we don't have a direct raw data endpoint, let's use debug/columns and a test query
-                    const columnsData = await apiCall('/debug/columns');
-                    
-                    document.getElementById('rawDataDisplay').innerHTML = `
-                        <div class="debug-success">✅ Estructura de columnas obtenida</div>
-                        <div class="debug-info">Columnas requeridas:</div>
-                        ${columnsData.columnas_requeridas.map(col => `<div class="debug-info">• ${col}</div>`).join('')}
-                        <div class="debug-info">Columnas opcionales (primeras 10):</div>
-                        ${columnsData.columnas_opcionales.slice(0, 10).map(col => `<div class="debug-info">• ${col}</div>`).join('')}
-                        <div class="debug-info">Ejemplo estructura:</div>
-                        <pre style="font-size: 0.7rem; background: #fff; padding: 0.5rem; border-radius: 0.25rem; margin: 0.5rem 0;">${JSON.stringify(columnsData.ejemplo_estructura, null, 2)}</pre>
-                    `;
-                    
-                    log('Raw data structure displayed', 'success');
-                    
+                    if (data.mensaje) {
+                        showResult('seriesResults', data.mensaje, 'warning');
+                        destroyChart('series');
+                    } else {
+                        displaySeriesResults(data);
+                        renderSeriesChart(data);
+                    }
                 } catch (error) {
-                    log(`Error getting raw data: ${error.message}`, 'error');
-                    document.getElementById('rawDataDisplay').innerHTML = `
-                        <div class="debug-error">❌ Error: ${error.message}</div>
-                    `;
+                    showResult('seriesResults', `Error: ${error.message}`, 'error');
+                    destroyChart('series');
+                } finally {
+                    showLoading('loadingSeries', false);
+                }
+            });
+        }
+
+        function displaySeriesResults(data) {
+            const serie = data.serie || [];
+            const tendencia = calcularTendencia(serie);
+            
+            const html = `
+                <div class="space-y-3">
+                    <div class="bg-white p-3 rounded border-l-4 border-green-500">
+                        <h5 class="font-semibold text-sm">${data.territorio}</h5>
+                        <p class="text-xs text-gray-600">Tipo: ${data.tipo_territorio}</p>
+                        <p class="text-xs text-gray-600">Indicador: ${data.indicador}</p>
+                    </div>
+                    
+                    <div class="bg-white p-3 rounded">
+                        <h5 class="font-semibold text-sm mb-2">Período Analizado</h5>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>Inicio: <strong>${data.periodo?.inicio}</strong></div>
+                            <div>Fin: <strong>${data.periodo?.fin}</strong></div>
+                            <div>Total años: <strong>${data.periodo?.años}</strong></div>
+                            <div>Unidad: <strong>${data.unidad_medida}</strong></div>
+                        </div>
+                    </div>
+                    
+                    ${tendencia ? `
+                    <div class="bg-white p-3 rounded">
+                        <h5 class="font-semibold text-sm mb-2">Análisis de Tendencia</h5>
+                        <div class="text-xs">
+                            <div class="flex justify-between mb-1">
+                                <span>Tendencia:</span>
+                                <span class="font-medium ${tendencia.direccion === 'creciente' ? 'text-green-600' : tendencia.direccion === 'decreciente' ? 'text-red-600' : 'text-gray-600'}">
+                                    ${tendencia.direccion}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Variación total:</span>
+                                <span class="font-medium">${tendencia.variacion}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            document.getElementById('seriesResults').innerHTML = html;
+        }
+
+        function calcularTendencia(serie) {
+            if (!serie || serie.length < 2) return null;
+            
+            const first = serie[0].valor;
+            const last = serie[serie.length - 1].valor;
+            const variacion = ((last - first) / first * 100).toFixed(1);
+            
+            let direccion = 'estable';
+            if (Math.abs(variacion) > 5) {
+                direccion = variacion > 0 ? 'creciente' : 'decreciente';
+            }
+            
+            return { direccion, variacion };
+        }
+
+        function renderSeriesChart(data) {
+            destroyChart('series');
+            
+            const canvas = document.getElementById('chartSeries');
+            const ctx = canvas.getContext('2d');
+            
+            const serie = data.serie || [];
+            
+            charts['series'] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: serie.map(s => s.año),
+                    datasets: [{
+                        label: data.unidad_medida,
+                        data: serie.map(s => s.valor),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${data.territorio} - ${data.indicador}`
+                        },
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: false,
+                            title: { display: true, text: data.unidad_medida }
+                        },
+                        x: {
+                            title: { display: true, text: 'Año' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Asociación
+        function initAsociacion() {
+            document.getElementById('asociacionLocalidad').addEventListener('change', async () => {
+                const localidad = document.getElementById('asociacionLocalidad').value;
+                await updateUpzForLocalidad('asociacionUpz', localidad);
+            });
+            
+            document.getElementById('btnAsociacion').addEventListener('click', async () => {
+                const indicadorX = document.getElementById('asociacionIndicadorX').value;
+                const indicadorY = document.getElementById('asociacionIndicadorY').value;
+                const localidad = document.getElementById('asociacionLocalidad').value;
+                const upz = document.getElementById('asociacionUpz').value;
+                const año = document.getElementById('asociacionAño').value;
+                
+                if (!indicadorX || !indicadorY) {
+                    showResult('asociacionResults', 'Por favor seleccione ambos indicadores', 'error');
+                    return;
+                }
+                
+                showLoading('loadingAsociacion', true);
+                
+                try {
+                    const params = new URLSearchParams({
+                        indicador_x: indicadorX,
+                        indicador_y: indicadorY
+                    });
+                    if (localidad) params.append('localidad', localidad);
+                    if (upz) params.append('upz', upz);
+                    if (año) params.append('año', año);
+                    
+                    const data = await apiCall(`/analisis/asociacion?${params}`);
+                    
+                    if (data.mensaje) {
+                        showResult('asociacionResults', data.mensaje, 'warning');
+                        destroyChart('asociacion');
+                    } else {
+                        displayAsociacionResults(data);
+                        renderAsociacionChart(data);
+                    }
+                } catch (error) {
+                    showResult('asociacionResults', `Error: ${error.message}`, 'error');
+                    destroyChart('asociacion');
+                } finally {
+                    showLoading('loadingAsociacion', false);
+                }
+            });
+        }
+
+        function displayAsociacionResults(data) {
+            const corr = data.correlacion;
+            const html = `
+                <div class="space-y-3">
+                    <div class="bg-white p-3 rounded border-l-4 border-purple-500">
+                        <h5 class="font-semibold text-sm">Análisis de Correlación</h5>
+                        <p class="text-xs text-gray-600">Territorios comunes: ${data.territorios_comunes}</p>
+                    </div>
+                    
+                    <div class="bg-white p-3 rounded">
+                        <h5 class="font-semibold text-sm mb-2">Pearson (r)</h5>
+                        <div class="flex justify-between text-sm">
+                            <span>Coeficiente:</span>
+                            <span class="font-bold ${Math.abs(corr.pearson_r) > 0.7 ? 'text-green-600' : Math.abs(corr.pearson_r) > 0.3 ? 'text-yellow-600' : 'text-red-600'}">
+                                ${corr.pearson_r}
+                            </span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span>p-value:</span>
+                            <span class="font-medium">${corr.pearson_p}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-3 rounded">
+                        <h5 class="font-semibold text-sm mb-2">Spearman (ρ)</h5>
+                        <div class="flex justify-between text-sm">
+                            <span>Coeficiente:</span>
+                            <span class="font-bold">${corr.spearman_rho}</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span>p-value:</span>
+                            <span class="font-medium">${corr.spearman_p}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-100 p-3 rounded">
+                        <h5 class="font-semibold text-sm mb-1">Interpretación</h5>
+                        <p class="text-xs">Correlación <strong>${corr.categoria}</strong></p>
+                        <p class="text-xs">
+                            ${corr.significativa ? '✅ Estadísticamente significativa' : '❌ No significativa'} (α = 0.05)
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('asociacionResults').innerHTML = html;
+        }
+
+        function renderAsociacionChart(data) {
+            destroyChart('asociacion');
+            
+            const canvas = document.getElementById('chartAsociacion');
+            const ctx = canvas.getContext('2d');
+            
+            const datos = data.datos || [];
+            
+            charts['asociacion'] = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Territorios',
+                        data: datos.map(d => ({ x: d.x, y: d.y })),
+                        backgroundColor: '#8b5cf6',
+                        borderColor: '#7c3aed',
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${data.indicador_x} vs ${data.indicador_y}`
+                        },
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const index = context[0].dataIndex;
+                                    return datos[index].territorio;
+                                },
+                                label: function(context) {
+                                    return [
+                                        `X: ${context.parsed.x}`,
+                                        `Y: ${context.parsed.y}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { 
+                                display: true, 
+                                text: data.indicador_x.length > 40 ? data.indicador_x.substring(0, 37) + '...' : data.indicador_x
+                            }
+                        },
+                        y: {
+                            title: { 
+                                display: true, 
+                                text: data.indicador_y.length > 40 ? data.indicador_y.substring(0, 37) + '...' : data.indicador_y
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Índice de Theil
+        function initTheil() {
+            document.getElementById('btnTheil').addEventListener('click', async () => {
+                const indicador = document.getElementById('theilIndicador').value;
+                const localidad = document.getElementById('theilLocalidad').value;
+                const año = document.getElementById('theilAño').value;
+                
+                if (!indicador) {
+                    showResult('theilStats', 'Por favor seleccione un indicador', 'error');
+                    return;
+                }
+                
+                showLoading('loadingTheil', true);
+                
+                try {
+                    const params = new URLSearchParams({ indicador });
+                    if (localidad) params.append('localidad', localidad);
+                    if (año) params.append('año', año);
+                    
+                    const data = await apiCall(`/analisis/theil?${params}`);
+                    
+                    if (data.mensaje) {
+                        showResult('theilStats', data.mensaje, 'warning');
+                        resetTheilDisplay();
+                    } else {
+                        displayTheilResults(data);
+                        renderTheilChart(data);
+                        document.getElementById('btnExportTheil').disabled = false;
+                    }
+                } catch (error) {
+                    showResult('theilStats', `Error: ${error.message}`, 'error');
+                    resetTheilDisplay();
+                } finally {
+                    showLoading('loadingTheil', false);
                 }
             });
             
-            document.getElementById('btnAnalyzeColumns').addEventListener('click', async () => {
-                try {
-                    log('Analyzing database structure...', 'info');
+            document.getElementById('btnExportTheil').addEventListener('click', () => {
+                // TODO: Implementar exportación
+                alert('Funcionalidad de exportación en desarrollo');
+            });
+        }
+
+        function resetTheilDisplay() {
+            updateStatCard('theilValue', '-');
+            updateStatCard('theilCategory', '-');
+            updateStatCard('theilTerritorios', '-');
+            destroyChart('theil');
+        }
+
+        function displayTheilResults(data) {
+            // Update stat cards
+            updateStatCard('theilValue', data.indice_theil);
+            updateStatCard('theilCategory', data.interpretacion?.categoria || '-');
+            updateStatCard('theilTerritorios', data.estadisticas?.territorios || '-');
+            
+            // Update stats panel
+            const stats = data.estadisticas;
+            const html = `
+                <div class="space-y-3">
+                    <div class="bg-white p-3 rounded border-l-4 border-blue-500">
+                        <h5 class="font-semibold text-sm">Indicador Analizado</h5>
+                        <p class="text-xs text-gray-600">${data.indicador}</p>
+                        <p class="text-xs text-gray-600">Nivel: ${data.nivel_datos}</p>
+                        <p class="text-xs text-gray-600">Unidad: ${data.unidad_medida}</p>
+                    </div>
                     
-                    const data = await apiCall('/debug/columns');
+                    <div class="bg-white p-3 rounded">
+                        <h5 class="font-semibold text-sm mb-2">Estadísticas Descriptivas</h5>
+                        <div class="space-y-1 text-xs">
+                            <div class="flex justify-between">
+                                <span>Promedio:</span>
+                                <span class="font-medium">${stats?.promedio_general}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Desv. Estándar:</span>
+                                <span class="font-medium">${stats?.desviacion_estandar}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Coef. Variación:</span>
+                                <span class="font-medium">${stats?.coeficiente_variacion}%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Mín - Máx:</span>
+                                <span class="font-medium">${stats?.min} - ${stats?.max}</span>
+                            </div>
+                        </div>
+                    </div>
                     
-                    document.getElementById('dbStructure').innerHTML = `
-                        <div class="debug-success">✅ Estructura analizada</div>
-                        <div class="debug-info">Columnas requeridas: ${data.columnas_requeridas?.length || 0}</div>
-                        <div class="debug-info">Columnas opcionales: ${data.columnas_opcionales?.length || 0}</div>
-                        ${data.mejoras_v431 ? `
-                            <div class="debug-success">Mejoras v4.3.1 detectadas:</div>
-                            ${data.mejoras_v431.map(mejora => `<div class="debug-info">• ${mejora}</div>`).join('')}
-                        ` : ''}
-                    `;
-                    
-                    log('Database structure analyzed', 'success');
-                    
-                } catch (error) {
-                    log(`Error analyzing columns: ${error.message}`, 'error');
-                    document.getElementById('dbStructure').innerHTML = `
-                        <div class="debug-error">❌ Error: ${error.message}</div>
-                    `;
+                    <div class="bg-${data.interpretacion?.categoria === 'Baja' ? 'green' : data.interpretacion?.categoria === 'Moderada' ? 'yellow' : 'red'}-50 p-3 rounded">
+                        <h5 class="font-semibold text-sm mb-1">Interpretación</h5>
+                        <p class="text-xs">
+                            Desigualdad <strong>${data.interpretacion?.categoria || 'N/A'}</strong>
+                        </p>
+                        <p class="text-xs mt-1">
+                            ${data.interpretacion?.significado || 'N/A'}
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('theilStats').innerHTML = html;
+        }
+
+        function renderTheilChart(data) {
+            destroyChart('theil');
+            
+            const canvas = document.getElementById('chartTheil');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const datos = data.datos || [];
+            
+            if (datos.length === 0) {
+                ctx.fillStyle = '#64748b';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('No hay datos para mostrar', canvas.width/2, canvas.height/2);
+                return;
+            }
+            
+            // Configurar canvas para scroll horizontal - TODAS las unidades
+            const minWidth = Math.max(800, datos.length * 50);
+            const container = canvas.parentElement;
+            
+            // Configurar scroll horizontal
+            canvas.style.minWidth = `${minWidth}px`;
+            canvas.width = minWidth;
+            canvas.height = 400;
+            
+            charts['theil'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: datos.map(d => {
+                        const label = d.territorio || d.upz || 'Sin nombre';
+                        return label.length > 15 ? label.substring(0, 12) + '...' : label;
+                    }),
+                    datasets: [{
+                        label: data.unidad_medida || 'Valor',
+                        data: datos.map(d => d.valor || 0),
+                        backgroundColor: datos.map(d => {
+                            const ratio = d.ratio_media || 1;
+                            if (ratio > 1.5) return '#ef4444'; // Alto
+                            if (ratio > 1.2) return '#f97316'; // Medio-alto
+                            if (ratio < 0.8) return '#3b82f6'; // Bajo
+                            return '#10b981'; // Normal
+                        }),
+                        borderColor: '#1f2937',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1000
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Distribución - ${(data.indicador || 'Indicador').substring(0, 50)}${(data.indicador || '').length > 50 ? '...' : ''}`
+                        },
+                        legend: { 
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                generateLabels: function() {
+                                    return [
+                                        {text: '🔴 Alto (>1.5x media)', fillStyle: '#ef4444'},
+                                        {text: '🟠 Medio-alto (1.2-1.5x)', fillStyle: '#f97316'},
+                                        {text: '🟢 Normal (0.8-1.2x)', fillStyle: '#10b981'},
+                                        {text: '🔵 Bajo (<0.8x)', fillStyle: '#3b82f6'}
+                                    ];
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const index = context[0].dataIndex;
+                                    return datos[index]?.territorio || datos[index]?.upz || 'Sin nombre';
+                                },
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const item = datos[index];
+                                    return [
+                                        `Valor: ${item?.valor || 'N/A'}`,
+                                        `Desviación: ${item?.desviacion_media || 'N/A'}`,
+                                        `Ratio vs media: ${item?.ratio_media || 'N/A'}x`,
+                                        `Posición: ${index + 1} de ${datos.length}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            title: { display: true, text: data.unidad_medida || 'Valor' }
+                        },
+                        x: {
+                            ticks: { 
+                                maxRotation: 45,
+                                minRotation: 0
+                            }
+                        }
+                    },
+                    onHover: function(event, elements) {
+                        event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+                    }
                 }
             });
+        }
+
+        // Utility function to destroy charts
+        function destroyChart(chartName) {
+            if (charts[chartName]) {
+                charts[chartName].destroy();
+                delete charts[chartName];
+            }
         }
 
         // Initialize everything
         document.addEventListener('DOMContentLoaded', async () => {
-            log('DOM loaded, initializing debug dashboard...', 'info');
+            console.log('Inicializando Dashboard Fecundidad Temprana v4.3.1...');
             
+            // Initialize components
             initTabs();
             initUpload();
+            initDynamicFilters();
             initCaracterizacion();
-            initRawData();
+            initSeries();
+            initAsociacion();
+            initTheil();
             
-            // Clear log button
-            document.getElementById('btnClearLog').addEventListener('click', () => {
-                debugLog = [];
-                document.getElementById('debugLog').innerHTML = '<div class="debug-info">Log cleared</div>';
-            });
+            // Load initial data
+            await loadSystemData();
             
-            // API test buttons
-            document.getElementById('btnTestHealth').addEventListener('click', testHealth);
-            document.getElementById('btnTestMetadatos').addEventListener('click', testMetadatos);
-            document.getElementById('btnTestData').addEventListener('click', testData);
-            
-            // Auto-run initial tests
-            log('Running initial system tests...', 'info');
-            await testHealth();
-            await testMetadatos();
-            
-            log('Debug dashboard initialized successfully', 'success');
+            console.log('Dashboard inicializado correctamente');
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            Object.values(charts).forEach(chart => chart.destroy());
         });
     </script>
 </body>
